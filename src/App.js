@@ -167,6 +167,7 @@ class QueueDisplay extends Component {
                 .replace(/windows&&cpu/, 'windows-cpu')
                 .replace(/windows&&gpu/, 'windows-gpu')
                 .replace(/g3.8xlarge-i-[^ ]+/, 'linux-gpu')
+                .replace(/worker-win-c5.2xlarge-i-[^ ]+/, 'windows-cpu')
     }
 
     const task_map = new Map();
