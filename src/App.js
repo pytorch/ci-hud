@@ -11,15 +11,16 @@ class Jenkins {
     return "https://ci.pytorch.org/jenkins/" + s;
   }
 
-  async get(url) {
-    const r = await axios.get(url);
+  async get(url, options) {
+    if (options === undefined) options = {};
+    const r = await axios.get(url, { params: options });
     // TODO: check status
     return r.data;
   }
 
-  async computer() { return this.get(this.url("computer")); }
-  async queue() { return this.get(this.url("queue")); }
-  async job(v) { return this.get(this.url("job/" + v)); }
+  async computer(options) { return this.get(this.url("computer"), options); }
+  async queue(options) { return this.get(this.url("queue"), options); }
+  async job(v, options) { return this.get(this.url("job/" + v), options); }
 }
 const jenkins = new Jenkins();
 
@@ -160,10 +161,10 @@ class QueueDisplay extends Component {
 
     function summarize_url(url) {
       let m;
-      if ((m = RegExp('^https://ci\.pytorch\.org/jenkins/job/([^/]+)/job/([^/]+)/$').exec(url)) !== null) {
+      if ((m = RegExp('^https://ci\\.pytorch\\.org/jenkins/job/([^/]+)/job/([^/]+)/$').exec(url)) !== null) {
         return summarize_project(m[1]) + "/" + summarize_job(m[2]);
       }
-      if ((m = RegExp('https://ci\.pytorch\.org/jenkins/job/([^/]+)/').exec(url)) !== null) {
+      if ((m = RegExp('https://ci\\.pytorch\\.org/jenkins/job/([^/]+)/').exec(url)) !== null) {
         return m[1];
       }
       return url;
@@ -229,7 +230,7 @@ class BuildHistoryDisplay extends Component {
   }
   async update() {
     this.setState({currentTime: new Date()});
-    const data = await jenkins.job(this.props.job);
+    const data = await jenkins.job(this.props.job, {depth: 1});
     console.log(data);
     data.updateTime = new Date();
     this.setState(data);
@@ -242,11 +243,38 @@ class BuildHistoryDisplay extends Component {
       if (!result) return '❓';
       return result;
     }
-    const rows = this.state.builds.map((b) => {
-      const cols = b.subBuilds.map((sb) => {
-        return <td><a href={jenkins.link(sb.url)} className="icon" target="_blank" alt={sb.jobName}>{result_icon(sb.result)}</a></td>
+
+    const known_jobs_set = new Set();
+    this.state.builds.forEach((b) => {
+      b.subBuilds.map((sb) => {
+        known_jobs_set.add(sb.jobName);
       });
-      return <tr key={b.number}><th>{b.number}</th>{cols}</tr>
+    });
+    // NB: use insertion order
+    const known_jobs = [...known_jobs_set.values()];
+
+    const rows = this.state.builds.map((b) => {
+      const sb_map = new Map();
+      b.subBuilds.forEach(sb => {
+        sb_map.set(sb.jobName, sb);
+      });
+
+      const cols = known_jobs.map((jobName) => {
+        const sb = sb_map.get(jobName);
+        if (sb === undefined) {
+          return <td></td>;
+        } else {
+          return <td><a href={jenkins.link(sb.url)} className="icon" target="_blank" alt={sb.jobName}>{result_icon(sb.result)}</a></td>;
+        }
+      });
+
+      return (
+        <tr key={b.number}>
+          <th><a href={b.url} target="_blank">{b.number}</a></th>
+          {cols}
+          <td></td>
+        </tr>
+        );
     });
 
     return (
