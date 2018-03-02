@@ -1,0 +1,31 @@
+th {
+  text-align: left;
+  padding-right: 1em;
+}
+td {
+  padding-right: 1em;
+}
+
+.ralign {
+  text-align: right;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+tfoot {
+  border-top: 1px solid #CCC;
+}
+
+tbody td:last-child {
+  padding-bottom: 0.2em;
+}
+
+tbody th:last-child {
+  padding-bottom: 0.2em;
+}
+
+tfoot td {
+  padding-top: 0.2em;
+}
