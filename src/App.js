@@ -67,8 +67,10 @@ class ComputersDisplay extends Component {
       const k = classify_node(c.displayName);
       let v = map.get(k);
       if (v === undefined) v = { busy: 0, total: 0 };
-      v.total++;
-      if (!c.idle) v.busy++;
+      if (!c.offline) {
+        v.total++;
+        if (!c.idle) v.busy++;
+      }
       map.set(k, v);
     });
 
@@ -158,7 +160,13 @@ class QueueDisplay extends Component {
     }
 
     function summarize_why(why) {
-      return why.replace(/^Waiting for next available executor on/, 'Needs');
+      return why.replace(/^Waiting for next available executor on/, 'Needs')
+                .replace(/docker&&cpu&&ccache/, 'linux-cpu-ccache')
+                .replace(/docker&&cpu/, 'linux-cpu')
+                .replace(/docker&&gpu/, 'linux-gpu')
+                .replace(/windows&&cpu/, 'windows-cpu')
+                .replace(/windows&&gpu/, 'windows-gpu')
+                .replace(/g3.8xlarge-i-[^ ]+/, 'linux-gpu')
     }
 
     const task_map = new Map();
