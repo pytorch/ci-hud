@@ -130,6 +130,8 @@ const centsPerHour = {
   'linux-cpu-ccache': 17, // c5.xlarge
   'win-cpu': 34, // c5.2xlarge
   'win-gpu': 114, // g3.4xlarge
+  'osx': 13900/30/24, // MacStadium mini i7 250 elite
+  'master': 17, // c5.xlarge
 };
 
 class QueueDisplay extends Component {
