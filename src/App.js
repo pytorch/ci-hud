@@ -7,6 +7,9 @@ class Jenkins {
   url(s) {
     return "https://ci.pytorch.org/jenkins/" + s + "/api/json";
   }
+  link(s) {
+    return "https://ci.pytorch.org/jenkins/" + s;
+  }
 
   async get(url) {
     const r = await axios.get(url);
@@ -227,6 +230,7 @@ class BuildHistoryDisplay extends Component {
   async update() {
     this.setState({currentTime: new Date()});
     const data = await jenkins.job(this.props.job);
+    console.log(data);
     data.updateTime = new Date();
     this.setState(data);
   }
@@ -240,9 +244,9 @@ class BuildHistoryDisplay extends Component {
     }
     const rows = this.state.builds.map((b) => {
       const cols = b.subBuilds.map((sb) => {
-        return <td>{result_icon(sb.result)}</td>
+        return <td><a href={jenkins.link(sb.url)} className="icon" target="_blank" alt={sb.jobName}>{result_icon(sb.result)}</a></td>
       });
-      return <tr key={b.id}><th>{b.id}</th>{cols}</tr>
+      return <tr key={b.number}><th>{b.number}</th>{cols}</tr>
     });
 
     return (
@@ -264,9 +268,9 @@ class App extends Component {
         <header className="App-header">
           <h1 className="App-title">ci.pytorch.org HUD</h1>
         </header>
+        <BuildHistoryDisplay interval={60000} job="pytorch-master" />
         <QueueDisplay interval={1000} />
         <ComputerDisplay interval={1000} />
-        <BuildHistoryDisplay interval={60000} job="pytorch-master" />
       </div>
     );
   }

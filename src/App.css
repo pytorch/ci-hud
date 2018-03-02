@@ -6,6 +6,10 @@ td {
   padding-right: 1em;
 }
 
+.icon {
+  text-decoration: none
+}
+
 .ralign {
   text-align: right;
 }
