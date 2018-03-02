@@ -179,6 +179,7 @@ class QueueDisplay extends Component {
                 .replace(/windows&&gpu/, 'windows-gpu')
                 .replace(/g3.8xlarge-i-[^ ]+/, 'linux-gpu')
                 .replace(/worker-win-c5.2xlarge-i-[^ ]+/, 'windows-cpu')
+                .replace(/worker-win-g3.4xlarge-i-[^ ]+/, 'windows-gpu')
     }
 
     const task_map = new Map();
@@ -253,7 +254,8 @@ class BuildHistoryDisplay extends Component {
     // NB: use insertion order
     const known_jobs = [...known_jobs_set.values()];
 
-    const rows = this.state.builds.map((b) => {
+    // TODO: do the slice server side
+    const rows = this.state.builds.slice(0, 10).map((b) => {
       const sb_map = new Map();
       b.subBuilds.forEach(sb => {
         sb_map.set(sb.jobName, sb);

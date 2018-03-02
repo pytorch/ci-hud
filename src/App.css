@@ -1,9 +1,11 @@
 th {
   text-align: left;
   padding-right: 1em;
+  white-space: nowrap;
 }
 td {
   padding-right: 1em;
+  white-space: nowrap;
 }
 
 .icon {
