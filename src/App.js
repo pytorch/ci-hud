@@ -4,10 +4,6 @@ import { promisify } from 'es6-promisify';
 import request from 'request';
 import axios from 'axios';
 
-function Executor(props) {
-  return <tr key={props.name}><td>{props.name}</td><td>{props.count}</td></tr>
-}
-
 const jenkins = (() => {
   const j = require('jenkins-api').init('https://ci.pytorch.org/jenkins');
   return {
@@ -16,10 +12,16 @@ const jenkins = (() => {
     }
 })();
 
+function AsOf(props) {
+  // TODO: Hardcoded 1sec refresh
+  const updateStatus = props.currentTime - props.updateTime > 1500 ? 'out-of-date' : 'up-to-date';
+  return <span className={updateStatus}>as of {props.updateTime.toLocaleTimeString()}; {updateStatus}</span>
+}
+
 class ComputersDisplay extends Component {
   constructor(props) {
     super(props);
-    this.state = { computer: [], updateTime: new Date() };
+    this.state = { computer: [], currentTime: new Date(), updateTime: new Date() };
   }
   componentDidMount() {
     this.update();
@@ -29,6 +31,7 @@ class ComputersDisplay extends Component {
     clearInterval(this.interval);
   }
   async update() {
+    this.setState({currentTime: new Date()});
     const data = await jenkins.computers();
     data.updateTime = new Date();
     this.setState(data);
@@ -95,7 +98,7 @@ class ComputersDisplay extends Component {
     });
     return (
       <div>
-        <h2>Computers (as of {this.state.updateTime.toLocaleTimeString()})</h2>
+        <h2>Computers (<AsOf currentTime={this.state.currentTime} updateTime={this.state.updateTime} />)</h2>
         <table>
           <tbody>{rows}</tbody>
           <tfoot>
@@ -119,7 +122,7 @@ const centsPerHour = {
 class QueueDisplay extends Component {
   constructor(props) {
     super(props);
-    this.state = { items: [], updateTime: new Date() };
+    this.state = { items: [], currentTime: new Date(), updateTime: new Date() };
   }
   componentDidMount() {
     this.update();
@@ -129,6 +132,7 @@ class QueueDisplay extends Component {
     clearInterval(this.interval);
   }
   async update() {
+    this.setState({currentTime: new Date()});
     const data = await jenkins.queue();
     data.updateTime = new Date();
     this.setState(data);
@@ -186,7 +190,7 @@ class QueueDisplay extends Component {
     });
     return (
       <div>
-        <h2>Queue (as of {this.state.updateTime.toLocaleTimeString()})</h2>
+        <h2>Queue (<AsOf currentTime={this.state.currentTime} updateTime={this.state.updateTime} />)</h2>
         <table>
           <tbody>{rows}</tbody>
         </table>

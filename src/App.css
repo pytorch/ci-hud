@@ -29,3 +29,7 @@ tbody th:last-child {
 tfoot td {
   padding-top: 0.2em;
 }
+
+.out-of-date {
+  background-color: #F5D76E;
+}
