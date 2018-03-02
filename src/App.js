@@ -1,24 +1,31 @@
 import React, { Component, Fragment } from 'react';
 import './App.css';
-import { promisify } from 'es6-promisify';
 import request from 'request';
 import axios from 'axios';
 
-const jenkins = (() => {
-  const j = require('jenkins-api').init('https://ci.pytorch.org/jenkins');
-  return {
-    queue: promisify(j.queue.bind(j)),
-    computers: promisify(j.computers.bind(j)),
-    all_builds: promisify(j.all_builds.bind(j)),
-    }
-})();
+class Jenkins {
+  url(s) {
+    return "https://ci.pytorch.org/jenkins/" + s + "/api/json";
+  }
+
+  async get(url) {
+    const r = await axios.get(url);
+    // TODO: check status
+    return r.data;
+  }
+
+  async computer() { return this.get(this.url("computer")); }
+  async queue() { return this.get(this.url("queue")); }
+  async job(v) { return this.get(this.url("job/" + v)); }
+}
+const jenkins = new Jenkins();
 
 function AsOf(props) {
   const updateStatus = props.currentTime - props.updateTime > props.interval ? 'out-of-date' : 'up-to-date';
   return <span className={updateStatus}>(as of {props.updateTime.toLocaleTimeString()}; {updateStatus})</span>
 }
 
-class ComputersDisplay extends Component {
+class ComputerDisplay extends Component {
   constructor(props) {
     super(props);
     this.state = { computer: [], currentTime: new Date(), updateTime: new Date(0) };
@@ -32,7 +39,7 @@ class ComputersDisplay extends Component {
   }
   async update() {
     this.setState({currentTime: new Date()});
-    const data = await jenkins.computers();
+    const data = await jenkins.computer();
     data.updateTime = new Date();
     this.setState(data);
   }
@@ -219,9 +226,9 @@ class BuildHistoryDisplay extends Component {
   }
   async update() {
     this.setState({currentTime: new Date()});
-    const data = await jenkins.all_builds(this.props.job);
+    const data = await jenkins.job(this.props.job);
     data.updateTime = new Date();
-    this.setState({ builds: data });
+    this.setState(data);
   }
   render() {
     function result_icon(result) {
@@ -232,8 +239,6 @@ class BuildHistoryDisplay extends Component {
       return result;
     }
     const rows = this.state.builds.map((b) => {
-      console.log(b)
-      b.subBuilds = [];
       const cols = b.subBuilds.map((sb) => {
         return <td>{result_icon(sb.result)}</td>
       });
@@ -260,8 +265,8 @@ class App extends Component {
           <h1 className="App-title">ci.pytorch.org HUD</h1>
         </header>
         <QueueDisplay interval={1000} />
-        <ComputersDisplay interval={1000} />
-        { /* <BuildHistoryDisplay interval={60000} job="pytorch-master" /> */ }
+        <ComputerDisplay interval={1000} />
+        <BuildHistoryDisplay interval={60000} job="pytorch-master" />
       </div>
     );
   }
