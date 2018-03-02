@@ -9,23 +9,23 @@ const jenkins = (() => {
   return {
     queue: promisify(j.queue.bind(j)),
     computers: promisify(j.computers.bind(j)),
+    all_builds: promisify(j.all_builds.bind(j)),
     }
 })();
 
 function AsOf(props) {
-  // TODO: Hardcoded 1sec refresh
-  const updateStatus = props.currentTime - props.updateTime > 1500 ? 'out-of-date' : 'up-to-date';
-  return <span className={updateStatus}>as of {props.updateTime.toLocaleTimeString()}; {updateStatus}</span>
+  const updateStatus = props.currentTime - props.updateTime > props.interval ? 'out-of-date' : 'up-to-date';
+  return <span className={updateStatus}>(as of {props.updateTime.toLocaleTimeString()}; {updateStatus})</span>
 }
 
 class ComputersDisplay extends Component {
   constructor(props) {
     super(props);
-    this.state = { computer: [], currentTime: new Date(), updateTime: new Date() };
+    this.state = { computer: [], currentTime: new Date(), updateTime: new Date(0) };
   }
   componentDidMount() {
     this.update();
-    this.interval = setInterval(this.update.bind(this), 1000);
+    this.interval = setInterval(this.update.bind(this), this.props.interval);
   }
   componentWillUnmount() {
     clearInterval(this.interval);
@@ -100,7 +100,7 @@ class ComputersDisplay extends Component {
     });
     return (
       <div>
-        <h2>Computers (<AsOf currentTime={this.state.currentTime} updateTime={this.state.updateTime} />)</h2>
+        <h2>Computers <AsOf interval={this.props.interval} currentTime={this.state.currentTime} updateTime={this.state.updateTime} /></h2>
         <table>
           <tbody>{rows}</tbody>
           <tfoot>
@@ -124,11 +124,11 @@ const centsPerHour = {
 class QueueDisplay extends Component {
   constructor(props) {
     super(props);
-    this.state = { items: [], currentTime: new Date(), updateTime: new Date() };
+    this.state = { items: [], currentTime: new Date(), updateTime: new Date(0) };
   }
   componentDidMount() {
     this.update();
-    this.interval = setInterval(this.update.bind(this), 1000);
+    this.interval = setInterval(this.update.bind(this), this.props.interval);
   }
   componentWillUnmount() {
     clearInterval(this.interval);
@@ -172,8 +172,8 @@ class QueueDisplay extends Component {
 
     const task_map = new Map();
     this.state.items.forEach((q) => {
-      const task = summarize_url(q['task']['url']);
-      const why = summarize_why(q['why']);
+      const task = summarize_url(q.task.url);
+      const why = summarize_why(q.why);
       let why_map = task_map.get(task);
       if (why_map === undefined) {
         why_map = new Map();
@@ -199,7 +199,50 @@ class QueueDisplay extends Component {
     });
     return (
       <div>
-        <h2>Queue (<AsOf currentTime={this.state.currentTime} updateTime={this.state.updateTime} />)</h2>
+        <h2>Queue <AsOf interval={this.props.interval} currentTime={this.state.currentTime} updateTime={this.state.updateTime} /></h2>
+        <table>
+          <tbody>{rows}</tbody>
+        </table>
+      </div>
+    );
+  }
+}
+
+class BuildHistoryDisplay extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { builds: [], currentTime: new Date(), updateTime: new Date(0) };
+  }
+  componentDidMount() {
+    this.update();
+    this.interval = setInterval(this.update.bind(this), this.props.interval);
+  }
+  async update() {
+    this.setState({currentTime: new Date()});
+    const data = await jenkins.all_builds(this.props.job);
+    data.updateTime = new Date();
+    this.setState({ builds: data });
+  }
+  render() {
+    function result_icon(result) {
+      if (result === 'SUCCESS') return '✅';
+      if (result === 'FAILURE') return '❌';
+      if (result === 'ABORTED') return '⭕';
+      if (!result) return '❓';
+      return result;
+    }
+    const rows = this.state.builds.map((b) => {
+      console.log(b)
+      b.subBuilds = [];
+      const cols = b.subBuilds.map((sb) => {
+        return <td>{result_icon(sb.result)}</td>
+      });
+      return <tr key={b.id}><th>{b.id}</th>{cols}</tr>
+    });
+
+    return (
+      <div>
+        <h2>{this.props.job} history <AsOf interval={this.props.interval} currenttime={this.state.currentTime} updateTime={this.state.updateTime} /></h2>
         <table>
           <tbody>{rows}</tbody>
         </table>
@@ -216,8 +259,9 @@ class App extends Component {
         <header className="App-header">
           <h1 className="App-title">ci.pytorch.org HUD</h1>
         </header>
-        <QueueDisplay />
-        <ComputersDisplay />
+        <QueueDisplay interval={1000} />
+        <ComputersDisplay interval={1000} />
+        { /* <BuildHistoryDisplay interval={60000} job="pytorch-master" /> */ }
       </div>
     );
   }
