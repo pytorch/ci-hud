@@ -1,5 +1,5 @@
 {
-  "name": "jenkins-hud",
+  "name": "pytorch-ci-hud",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
