@@ -3832,12 +3832,6 @@ istanbul-reports@^1.1.4:
   dependencies:
     handlebars "^4.0.3"
 
-jenkins-api@^0.3.1:
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/jenkins-api/-/jenkins-api-0.3.1.tgz#32fc3d892c6f22a51faa2ef47b3c9eb6745d3fff"
-  dependencies:
-    request "^2.81.0"
-
 jest-changed-files@^20.0.3:
   version "20.0.3"
   resolved "https://registry.yarnpkg.com/jest-changed-files/-/jest-changed-files-20.0.3.tgz#9394d5cc65c438406149bef1bf4d52b68e03e3f8"
@@ -5874,7 +5868,7 @@ request@2.81.0:
     tunnel-agent "^0.6.0"
     uuid "^3.0.0"
 
-request@^2.79.0, request@^2.81.0:
+request@^2.79.0:
   version "2.83.0"
   resolved "https://registry.yarnpkg.com/request/-/request-2.83.0.tgz#ca0b65da02ed62935887808e6f510381034e3356"
   dependencies:
