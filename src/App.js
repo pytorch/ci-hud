@@ -99,7 +99,7 @@ class ComputersDisplay extends Component {
         <table>
           <tbody>{rows}</tbody>
           <tfoot>
-            <tr><td></td><td className="ralign" colspan="2">{centsToDollars(totalCost*24*30)}/mo</td></tr>
+            <tr><td></td><td className="ralign" colSpan="2">{centsToDollars(totalCost*24*30)}/mo</td></tr>
           </tfoot>
         </table>
       </div>
@@ -112,7 +112,6 @@ const centsPerHour = {
   'linux-cpu': 17, // c5.xlarge
   'linux-gpu': 228, // g3.8xlarge
   'linux-cpu-ccache': 17, // c5.xlarge
-  'osx': 0, // dunno
   'win-cpu': 34, // c5.2xlarge
   'win-gpu': 114, // g3.4xlarge
 };
