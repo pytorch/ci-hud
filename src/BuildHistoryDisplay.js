@@ -44,8 +44,18 @@ export default class BuildHistoryDisplay extends Component {
     }
 
     // TODO: do the slice server side
-    // const builds = this.state.builds.slice(0, 10);
-    const builds = this.state.builds;
+    // let builds = this.state.builds.slice(0, 10);
+    let builds = this.state.builds;
+    function isInterestingBuild(b) {
+      // Has to have executed at least one sub-build
+      //  (usually, failing this means there was a merge conflict)
+      if (b.subBuilds.length === 0) return false;
+      // Did not have all sub-builds cancelled
+      if (b.subBuilds.every((sb) => sb.result === 'ABORTED')) return false;
+      return true;
+    }
+    builds = builds.filter(isInterestingBuild);
+
 
     const known_jobs_set = new Set();
     builds.forEach((b) => {
@@ -100,7 +110,6 @@ export default class BuildHistoryDisplay extends Component {
       function renderCauses(changeSet) {
         const defaultCause = <em>Manually triggered rebuild</em>;
         if (changeSet.actions === undefined) return defaultCause;
-        console.log(changeSet.actions);
         return intersperse(changeSet.actions
           .filter((action) => action.causes !== undefined)
           .map((action, i) =>
@@ -108,12 +117,22 @@ export default class BuildHistoryDisplay extends Component {
           "; ");
       }
 
+      const isPullRequest = b.actions.some(
+        (action) => action.causes !== undefined &&
+                    action.causes.some(
+                      (cause) => cause._class === "org.jenkinsci.plugins.ghprb.GhprbCause"
+                    ))
+
       function renderBuild(build) {
-        const changeSet = build.changeSet;
-        if (changeSet.items.length === 0) {
-          return <td>{renderCauses(build)}</td>;
+        if (isPullRequest) {
+          return <td dangerouslySetInnerHTML={{__html: build.description}} />;
         } else {
-          return <td>{changeSet.items.slice().reverse().map(renderCommit)}</td>
+          const changeSet = build.changeSet;
+          if (changeSet.items.length === 0) {
+            return <td>{renderCauses(build)}</td>;
+          } else {
+            return <td>{changeSet.items.slice().reverse().map(renderCommit)}</td>
+          }
         }
       }
 

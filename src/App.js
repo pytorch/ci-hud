@@ -12,9 +12,12 @@ class App extends Component {
         <header className="App-header">
           <h1 className="App-title">ci.pytorch.org HUD</h1>
         </header>
+        <BuildHistoryDisplay interval={60000} job="pytorch-pull-request" />
+        { /*
         <BuildHistoryDisplay interval={60000} job="pytorch-master" />
         <QueueDisplay interval={1000} />
         <ComputerDisplay interval={1000} />
+        */ }
       </div>
     );
   }
