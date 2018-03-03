@@ -48,7 +48,12 @@ th.rotate {
 
 th.rotate > div {
   transform:
-    translate(10px, 75px) /* ugh */
+    translate(10px, 155px) /* ugh */
     rotate(315deg);
   width: 20px;
 }
+
+th { vertical-align: top; }
+td { vertical-align: top; }
+
+code a { color: #AAA; }
