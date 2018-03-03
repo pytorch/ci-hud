@@ -39,3 +39,16 @@ tfoot td {
 .disconnected {
   background-color: #F5D76E;
 }
+
+/* Not a fan... */
+th.rotate {
+  height: 160px; /* ugh */
+  white-space: nowrap;
+}
+
+th.rotate > div {
+  transform:
+    translate(10px, 61px) /* ugh */
+    rotate(315deg);
+  width: 20px;
+}

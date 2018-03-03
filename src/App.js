@@ -138,6 +138,10 @@ const centsPerHour = {
   'master': 17, // c5.xlarge
 };
 
+function summarize_job(job) {
+  return job.replace(/^pytorch-/, '').replace(/-trigger$/, '');
+}
+
 class QueueDisplay extends Component {
   constructor(props) {
     super(props);
@@ -159,10 +163,6 @@ class QueueDisplay extends Component {
   render() {
     function summarize_project(project) {
       return project.replace(/-builds$/, '');
-    }
-
-    function summarize_job(job) {
-      return job.replace(/^pytorch-/, '');
     }
 
     function summarize_url(url) {
@@ -238,7 +238,6 @@ class BuildHistoryDisplay extends Component {
   async update() {
     this.setState({currentTime: new Date()});
     const data = await jenkins.job(this.props.job, {depth: 1});
-    console.log(data);
     data.updateTime = new Date();
     this.setState(data);
   }
@@ -251,8 +250,11 @@ class BuildHistoryDisplay extends Component {
       return result;
     }
 
+    // TODO: do the slice server side
+    const builds = this.state.builds.slice(0, 10);
+
     const known_jobs_set = new Set();
-    this.state.builds.forEach((b) => {
+    builds.forEach((b) => {
       b.subBuilds.forEach((sb) => {
         known_jobs_set.add(sb.jobName);
       });
@@ -260,8 +262,11 @@ class BuildHistoryDisplay extends Component {
     // NB: use insertion order
     const known_jobs = [...known_jobs_set.values()];
 
-    // TODO: do the slice server side
-    const rows = this.state.builds.slice(0, 10).map((b) => {
+    const known_jobs_head = known_jobs.map((jobName) =>
+      <th class="rotate"><div><span>{summarize_job(jobName)}</span></div></th>
+    );
+
+    const rows = builds.map((b) => {
       const sb_map = new Map();
       b.subBuilds.forEach(sb => {
         sb_map.set(sb.jobName, sb);
@@ -290,6 +295,8 @@ class BuildHistoryDisplay extends Component {
         <h2>{this.props.job} history <AsOf interval={this.props.interval} currenttime={this.state.currentTime} updateTime={this.state.updateTime} /></h2>
         <table>
           <thead>
+            <th></th>
+            {known_jobs_head}
           </thead>
           <tbody>{rows}</tbody>
         </table>
