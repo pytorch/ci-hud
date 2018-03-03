@@ -249,7 +249,7 @@ class BuildHistoryDisplay extends Component {
 
     const known_jobs_set = new Set();
     this.state.builds.forEach((b) => {
-      b.subBuilds.map((sb) => {
+      b.subBuilds.forEach((sb) => {
         known_jobs_set.add(sb.jobName);
       });
     });
@@ -285,6 +285,8 @@ class BuildHistoryDisplay extends Component {
       <div>
         <h2>{this.props.job} history <AsOf interval={this.props.interval} currenttime={this.state.currentTime} updateTime={this.state.updateTime} /></h2>
         <table>
+          <thead>
+          </thead>
           <tbody>{rows}</tbody>
         </table>
       </div>
