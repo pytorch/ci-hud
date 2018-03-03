@@ -1,6 +1,5 @@
 import React, { Component, Fragment } from 'react';
 import './App.css';
-import request from 'request';
 import axios from 'axios';
 
 class Jenkins {
@@ -25,8 +24,13 @@ class Jenkins {
 const jenkins = new Jenkins();
 
 function AsOf(props) {
-  const updateStatus = props.currentTime - props.updateTime > props.interval ? 'out-of-date' : 'up-to-date';
-  return <span className={updateStatus}>(as of {props.updateTime.toLocaleTimeString()}; {updateStatus})</span>
+  const updateStatus = props.currentTime - props.updateTime > props.interval ? 'disconnected' : 'connected';
+  const timeString = props.updateTime - new Date(0) === 0 ?
+                     <Fragment>pending</Fragment> :
+                     <Fragment>
+                      as of {props.updateTime.toLocaleTimeString()}; {updateStatus}
+                     </Fragment>;
+  return <span className={updateStatus}>({timeString})</span>
 }
 
 class ComputerDisplay extends Component {
@@ -265,11 +269,11 @@ class BuildHistoryDisplay extends Component {
 
       const cols = known_jobs.map((jobName) => {
         const sb = sb_map.get(jobName);
-        if (sb === undefined) {
-          return <td></td>;
-        } else {
-          return <td><a href={jenkins.link(sb.url)} className="icon" target="_blank" alt={sb.jobName}>{result_icon(sb.result)}</a></td>;
+        let cell = <Fragment />;
+        if (sb !== undefined) {
+          cell = <a href={jenkins.link(sb.url)} className="icon" target="_blank" alt={sb.jobName}>{result_icon(sb.result)}</a>;
         }
+        return <td key={jobName}>{cell}</td>;
       });
 
       return (
