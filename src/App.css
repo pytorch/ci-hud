@@ -42,13 +42,13 @@ tfoot td {
 
 /* Not a fan... */
 th.rotate {
-  height: 160px; /* ugh */
+  height: 180px; /* ugh */
   white-space: nowrap;
 }
 
 th.rotate > div {
   transform:
-    translate(10px, 61px) /* ugh */
+    translate(10px, 75px) /* ugh */
     rotate(315deg);
   width: 20px;
 }
