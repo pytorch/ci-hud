@@ -45,6 +45,7 @@ export default class BuildHistoryDisplay extends Component {
     this.setState({currentTime: new Date()});
     const data = await jenkins.job(this.props.job, {depth: 1});
     data.updateTime = new Date();
+    // TODO: This can cause spurious state updates
     this.setState(data);
   }
   render() {

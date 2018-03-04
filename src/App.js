@@ -6,7 +6,7 @@ import BuildHistoryDisplay from './BuildHistoryDisplay.js';
 import { BrowserRouter as Router, Route, Link } from "react-router-dom";
 
 const App = () => (
-  <Router>
+  <Router basename={process.env.PUBLIC_URL + '/'}>
     <div className="App">
       <header className="App-header">
         <h1 className="App-title">ci.pytorch.org HUD</h1>
