@@ -7,22 +7,6 @@ import { summarize_job } from './Summarize.js';
 //  - Put the master and pull request info together, so you can see what
 //  the reported 'master' status is for a given 'pull-request' build
 
-/* intersperse: Return an array with the separator interspersed between
- * each element of the input array.
- *
- * > _([1,2,3]).intersperse(0)
- * [1,0,2,0,3]
- */
-function intersperse(arr, sep) {
-    if (arr.length === 0) {
-        return [];
-    }
-
-    return arr.slice(1).reduce(function(xs, x, i) {
-        return xs.concat([sep, x]);
-    }, [arr[0]]);
-}
-
 export default class BuildHistoryDisplay extends Component {
   constructor(props) {
     super(props);
@@ -76,6 +60,9 @@ export default class BuildHistoryDisplay extends Component {
     //let builds = this.state.builds.slice(0, 10);
     let builds = this.state.builds;
 
+    // TODO: This deeply assumes that you are viewing a thing with
+    // subbuilds, not the actual build.
+
     function isInterestingBuild(b) {
       // Has to have executed at least one sub-build
       //  (usually, failing this means there was a merge conflict)
@@ -101,7 +88,7 @@ export default class BuildHistoryDisplay extends Component {
 
     const known_jobs = [...known_jobs_set.values()].sort();
     const known_jobs_head = known_jobs.map((jobName) =>
-      <th className="rotate" key={jobName}><div><span>{summarize_job(jobName)}</span></div></th>
+      <th className="rotate" key={jobName}><div>{summarize_job(jobName)}</div></th>
     );
 
     const rows = builds.map((b) => {
@@ -135,7 +122,7 @@ export default class BuildHistoryDisplay extends Component {
       function renderPullRequestNumber(comment) {
         let m = comment.match(/\(#(\d+)\)/);
         if (m) {
-          return <Fragment>(<a href={"https://github.com/pytorch/pytorch/pull/" + m[1]} target="_blank">#{m[1]}</a>)</Fragment>;
+          return <Fragment><a href={"https://github.com/pytorch/pytorch/pull/" + m[1]} target="_blank">#{m[1]}</a></Fragment>;
         }
         return <Fragment />;
       }
@@ -151,33 +138,52 @@ export default class BuildHistoryDisplay extends Component {
       }
 
       function renderCauses(changeSet) {
-        const defaultCause = <em>Manually triggered rebuild</em>;
+        const defaultCause = <em>Manually triggered rebuild.</em>;
         if (changeSet.actions === undefined) return defaultCause;
-        return intersperse(changeSet.actions
+        return changeSet.actions
           .filter((action) => action.causes !== undefined)
           .map((action, i) =>
-            action.causes.map((cause, i) => <em key={i}>{cause.shortDescription}</em>)),
-          "; ");
+            action.causes.map((cause, i) => <em key={i}>{cause.shortDescription}.{" "}</em>));
+      }
+
+      function getPushedBy(build) {
+        const action = build.actions.find((action) => action._class === "hudson.model.CauseAction");
+        if (action === undefined) return "(unknown)";
+        const cause = action.causes.find((cause) => cause._class === "com.cloudbees.jenkins.GitHubPushCause");
+        if (cause === undefined) return "";
+        const match = cause.shortDescription.match(/Started by GitHub push by (.+)/);
+        if (match === null) return cause.shortDescription;
+        return match[1];
       }
 
       function getPullParams(build) {
-        const action = build.actions.find((action) => action._class === "org.jenkinsci.plugins.ghprb.GhprbParametersAction");
+        let action = build.actions.find((action) => action._class === "org.jenkinsci.plugins.ghprb.GhprbParametersAction");
+        if (action === undefined) {
+          action = build.actions.find((action) => action._class === "com.tikal.jenkins.plugins.multijob.MultiJobParametersAction");
+        }
         if (action === undefined) {
           return new Map();
-        } else {
-          return new Map(action.parameters.map((param) => [param.name, param.value]));
         }
+        return new Map(action.parameters.map((param) => [param.name, param.value]));
       }
 
+      const isRebuild = b.actions.some(
+        (action) => action.causes !== undefined &&
+                    action.causes.some(
+                      (cause) => cause._class === "com.sonyericsson.rebuild.RebuildCause"
+                    ));
       const isPullRequest = b.actions.some(
         (action) => action.causes !== undefined &&
                     action.causes.some(
-                      (cause) => cause._class === "org.jenkinsci.plugins.ghprb.GhprbCause"
+                      (cause) => cause._class === "org.jenkinsci.plugins.ghprb.GhprbCause" ||
+                                 (cause._class === "hudson.model.Cause$UpstreamCause" && /-pull-request$/.test(cause.upstreamProject))
                     ))
 
       function renderBuild(build) {
-        console.log(build);
-        if (isPullRequest) {
+        if (isRebuild) {
+          // TODO: copypaste
+          return <Fragment><td></td><td className="right-cell">{renderCauses(build)}</td></Fragment>;
+        } else if (isPullRequest) {
           const params = getPullParams(build);
           const title = params.get("ghprbPullTitle");
           const url = params.get("ghprbPullLink");
@@ -191,11 +197,16 @@ export default class BuildHistoryDisplay extends Component {
             );
         } else {
           const changeSet = build.changeSet;
+          // TODO: This is empty for not pytorch-master.  We could
+          // probably get the info if we propagate it as a variable.
+          const pushedBy = getPushedBy(build);
+          let desc;
           if (changeSet.items.length === 0) {
-            return <td className="right-cell">{renderCauses(build)}</td>;
+            desc = renderCauses(build);
           } else {
-            return <td className="right-cell">{changeSet.items.slice().reverse().map(renderCommit)}</td>
+            desc = changeSet.items.slice().reverse().map(renderCommit);
           }
+          return <Fragment><td>{pushedBy}</td><td className="right-cell">{desc}</td></Fragment>;
         }
       }
 
