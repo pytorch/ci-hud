@@ -24,6 +24,7 @@ const App = () => (
       </ul>
       <Route exact path="/" component={Home} />
       <Route path="/build/:job" component={Build} />
+      <Route path="/build/:dir/job/:job" component={Build} />
     </div>
   </Router>
 );
@@ -36,7 +37,7 @@ const Home = () => (
 );
 
 const Build = ({ match }) => (
-  <BuildHistoryDisplay interval={60000} job={match.params.job} />
+  <BuildHistoryDisplay interval={60000} job={match.params.dir ? match.params.dir + "/job/" + match.params.job : match.params.job} />
 );
 
 export default App;
