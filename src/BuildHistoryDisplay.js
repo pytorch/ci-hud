@@ -2,6 +2,7 @@ import React, { Component, Fragment } from 'react';
 import jenkins from './Jenkins.js';
 import AsOf from './AsOf.js';
 import { summarize_job } from './Summarize.js';
+import * as d3 from 'd3v4';
 
 // Ideas:
 //  - Put the master and pull request info together, so you can see what
@@ -90,6 +91,11 @@ export default class BuildHistoryDisplay extends Component {
     const known_jobs_head = known_jobs.map((jobName) =>
       <th className="rotate" key={jobName}><div>{summarize_job(jobName)}</div></th>
     );
+
+    const durationWidth = 120;
+    const durationHeight = 10;
+    const durationScale = d3.scaleLinear().rangeRound([0, durationWidth]);
+    durationScale.domain([0, d3.max(builds, (b) => b.duration)]);
 
     const rows = builds.map((b) => {
       const sb_map = new Map();
@@ -205,7 +211,19 @@ export default class BuildHistoryDisplay extends Component {
           }
         }
 
-        return <Fragment><td className="right-cell">{Math.floor(build.duration/1000/60)} min</td><td className="right-cell">{author}</td><td className="right-cell">{desc}</td></Fragment>;
+        return <Fragment>
+                <td className="right-cell bar-number">{Math.floor(build.duration/1000/60)}</td>
+                <td>
+                  <svg width={durationWidth} height={durationHeight}>
+                    <rect className="bar"
+                          x="0"
+                          y="0"
+                          width={durationScale(build.duration)}
+                          height={durationHeight} />
+                  </svg>
+                </td>
+                <td className="right-cell">{author}</td>
+                <td className="right-cell">{desc}</td></Fragment>;
       }
 
       return (

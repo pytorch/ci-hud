@@ -92,3 +92,15 @@ code a { color: #AAA; }
    -o-animation: flickerAnimation 1s infinite;
     animation: flickerAnimation 1s infinite;
 }
+
+.bar {
+  fill: steelblue;
+}
+
+.bar-number {
+  padding-right: 2px;
+  font-family: sans-serif;
+  text-align: right;
+  font-size: 0.7em;
+  vertical-align: center;
+}
