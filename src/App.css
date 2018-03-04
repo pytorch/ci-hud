@@ -8,6 +8,7 @@ td {
 
 .left-cell {
   padding-right: 1em;
+  text-align: right;
 }
 
 .right-cell {

@@ -3,6 +3,7 @@ import jenkins from './Jenkins.js';
 import AsOf from './AsOf.js';
 import { summarize_job } from './Summarize.js';
 import * as d3 from 'd3v4';
+import parse_duration from 'parse-duration';
 
 // Ideas:
 //  - Put the master and pull request info together, so you can see what
@@ -37,6 +38,7 @@ export default class BuildHistoryDisplay extends Component {
                   url,
                   number,
                   duration,
+                  timestamp,
                   actions[parameters[name,value],
                   causes[shortDescription]],
                   changeSet[items[commitId,comment,msg]],
@@ -140,25 +142,25 @@ export default class BuildHistoryDisplay extends Component {
       collect_jobs(b);
 
       function perf_report(sb) {
-        return sb.duration;
+        return <Fragment>{Math.floor(parse_duration(sb.duration)/1000/60)}&nbsp;&nbsp;</Fragment>;
       }
 
       const cols = known_jobs.map((jobName) => {
         const sb = sb_map.get(jobName);
         let cell = <Fragment />;
         if (sb !== undefined) {
-          if (true) {
+          if (this.props.mode === "perf") {
+            cell = perf_report(sb)
+          } else {
             cell = <a href={jenkins.link(sb.url + "/console")}
                       className="icon"
                       target="_blank"
                       alt={sb.jobName}>
                      {result_icon(sb.result)}
                    </a>;
-          } else {
-            cell = perf_report(sb)
           }
         }
-        return <td key={jobName}>{cell}</td>;
+        return <td key={jobName} style={{textAlign: "right", fontFamily: "sans-serif"}}>{cell}</td>;
       });
 
       function drop_pr_number(msg) {
@@ -265,9 +267,19 @@ export default class BuildHistoryDisplay extends Component {
                 <td className="right-cell">{desc}</td></Fragment>;
       }
 
+      const date = new Date(b.timestamp);
+      const today = new Date();
+      let whenString;
+      if (today.toLocaleDateString() === date.toLocaleDateString()) {
+        whenString = date.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
+      } else {
+        whenString = date.toLocaleString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
+      }
+
       return (
         <tr key={b.number}>
           <th className="left-cell"><a href={b.url} target="_blank">{b.number}</a></th>
+          <td className="left-cell">{whenString}</td>
           {cols}
           {renderBuild(b)}
         </tr>
@@ -285,6 +297,7 @@ export default class BuildHistoryDisplay extends Component {
         <table>
           <thead>
             <tr>
+              <th></th>
               <th></th>
               {known_jobs_head}
             </tr>

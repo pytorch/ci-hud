@@ -16,10 +16,10 @@ const App = () => (
           <Link to="/">home</Link>
         </li>
         <li>
-          <Link to="/build/pytorch-master">pytorch-master</Link>
+          <Link to="/build/pytorch-master">pytorch-master</Link> (<Link to="/build/pytorch-master?mode=perf">perf</Link>)
         </li>
         <li>
-          <Link to="/build/pytorch-pull-request">pytorch-pull-request</Link>
+          <Link to="/build/pytorch-pull-request">pytorch-pull-request</Link> (<Link to="/build/pytorch-pull-request?mode=perf">perf</Link>)
         </li>
       </ul>
       <ul className="menu">
@@ -51,9 +51,11 @@ const Home = () => (
   </div>
 );
 
-const Build = ({ match }) => (
-  <BuildHistoryDisplay interval={60000} job={match.url.replace(/^\/build\//, '')} />
-);
+const Build = ({ match }) => {
+  // Uhhh, am I really supposed to rob window.location here?
+  const query = new URLSearchParams(window.location.search);
+  return <BuildHistoryDisplay interval={60000} job={match.url.replace(/^\/build\//, '')} mode={query.get('mode')} />
+};
 
 const BuildRoute = ({ match }) => (
   <Fragment>
