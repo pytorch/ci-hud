@@ -57,3 +57,5 @@ th { vertical-align: top; }
 td { vertical-align: top; }
 
 code a { color: #AAA; }
+
+.menu li { display: inline; margin-right: 1em; }

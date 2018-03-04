@@ -22,11 +22,20 @@ function intersperse(arr, sep) {
 export default class BuildHistoryDisplay extends Component {
   constructor(props) {
     super(props);
-    this.state = { builds: [], currentTime: new Date(), updateTime: new Date(0) };
+    this.state = this.initialState();
+  }
+  initialState() {
+    return { builds: [], currentTime: new Date(), updateTime: new Date(0) };
   }
   componentDidMount() {
     this.update();
     this.interval = setInterval(this.update.bind(this), this.props.interval);
+  }
+  componentDidUpdate(prevProps) {
+    if (this.props.job !== prevProps.job) {
+      this.setState(this.initialState());
+      this.update();
+    }
   }
   async update() {
     this.setState({currentTime: new Date()});
