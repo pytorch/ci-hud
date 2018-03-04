@@ -192,7 +192,7 @@ export default class BuildHistoryDisplay extends Component {
           return (
             <Fragment>
               <td className="right-cell">{author}</td>
-              <td className="right-cell"><a href={url}>#{id}</a> {title}</td>
+              <td className="right-cell"><a href={url} target="_blank">#{id}</a> {title}</td>
             </Fragment>
             );
         } else {
@@ -206,7 +206,8 @@ export default class BuildHistoryDisplay extends Component {
           } else {
             desc = changeSet.items.slice().reverse().map(renderCommit);
           }
-          return <Fragment><td>{pushedBy}</td><td className="right-cell">{desc}</td></Fragment>;
+          return <Fragment><td className="right-cell">{pushedBy}</td>
+                           <td className="right-cell">{desc}</td></Fragment>;
         }
       }
 
