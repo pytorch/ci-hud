@@ -47,8 +47,8 @@ export default class BuildHistoryDisplay extends Component {
     function result_icon(result) {
       if (result === 'SUCCESS') return '✅';
       if (result === 'FAILURE') return '❌';
-      if (result === 'ABORTED') return '⭕';
-      if (!result) return '❓';
+      if (result === 'ABORTED') return '⚪';
+      if (!result) return '🚧';
       return result;
     }
 
@@ -118,7 +118,7 @@ export default class BuildHistoryDisplay extends Component {
         const sb = sb_map.get(jobName);
         let cell = <Fragment />;
         if (sb !== undefined) {
-          cell = <a href={jenkins.link(sb.url)} className="icon" target="_blank" alt={sb.jobName}>{result_icon(sb.result)}</a>;
+          cell = <a href={jenkins.link(sb.url + "/console")} className="icon" target="_blank" alt={sb.jobName}>{result_icon(sb.result)}</a>;
         }
         return <td key={jobName}>{cell}</td>;
       });
