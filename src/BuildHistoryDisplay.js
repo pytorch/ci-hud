@@ -180,35 +180,32 @@ export default class BuildHistoryDisplay extends Component {
                     ))
 
       function renderBuild(build) {
+        console.log(build);
+        let author = "";
+        let desc = "";
+
         if (isRebuild) {
-          // TODO: copypaste
-          return <Fragment><td></td><td className="right-cell">{renderCauses(build)}</td></Fragment>;
+          desc = renderCauses(build);
         } else if (isPullRequest) {
           const params = getPullParams(build);
           const title = params.get("ghprbPullTitle");
           const url = params.get("ghprbPullLink");
           const id = params.get("ghprbPullId");
-          const author = params.get("ghprbPullAuthorLogin");
-          return (
-            <Fragment>
-              <td className="right-cell">{author}</td>
-              <td className="right-cell"><a href={url} target="_blank">#{id}</a> {title}</td>
-            </Fragment>
-            );
+          author = params.get("ghprbPullAuthorLogin");
+          desc = <Fragment><a href={url} target="_blank">#{id}</a> {title}</Fragment>;
         } else {
           const changeSet = build.changeSet;
           // TODO: This is empty for not pytorch-master.  We could
           // probably get the info if we propagate it as a variable.
-          const pushedBy = getPushedBy(build);
-          let desc;
+          author = getPushedBy(build);
           if (changeSet.items.length === 0) {
             desc = renderCauses(build);
           } else {
             desc = changeSet.items.slice().reverse().map(renderCommit);
           }
-          return <Fragment><td className="right-cell">{pushedBy}</td>
-                           <td className="right-cell">{desc}</td></Fragment>;
         }
+
+        return <Fragment><td className="right-cell">{Math.floor(build.duration/1000/60)} min</td><td className="right-cell">{author}</td><td className="right-cell">{desc}</td></Fragment>;
       }
 
       return (
