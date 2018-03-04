@@ -142,7 +142,7 @@ export default class BuildHistoryDisplay extends Component {
       collect_jobs(b);
 
       function perf_report(sb) {
-        return <Fragment>{Math.floor(parse_duration(sb.duration)/1000/60)}&nbsp;&nbsp;</Fragment>;
+        return <Fragment>{parse_duration(sb.duration)}&nbsp;&nbsp;</Fragment>;
       }
 
       const cols = known_jobs.map((jobName) => {

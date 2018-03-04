@@ -21,6 +21,12 @@ const App = () => (
         <li>
           <Link to="/build/pytorch-pull-request">pytorch-pull-request</Link> (<Link to="/build/pytorch-pull-request?mode=perf">perf</Link>)
         </li>
+        <li>
+          <Link to="/build/caffe2-master">caffe2-master</Link> (<Link to="/build/caffe2-master?mode=perf">perf</Link>)
+        </li>
+        <li>
+          <Link to="/build/caffe2-pull-request">caffe2-pull-request</Link> (<Link to="/build/caffe2-pull-request?mode=perf">perf</Link>)
+        </li>
       </ul>
       <ul className="menu">
         {[
