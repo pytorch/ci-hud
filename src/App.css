@@ -1,11 +1,17 @@
 th {
   text-align: left;
-  padding-right: 1em;
   white-space: nowrap;
 }
 td {
-  padding-right: 1em;
   white-space: nowrap;
+}
+
+.left-cell {
+  padding-right: 1em;
+}
+
+.right-cell {
+  padding-left: 1em;
 }
 
 .icon {

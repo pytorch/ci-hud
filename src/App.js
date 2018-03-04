@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React from 'react';
 import './App.css';
 import ComputerDisplay from './ComputerDisplay.js';
 import QueueDisplay from './QueueDisplay.js';

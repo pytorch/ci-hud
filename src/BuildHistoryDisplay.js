@@ -52,9 +52,25 @@ export default class BuildHistoryDisplay extends Component {
       return result;
     }
 
+    // Sigh... the place where you can get the information you're
+    // interested in at the top level is NOT the same as where you get
+    // it inside, because of how Jenkins handles depth (Jenkins
+    // *will* give you information for everything recursively, just
+    // not in the place you might expect it.
+    //
+    //  class: "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
+    //  id: "3772"
+    //  subBuilds:
+    //    0:
+    //      jobName: "whatever"
+    //      build:
+    //        class: "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
+    //        subBuilds:
+
     // TODO: do the slice server side
-    // let builds = this.state.builds.slice(0, 10);
+    //let builds = this.state.builds.slice(0, 10);
     let builds = this.state.builds;
+
     function isInterestingBuild(b) {
       // Has to have executed at least one sub-build
       //  (usually, failing this means there was a merge conflict)
@@ -65,25 +81,38 @@ export default class BuildHistoryDisplay extends Component {
     }
     builds = builds.filter(isInterestingBuild);
 
-
     const known_jobs_set = new Set();
-    builds.forEach((b) => {
-      b.subBuilds.forEach((sb) => {
-        known_jobs_set.add(sb.jobName);
-      });
-    });
-    // NB: use insertion order
-    const known_jobs = [...known_jobs_set.values()];
+    function collect_known_jobs_set(topBuild) {
+      function go(subBuild) {
+        if (subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
+          subBuild.build.subBuilds.forEach(go);
+        } else {
+          known_jobs_set.add(subBuild.jobName);
+        }
+      }
+      topBuild.subBuilds.forEach(go);
+    }
+    builds.forEach(collect_known_jobs_set);
 
+    const known_jobs = [...known_jobs_set.values()].sort();
     const known_jobs_head = known_jobs.map((jobName) =>
       <th className="rotate" key={jobName}><div><span>{summarize_job(jobName)}</span></div></th>
     );
 
     const rows = builds.map((b) => {
       const sb_map = new Map();
-      b.subBuilds.forEach(sb => {
-        sb_map.set(sb.jobName, sb);
-      });
+
+      function collect_jobs(topBuild) {
+        function go(subBuild) {
+          if (subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
+            subBuild.build.subBuilds.forEach(go);
+          } else {
+            sb_map.set(subBuild.jobName, subBuild);
+          }
+        }
+        topBuild.subBuilds.forEach(go);
+      }
+      collect_jobs(b);
 
       const cols = known_jobs.map((jobName) => {
         const sb = sb_map.get(jobName);
@@ -134,21 +163,20 @@ export default class BuildHistoryDisplay extends Component {
 
       function renderBuild(build) {
         if (isPullRequest) {
-          return <td dangerouslySetInnerHTML={{__html: build.description}} />;
+          return <td className="right-cell" dangerouslySetInnerHTML={{__html: build.description}} />;
         } else {
           const changeSet = build.changeSet;
           if (changeSet.items.length === 0) {
-            return <td>{renderCauses(build)}</td>;
+            return <td className="right-cell">{renderCauses(build)}</td>;
           } else {
-            return <td>{changeSet.items.slice().reverse().map(renderCommit)}</td>
+            return <td className="right-cell">{changeSet.items.slice().reverse().map(renderCommit)}</td>
           }
         }
       }
 
-      console.log(b);
       return (
         <tr key={b.number}>
-          <th><a href={b.url} target="_blank">{b.number}</a></th>
+          <th className="left-cell"><a href={b.url} target="_blank">{b.number}</a></th>
           {cols}
           {renderBuild(b)}
         </tr>
@@ -157,7 +185,12 @@ export default class BuildHistoryDisplay extends Component {
 
     return (
       <div>
-        <h2>{this.props.job} history <AsOf interval={this.props.interval} currenttime={this.state.currentTime} updateTime={this.state.updateTime} /></h2>
+        <h2>
+          {this.props.job} history{' '}
+          <AsOf interval={this.props.interval}
+                currentTime={this.state.currentTime}
+                updateTime={this.state.updateTime} />
+        </h2>
         <table>
           <thead>
             <tr>
