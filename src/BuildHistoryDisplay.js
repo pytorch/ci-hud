@@ -28,8 +28,37 @@ export default class BuildHistoryDisplay extends Component {
   }
   async update() {
     this.setState({currentTime: new Date()});
-    const data = await jenkins.job(this.props.job, {depth: 1});
+    // NB: server-slide slicing doesn't really help, Jenkins seems to
+    // load everything into memory anyway
+    let data;
+    if (false) {
+      data = await jenkins.job(this.props.job,
+        {tree: `builds[
+                  url,
+                  number,
+                  duration,
+                  actions[parameters[name,value],
+                  causes[shortDescription]],
+                  changeSet[items[commitId,comment,msg]],
+                  subBuilds[
+                    result,jobName,url,duration,
+                    build[
+                      subBuilds[
+                        result,jobName,url,duration,
+                        build[
+                          subBuilds[result,jobName,url,duration]
+                        ]
+                      ]
+                    ]
+                  ]
+               ]`.replace(/\s+/g, '')});
+    } else {
+      data = await jenkins.job(this.props.job, {depth: 1});
+    }
     data.updateTime = new Date();
+    if (data.allBuilds !== undefined) {
+      data.builds = data.allBuilds;
+    }
     // TODO: This can cause spurious state updates
     this.setState(data);
   }
@@ -57,8 +86,6 @@ export default class BuildHistoryDisplay extends Component {
     //        class: "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
     //        subBuilds:
 
-    // TODO: do the slice server side
-    //let builds = this.state.builds.slice(0, 10);
     let builds = this.state.builds;
 
     // TODO: This deeply assumes that you are viewing a thing with
@@ -77,7 +104,7 @@ export default class BuildHistoryDisplay extends Component {
     const known_jobs_set = new Set();
     function collect_known_jobs_set(topBuild) {
       function go(subBuild) {
-        if (subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
+        if (subBuild.build && subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
           subBuild.build.subBuilds.forEach(go);
         } else {
           known_jobs_set.add(subBuild.jobName);
@@ -102,7 +129,7 @@ export default class BuildHistoryDisplay extends Component {
 
       function collect_jobs(topBuild) {
         function go(subBuild) {
-          if (subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
+          if (subBuild.build && subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
             subBuild.build.subBuilds.forEach(go);
           } else {
             sb_map.set(subBuild.jobName, subBuild);
@@ -112,11 +139,24 @@ export default class BuildHistoryDisplay extends Component {
       }
       collect_jobs(b);
 
+      function perf_report(sb) {
+        return sb.duration;
+      }
+
       const cols = known_jobs.map((jobName) => {
         const sb = sb_map.get(jobName);
         let cell = <Fragment />;
         if (sb !== undefined) {
-          cell = <a href={jenkins.link(sb.url + "/console")} className="icon" target="_blank" alt={sb.jobName}>{result_icon(sb.result)}</a>;
+          if (true) {
+            cell = <a href={jenkins.link(sb.url + "/console")}
+                      className="icon"
+                      target="_blank"
+                      alt={sb.jobName}>
+                     {result_icon(sb.result)}
+                   </a>;
+          } else {
+            cell = perf_report(sb)
+          }
         }
         return <td key={jobName}>{cell}</td>;
       });
@@ -186,7 +226,6 @@ export default class BuildHistoryDisplay extends Component {
                     ))
 
       function renderBuild(build) {
-        console.log(build);
         let author = "";
         let desc = "";
 
@@ -238,7 +277,7 @@ export default class BuildHistoryDisplay extends Component {
     return (
       <div>
         <h2>
-          {this.props.job} history{' '}
+          <a href={jenkins.link("job/" + this.props.job)} target="_blank">{this.props.job}</a> history{' '}
           <AsOf interval={this.props.interval}
                 currentTime={this.state.currentTime}
                 updateTime={this.state.updateTime} />
