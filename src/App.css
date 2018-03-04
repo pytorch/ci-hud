@@ -2,6 +2,11 @@ th {
   text-align: left;
   white-space: nowrap;
 }
+
+thead th {
+  vertical-align: bottom;
+}
+
 td {
   white-space: nowrap;
 }
@@ -51,6 +56,7 @@ tfoot td {
 th.rotate {
   height: 180px; /* ugh */
   white-space: nowrap;
+  vertical-align: top;
 }
 
 th.rotate > div {

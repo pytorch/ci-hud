@@ -297,9 +297,12 @@ export default class BuildHistoryDisplay extends Component {
         <table>
           <thead>
             <tr>
-              <th></th>
-              <th></th>
+              <th className="left-cell">No.</th>
+              <th className="left-cell">Date</th>
               {known_jobs_head}
+              <th className="right-cell" colSpan="2">Total time (min)</th>
+              <th className="right-cell">User</th>
+              <th className="right-cell">Description</th>
             </tr>
           </thead>
           <tbody>{rows}</tbody>
