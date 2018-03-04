@@ -3,6 +3,10 @@ import jenkins from './Jenkins.js';
 import AsOf from './AsOf.js';
 import { summarize_job } from './Summarize.js';
 
+// Ideas:
+//  - Put the master and pull request info together, so you can see what
+//  the reported 'master' status is for a given 'pull-request' build
+
 /* intersperse: Return an array with the separator interspersed between
  * each element of the input array.
  *
@@ -45,10 +49,10 @@ export default class BuildHistoryDisplay extends Component {
   }
   render() {
     function result_icon(result) {
-      if (result === 'SUCCESS') return '✅';
-      if (result === 'FAILURE') return '❌';
-      if (result === 'ABORTED') return '⚪';
-      if (!result) return '🚧';
+      if (result === 'SUCCESS') return <span role="img" aria-label="passed">✅</span>;
+      if (result === 'FAILURE') return <span role="img" aria-label="failed">❌</span>;
+      if (result === 'ABORTED') return <span role="img" aria-label="cancelled">⚪</span>;
+      if (!result) return <span className="animate-flicker" role="img" aria-label="in progress">🚧</span>;
       return result;
     }
 
@@ -155,6 +159,15 @@ export default class BuildHistoryDisplay extends Component {
           "; ");
       }
 
+      function getPullParams(build) {
+        const action = build.actions.find((action) => action._class === "org.jenkinsci.plugins.ghprb.GhprbParametersAction");
+        if (action === undefined) {
+          return new Map();
+        } else {
+          return new Map(action.parameters.map((param) => [param.name, param.value]));
+        }
+      }
+
       const isPullRequest = b.actions.some(
         (action) => action.causes !== undefined &&
                     action.causes.some(
@@ -162,8 +175,19 @@ export default class BuildHistoryDisplay extends Component {
                     ))
 
       function renderBuild(build) {
+        console.log(build);
         if (isPullRequest) {
-          return <td className="right-cell" dangerouslySetInnerHTML={{__html: build.description}} />;
+          const params = getPullParams(build);
+          const title = params.get("ghprbPullTitle");
+          const url = params.get("ghprbPullLink");
+          const id = params.get("ghprbPullId");
+          const author = params.get("ghprbPullAuthorLogin");
+          return (
+            <Fragment>
+              <td className="right-cell">{author}</td>
+              <td className="right-cell"><a href={url}>#{id}</a> {title}</td>
+            </Fragment>
+            );
         } else {
           const changeSet = build.changeSet;
           if (changeSet.items.length === 0) {
