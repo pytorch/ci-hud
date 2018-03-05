@@ -51,9 +51,11 @@ export default class BuildHistoryDisplay extends Component {
                   subBuilds[
                     result,jobName,url,duration,
                     build[
+                      builtOn,
                       subBuilds[
                         result,jobName,url,duration,
                         build[
+                          builtOn,
                           subBuilds[result,jobName,url,duration]
                         ]
                       ]
@@ -61,7 +63,10 @@ export default class BuildHistoryDisplay extends Component {
                   ]
                ]`.replace(/\s+/g, '')});
     } else {
-      data = await jenkins.job(this.props.job, {depth: 1});
+      // If you want entries in build on subBuilds, need depth = 3
+      // Otherwise, most data can be got with depth = 1
+      const depth = 3;
+      data = await jenkins.job(this.props.job, {depth: depth});
     }
     data.updateTime = new Date();
     if (data.allBuilds !== undefined) {
@@ -111,13 +116,21 @@ export default class BuildHistoryDisplay extends Component {
     }
     builds = builds.filter(isInterestingBuild);
 
+    function getJobName(subBuild) {
+      const baseJobName = subBuild.jobName;
+      if (subBuild.build && subBuild.build.builtOn && baseJobName.match(/^ccache-cleanup-.*$/)) {
+        return baseJobName + "/" + subBuild.build.builtOn;
+      }
+      return baseJobName;
+    }
+
     const known_jobs_set = new Set();
     function collect_known_jobs_set(topBuild) {
       function go(subBuild) {
         if (subBuild.build && subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
           subBuild.build.subBuilds.forEach(go);
         } else {
-          known_jobs_set.add(subBuild.jobName);
+          known_jobs_set.add(getJobName(subBuild));
         }
       }
       topBuild.subBuilds.forEach(go);
@@ -142,7 +155,7 @@ export default class BuildHistoryDisplay extends Component {
           if (subBuild.build && subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
             subBuild.build.subBuilds.forEach(go);
           } else {
-            sb_map.set(subBuild.jobName, subBuild);
+            sb_map.set(getJobName(subBuild), subBuild);
           }
         }
         topBuild.subBuilds.forEach(go);
@@ -163,7 +176,7 @@ export default class BuildHistoryDisplay extends Component {
             cell = <a href={jenkins.link(sb.url + "/console")}
                       className="icon"
                       target="_blank"
-                      alt={sb.jobName}>
+                      alt={getJobName(sb)}>
                      {result_icon(sb.result)}
                    </a>;
           }
