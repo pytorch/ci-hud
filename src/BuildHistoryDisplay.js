@@ -28,7 +28,8 @@ export default class BuildHistoryDisplay extends Component {
     }
   }
   async update() {
-    this.setState({currentTime: new Date()});
+    const currentTime = new Date();
+    this.setState({currentTime: currentTime});
     // NB: server-slide slicing doesn't really help, Jenkins seems to
     // load everything into memory anyway
     let data;
@@ -69,6 +70,7 @@ export default class BuildHistoryDisplay extends Component {
       data = await jenkins.job(this.props.job, {depth: depth});
     }
     data.updateTime = new Date();
+    data.connectedIn = data.updateTime - currentTime;
     if (data.allBuilds !== undefined) {
       data.builds = data.allBuilds;
     }
@@ -312,6 +314,7 @@ export default class BuildHistoryDisplay extends Component {
         <h2>
           <a href={jenkins.link("job/" + this.props.job)} target="_blank">{this.props.job}</a> history{' '}
           <AsOf interval={this.props.interval}
+                connectedIn={this.state.connectedIn}
                 currentTime={this.state.currentTime}
                 updateTime={this.state.updateTime} />
         </h2>

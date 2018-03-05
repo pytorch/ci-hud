@@ -6,7 +6,7 @@ import { summarize_job } from './Summarize.js';
 export default class QueueDisplay extends Component {
   constructor(props) {
     super(props);
-    this.state = { items: [], currentTime: new Date(), updateTime: new Date(0) };
+    this.state = { items: [], currentTime: new Date(), updateTime: new Date(0), connectedIn: 0 };
   }
   componentDidMount() {
     this.update();
@@ -16,9 +16,11 @@ export default class QueueDisplay extends Component {
     clearInterval(this.interval);
   }
   async update() {
-    this.setState({currentTime: new Date()});
+    const currentTime = new Date();
+    this.setState({currentTime: currentTime});
     const data = await jenkins.queue();
     data.updateTime = new Date();
+    data.connectedIn = data.updateTime - currentTime;
     this.setState(data);
   }
   render() {
@@ -78,7 +80,10 @@ export default class QueueDisplay extends Component {
     });
     return (
       <div>
-        <h2>Queue <AsOf interval={this.props.interval} currentTime={this.state.currentTime} updateTime={this.state.updateTime} /></h2>
+        <h2>Queue <AsOf interval={this.props.interval}
+                        connectedIn={this.state.connectedIn}
+                        currentTime={this.state.currentTime}
+                        updateTime={this.state.updateTime} /></h2>
         <table>
           <tbody>{rows}</tbody>
         </table>
