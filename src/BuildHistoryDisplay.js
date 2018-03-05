@@ -32,7 +32,13 @@ export default class BuildHistoryDisplay extends Component {
     // NB: server-slide slicing doesn't really help, Jenkins seems to
     // load everything into memory anyway
     let data;
-    if (false) {
+    if (true) {
+      // STOP.  You want more results?  You may have noticed that on
+      // Google, people suggest using allBuilds with {0,n} to make use
+      // of Jenkins pagination.  However, if you do this, it will *DOS our Jeenkins
+      // instance*; even when pagination is requested, Jenkins will
+      // still load ALL builds into memory before servicing your
+      // request.  I've filed this at https://issues.jenkins-ci.org/browse/JENKINS-49908
       data = await jenkins.job(this.props.job,
         {tree: `builds[
                   url,
@@ -99,6 +105,8 @@ export default class BuildHistoryDisplay extends Component {
       if (b.subBuilds.length === 0) return false;
       // Did not have all sub-builds cancelled
       if (b.subBuilds.every((sb) => sb.result === 'ABORTED')) return false;
+      // This would filter for only passing builds
+      // if (b.subBuilds.some((sb) => sb.result === 'FAILURE' || sb.result === 'ABORTED')) return false;
       return true;
     }
     builds = builds.filter(isInterestingBuild);
