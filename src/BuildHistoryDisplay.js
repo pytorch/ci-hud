@@ -52,17 +52,16 @@ export default class BuildHistoryDisplay extends Component {
                   subBuilds[
                     result,jobName,url,duration,
                     build[
-                      builtOn,
                       subBuilds[
                         result,jobName,url,duration,
                         build[
-                          builtOn,
                           subBuilds[result,jobName,url,duration]
                         ]
                       ]
                     ]
                   ]
                ]`.replace(/\s+/g, '')});
+               // build[builtOn]
     } else {
       // If you want entries in build on subBuilds, need depth = 3
       // Otherwise, most data can be got with depth = 1
