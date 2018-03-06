@@ -46,6 +46,7 @@ export default class BuildHistoryDisplay extends Component {
                   number,
                   duration,
                   timestamp,
+                  result,
                   actions[parameters[name,value],
                   causes[shortDescription]],
                   changeSet[items[commitId,comment,msg]],
@@ -65,7 +66,7 @@ export default class BuildHistoryDisplay extends Component {
     } else {
       // If you want entries in build on subBuilds, need depth = 3
       // Otherwise, most data can be got with depth = 1
-      const depth = 3;
+      const depth = 1;
       data = await jenkins.job(this.props.job, {depth: depth});
     }
     data.updateTime = new Date();
@@ -108,9 +109,9 @@ export default class BuildHistoryDisplay extends Component {
     function isInterestingBuild(b) {
       // Has to have executed at least one sub-build
       //  (usually, failing this means there was a merge conflict)
-      if (b.subBuilds.length === 0) return false;
+      // if (b.subBuilds.length === 0) return false;
       // Did not have all sub-builds cancelled
-      if (b.subBuilds.every((sb) => sb.result === 'ABORTED')) return false;
+      // if (b.subBuilds.every((sb) => sb.result === 'ABORTED')) return false;
       // This would filter for only passing builds
       // if (b.subBuilds.some((sb) => sb.result === 'FAILURE' || sb.result === 'ABORTED')) return false;
       return true;
@@ -126,14 +127,15 @@ export default class BuildHistoryDisplay extends Component {
     }
 
     const known_jobs_set = new Set();
+    const this_job = "*"; // this.props.job;
     function collect_known_jobs_set(topBuild) {
       function go(subBuild) {
+        known_jobs_set.add(getJobName(subBuild));
         if (subBuild.build && subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
           subBuild.build.subBuilds.forEach(go);
-        } else {
-          known_jobs_set.add(getJobName(subBuild));
         }
       }
+      known_jobs_set.add(this_job);
       topBuild.subBuilds.forEach(go);
     }
     builds.forEach(collect_known_jobs_set);
@@ -153,12 +155,12 @@ export default class BuildHistoryDisplay extends Component {
 
       function collect_jobs(topBuild) {
         function go(subBuild) {
+          sb_map.set(getJobName(subBuild), subBuild);
           if (subBuild.build && subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
             subBuild.build.subBuilds.forEach(go);
-          } else {
-            sb_map.set(getJobName(subBuild), subBuild);
           }
         }
+        sb_map.set(this_job, topBuild);
         topBuild.subBuilds.forEach(go);
       }
       collect_jobs(b);
