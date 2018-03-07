@@ -15,7 +15,7 @@ export default class BuildHistoryDisplay extends Component {
     this.state = this.initialState();
   }
   initialState() {
-    return { builds: [], currentTime: new Date(), updateTime: new Date(0) };
+    return { builds: [], currentTime: new Date(), updateTime: new Date(0), showStale: false };
   }
   componentDidMount() {
     this.update();
@@ -130,12 +130,12 @@ export default class BuildHistoryDisplay extends Component {
     const this_job = "*"; // this.props.job;
     function collect_known_jobs_set(topBuild) {
       function go(subBuild) {
-        known_jobs_set.add(getJobName(subBuild));
         if (subBuild.build && subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
           subBuild.build.subBuilds.forEach(go);
+        } else {
+          known_jobs_set.add(getJobName(subBuild));
         }
       }
-      known_jobs_set.add(this_job);
       topBuild.subBuilds.forEach(go);
     }
     builds.forEach(collect_known_jobs_set);
@@ -150,33 +150,36 @@ export default class BuildHistoryDisplay extends Component {
     const durationScale = d3.scaleLinear().rangeRound([0, durationWidth]);
     durationScale.domain([0, d3.max(builds, (b) => b.duration)]);
 
-    const rows = builds.map((b) => {
+    const seen_prs = new Set();
+
+    const rows = builds.map((build) => {
       const sb_map = new Map();
 
       function collect_jobs(topBuild) {
         function go(subBuild) {
-          sb_map.set(getJobName(subBuild), subBuild);
           if (subBuild.build && subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
             subBuild.build.subBuilds.forEach(go);
+          } else {
+            sb_map.set(getJobName(subBuild), subBuild);
           }
         }
         sb_map.set(this_job, topBuild);
         topBuild.subBuilds.forEach(go);
       }
-      collect_jobs(b);
+      collect_jobs(build);
 
       function perf_report(sb) {
         return <Fragment>{parse_duration(sb.duration)/1000}&nbsp;&nbsp;</Fragment>;
       }
 
-      const cols = known_jobs.map((jobName) => {
+      const status_cols = known_jobs.map((jobName) => {
         const sb = sb_map.get(jobName);
         let cell = <Fragment />;
         if (sb !== undefined) {
           if (this.props.mode === "perf") {
             cell = perf_report(sb)
           } else {
-            cell = <a href={jenkins.link(sb.url + "/console")}
+            cell = <a href={/^https?:\/\//.test(sb.url) ? sb.url + "/console" : jenkins.link(sb.url + "/console")}
                       className="icon"
                       target="_blank"
                       alt={getJobName(sb)}>
@@ -239,59 +242,51 @@ export default class BuildHistoryDisplay extends Component {
         return new Map(action.parameters.map((param) => [param.name, param.value]));
       }
 
-      const isRebuild = b.actions.some(
+      const isRebuild = build.actions.some(
         (action) => action.causes !== undefined &&
                     action.causes.some(
                       (cause) => cause._class === "com.sonyericsson.rebuild.RebuildCause"
                     ));
-      const isPullRequest = b.actions.some(
+      const isPullRequest = build.actions.some(
         (action) => action.causes !== undefined &&
                     action.causes.some(
                       (cause) => cause._class === "org.jenkinsci.plugins.ghprb.GhprbCause" ||
                                  (cause._class === "hudson.model.Cause$UpstreamCause" && /-pull-request$/.test(cause.upstreamProject))
                     ))
 
-      function renderBuild(build) {
-        let author = "";
-        let desc = "";
+      let author = "";
+      let desc = "";
+      let pull_link;
+      let pull_id;
 
-        if (isRebuild) {
-          desc = renderCauses(build);
-        } else if (isPullRequest) {
-          const params = getPullParams(build);
-          const title = params.get("ghprbPullTitle");
-          const url = params.get("ghprbPullLink");
-          const id = params.get("ghprbPullId");
-          author = params.get("ghprbPullAuthorLogin");
-          desc = <Fragment><a href={url} target="_blank">#{id}</a> {title}</Fragment>;
-        } else {
-          const changeSet = build.changeSet;
-          // TODO: This is empty for not pytorch-master.  We could
-          // probably get the info if we propagate it as a variable.
-          author = getPushedBy(build);
-          if (changeSet.items.length === 0) {
-            desc = renderCauses(build);
-          } else {
-            desc = changeSet.items.slice().reverse().map(renderCommit);
-          }
+      // TODO: Too lazy to set up PR numbers for the old ones
+
+      if (isRebuild) {
+        desc = renderCauses(build);
+      } else if (isPullRequest) {
+        const params = getPullParams(build);
+        const title = params.get("ghprbPullTitle");
+        pull_link = params.get("ghprbPullLink");
+        pull_id = params.get("ghprbPullId");
+        author = params.get("ghprbPullAuthorLogin");
+        desc = title;
+        if (seen_prs.has(pull_id)) {
+          if (!this.state.showStale) return;
         }
-
-        return <Fragment>
-                <td className="right-cell bar-number">{Math.floor(build.duration/1000/60)}</td>
-                <td>
-                  <svg width={durationWidth} height={durationHeight}>
-                    <rect className="bar"
-                          x="0"
-                          y="0"
-                          width={durationScale(build.duration)}
-                          height={durationHeight} />
-                  </svg>
-                </td>
-                <td className="right-cell">{author}</td>
-                <td className="right-cell">{desc}</td></Fragment>;
+        seen_prs.add(pull_id);
+      } else {
+        const changeSet = build.changeSet;
+        // TODO: This is empty for not pytorch-master.  We could
+        // probably get the info if we propagate it as a variable.
+        author = getPushedBy(build);
+        if (changeSet.items.length === 0) {
+          desc = renderCauses(build);
+        } else {
+          desc = changeSet.items.slice().reverse().map(renderCommit);
+        }
       }
 
-      const date = new Date(b.timestamp);
+      const date = new Date(build.timestamp);
       const today = new Date();
       let whenString;
       if (today.toLocaleDateString() === date.toLocaleDateString()) {
@@ -301,11 +296,24 @@ export default class BuildHistoryDisplay extends Component {
       }
 
       return (
-        <tr key={b.number}>
-          <th className="left-cell"><a href={b.url} target="_blank">{b.number}</a></th>
+        <tr key={build.number}>
+          <th className="left-cell">{result_icon(sb_map.get(this_job).result)}</th>
+          <th className="left-cell"><a href={build.url} target="_blank">{build.number}</a></th>
+          <th className="left-cell"><a href={pull_link} target="_blank">{pull_id ? "#" + pull_id : ""}</a></th>
           <td className="left-cell">{whenString}</td>
-          {cols}
-          {renderBuild(b)}
+          {status_cols}
+          <td className="right-cell bar-number">{Math.floor(build.duration/1000/60)}</td>
+          <td>
+            <svg width={durationWidth} height={durationHeight}>
+              <rect className="bar"
+                    x="0"
+                    y="0"
+                    width={durationScale(build.duration)}
+                    height={durationHeight} />
+            </svg>
+          </td>
+          <td className="right-cell">{author}</td>
+          <td className="right-cell">{desc}</td>
         </tr>
         );
     });
@@ -319,10 +327,20 @@ export default class BuildHistoryDisplay extends Component {
                 currentTime={this.state.currentTime}
                 updateTime={this.state.updateTime} />
         </h2>
+        <div>
+          <ul className="menu">
+            <li>
+              <input type="checkbox" name="show-stale" value={this.state.showStale} onChange={(e) => { this.setState({showStale: e.target.checked}) }} />
+              <label for="show-stale">Show stale builds of PRs</label>
+            </li>
+          </ul>
+        </div>
         <table>
           <thead>
             <tr>
-              <th className="left-cell">No.</th>
+              <th></th>
+              <th className="left-cell">J#</th>
+              <th className="left-cell">PR#</th>
               <th className="left-cell">Date</th>
               {known_jobs_head}
               <th className="right-cell" colSpan="2">Total time (min)</th>
