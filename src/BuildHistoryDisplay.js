@@ -271,7 +271,8 @@ export default class BuildHistoryDisplay extends Component {
         author = params.get("ghprbPullAuthorLogin");
         desc = title;
         if (seen_prs.has(pull_id)) {
-          if (!this.state.showStale) return;
+          // TODO: do this filtering earlier
+          if (!this.state.showStale) return <Fragment />;
         }
         seen_prs.add(pull_id);
       } else {
@@ -331,7 +332,7 @@ export default class BuildHistoryDisplay extends Component {
           <ul className="menu">
             <li>
               <input type="checkbox" name="show-stale" value={this.state.showStale} onChange={(e) => { this.setState({showStale: e.target.checked}) }} />
-              <label for="show-stale">Show stale builds of PRs</label>
+              <label htmlFor="show-stale">Show stale builds of PRs</label>
             </li>
           </ul>
         </div>
