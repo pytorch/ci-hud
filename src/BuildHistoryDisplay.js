@@ -114,6 +114,12 @@ export default class BuildHistoryDisplay extends Component {
       // if (b.subBuilds.every((sb) => sb.result === 'ABORTED')) return false;
       // This would filter for only passing builds
       // if (b.subBuilds.some((sb) => sb.result === 'FAILURE' || sb.result === 'ABORTED')) return false;
+      // This data is corrupt, ignore it
+      if (b.url === "https://ci.pytorch.org/jenkins/job/pytorch-pull-request/4026/") return false;
+      if (b.url === "https://ci.pytorch.org/jenkins/job/pytorch-pull-request/4027/") return false;
+      if (b.url === "https://ci.pytorch.org/jenkins/job/pytorch-pull-request/4025/") return false;
+      if (b.url === "https://ci.pytorch.org/jenkins/job/pytorch-master/1172/") return false;
+      if (b.url === "https://ci.pytorch.org/jenkins/job/pytorch-master/1103/") return false;
       return true;
     }
     builds = builds.filter(isInterestingBuild);
