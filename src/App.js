@@ -28,6 +28,12 @@ const App = () => (
           <Link to="/build/caffe2-pull-request">caffe2-pull-request</Link> (<Link to="/build/caffe2-pull-request?mode=perf">perf</Link>)
         </li>
         <li>
+          <Link to="/build/tensorcomp-master">tensorcomp-master</Link> (<Link to="/build/tensorcomp-master?mode=perf">perf</Link>)
+        </li>
+        <li>
+          <Link to="/build/tensorcomp-pull-request">tensorcomp-pull-request</Link> (<Link to="/build/tensorcomp-pull-request?mode=perf">perf</Link>)
+        </li>
+        <li>
           <Link to="/build/private/job/ccache-cleanup-trigger">ccache-cleanup</Link>
         </li>
       </ul>
