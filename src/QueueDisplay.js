@@ -47,6 +47,7 @@ export default class QueueDisplay extends Component {
                 .replace(/windows&&cpu/, 'windows-cpu')
                 .replace(/windows&&gpu/, 'windows-gpu')
                 .replace(/g3.8xlarge-i-[^ ]+/, 'linux-gpu')
+                .replace(/g3.16xlarge-i-[^ ]+/, 'linux-multigpu')
                 .replace(/worker-win-c5.2xlarge-i-[^ ]+/, 'windows-cpu')
                 .replace(/worker-win-g3.4xlarge-i-[^ ]+/, 'windows-gpu')
     }

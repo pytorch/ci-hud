@@ -6,6 +6,7 @@ import AsOf from './AsOf.js';
 const centsPerHour = {
   'linux-cpu': 17, // c5.xlarge
   'linux-gpu': 228, // g3.8xlarge
+  'linux-multigpu': 456, // g3.16xlarge
   'linux-cpu-ccache': 17, // c5.xlarge
   'win-cpu': 34, // c5.2xlarge
   'win-gpu': 114, // g3.4xlarge
