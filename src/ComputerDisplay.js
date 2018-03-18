@@ -42,6 +42,9 @@ export default class ComputerDisplay extends Component {
       if (/^g3.8xlarge-i-.*$/.test(node)) {
         return 'linux-gpu';
       }
+      if (/^g3.16xlarge-i-.*$/.test(node)) {
+        return 'linux-multigpu';
+      }
       if (/^worker-c5-xlarge-.*$/.test(node)) {
         return 'linux-cpu-ccache';
       }
