@@ -22,7 +22,7 @@ function seconds2time (seconds) {
     if (hours !== 0) {
       time = hours+":";
     }
-    if (minutes !=- 0 || time !== "") {
+    if (minutes !== 0 || time !== "") {
       minutes = (minutes < 10 && time !== "") ? "0"+minutes : String(minutes);
       time += minutes+":";
     }
