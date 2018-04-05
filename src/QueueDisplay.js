@@ -27,6 +27,7 @@ export default class QueueDisplay extends Component {
     function summarize_why(why) {
       return why.replace(/^Waiting for next available executor on/, 'Needs')
                 .replace(/docker&&cpu&&ccache/, 'linux-cpu-ccache')
+                .replace(/[^ ]+cpu_ccache.+/, 'linux-cpu-ccache')
                 .replace(/docker&&cpu&&!ccache/, 'linux-cpu')
                 .replace(/docker&&cpu/, 'linux-cpu-any')
                 .replace(/docker&&gpu/, 'linux-gpu')
