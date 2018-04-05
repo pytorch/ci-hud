@@ -1,11 +1,13 @@
 import React, { Component } from 'react';
 import jenkins from './Jenkins.js';
 import AsOf from './AsOf.js';
+import { summarize_ago, summarize_url } from './Summarize.js';
 
 // Last updated 2018-03-01
 const centsPerHour = {
   'linux-cpu': 17, // c5.xlarge
   'linux-gpu': 228, // g3.8xlarge
+  'linux-tc-gpu': 228, // g3.8xlarge
   'linux-multigpu': 456, // g3.16xlarge
   'linux-cpu-ccache': 17, // c5.xlarge
   'win-cpu': 34, // c5.2xlarge
@@ -29,18 +31,38 @@ export default class ComputerDisplay extends Component {
   async update() {
     const currentTime = new Date();
     this.setState({currentTime: currentTime});
-    const data = await jenkins.computer();
+    const data = await jenkins.computer(
+      {tree: `computer[
+                offline,
+                idle,
+                displayName,
+                assignedLabels[name],
+                executors[
+                  currentExecutable[
+                    timestamp,
+                    estimatedDuration,
+                    url,
+                    building
+                  ],
+                  idle
+                ]
+              ]`.replace(/\s+/g, '')});
     data.updateTime = new Date();
     data.connectedIn = data.updateTime - currentTime;
     this.setState(data);
   }
   render() {
-    function classify_node(node) {
+    function classify_node(n) {
+      const node = n.displayName;
       if (/^c5.xlarge-i-.*$/.test(node)) {
         return 'linux-cpu';
       }
       if (/^g3.8xlarge-i-.*$/.test(node)) {
-        return 'linux-gpu';
+        if (n.assignedLabels.some((l) => l.name === "tc_gpu")) {
+          return 'linux-tc-gpu';
+        } else {
+          return 'linux-gpu';
+        }
       }
       if (/^g3.16xlarge-i-.*$/.test(node)) {
         return 'linux-multigpu';
@@ -65,7 +87,7 @@ export default class ComputerDisplay extends Component {
 
     const map = new Map();
     this.state.computer.forEach((c) => {
-      const k = classify_node(c.displayName);
+      const k = classify_node(c);
       let v = map.get(k);
       if (v === undefined) v = { busy: 0, total: 0 };
       if (!c.offline) {
@@ -99,14 +121,44 @@ export default class ComputerDisplay extends Component {
           <td className="ralign">{cost}/hr</td>
         </tr>);
     });
+
+    const busy_nodes = this.state.computer.filter((c) => !c.idle && c.displayName !== "master");
+    busy_nodes.sort((a, b) => a.executors[0].currentExecutable.timestamp - b.executors[0].currentExecutable.timestamp);
+    const running_rows = busy_nodes.map((c) => {
+      const executable = c.executors[0].currentExecutable;
+      return <tr key={c.displayName}>
+                <td className="left-cell">{summarize_ago(executable.timestamp)}</td>
+                <td>
+                  <a href={executable.url}>
+                    {summarize_url(executable.url)}
+                  </a>
+                </td>
+              </tr>;
+    });
+
     return (
       <div>
         <h2>Computers <AsOf interval={this.props.interval} currentTime={this.state.currentTime} updateTime={this.state.updateTime} connectedIn={this.state.connectedIn} /></h2>
         <table>
-          <tbody>{rows}</tbody>
-          <tfoot>
-            <tr><td></td><td className="ralign" colSpan="2">{centsToDollars(totalCost*24*30)}/mo</td></tr>
-          </tfoot>
+          <tbody>
+            <tr>
+              <td>
+                <table>
+                  <tbody>{rows}</tbody>
+                  <tfoot>
+                    <tr><td></td><td className="ralign" colSpan="2">{centsToDollars(totalCost*24*30)}/mo</td></tr>
+                  </tfoot>
+                </table>
+              </td>
+              <td className="right-cell">
+                <table>
+                  <tbody>
+                    {running_rows}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
       );

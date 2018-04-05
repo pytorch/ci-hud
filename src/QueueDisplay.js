@@ -1,7 +1,7 @@
-import React, { Component, Fragment } from 'react';
+import React, { Component } from 'react';
 import jenkins from './Jenkins.js';
 import AsOf from './AsOf.js';
-import { summarize_job } from './Summarize.js';
+import { summarize_url } from './Summarize.js';
 
 export default class QueueDisplay extends Component {
   constructor(props) {
@@ -24,25 +24,11 @@ export default class QueueDisplay extends Component {
     this.setState(data);
   }
   render() {
-    function summarize_project(project) {
-      return project.replace(/-builds$/, '');
-    }
-
-    function summarize_url(url) {
-      let m;
-      if ((m = RegExp('^https://ci\\.pytorch\\.org/jenkins/job/([^/]+)/job/([^/]+)/$').exec(url)) !== null) {
-        return summarize_project(m[1]) + "/" + summarize_job(m[2]);
-      }
-      if ((m = RegExp('https://ci\\.pytorch\\.org/jenkins/job/([^/]+)/').exec(url)) !== null) {
-        return m[1];
-      }
-      return url;
-    }
-
     function summarize_why(why) {
       return why.replace(/^Waiting for next available executor on/, 'Needs')
                 .replace(/docker&&cpu&&ccache/, 'linux-cpu-ccache')
-                .replace(/docker&&cpu/, 'linux-cpu')
+                .replace(/docker&&cpu&&!ccache/, 'linux-cpu')
+                .replace(/docker&&cpu/, 'linux-cpu-any')
                 .replace(/docker&&gpu/, 'linux-gpu')
                 .replace(/windows&&cpu/, 'windows-cpu')
                 .replace(/windows&&gpu/, 'windows-gpu')
@@ -52,15 +38,9 @@ export default class QueueDisplay extends Component {
                 .replace(/worker-win-g3.4xlarge-i-[^ ]+/, 'windows-gpu')
     }
 
-    const task_map = new Map();
+    const why_map = new Map();
     this.state.items.forEach((q) => {
-      const task = summarize_url(q.task.url);
       const why = summarize_why(q.why);
-      let why_map = task_map.get(task);
-      if (why_map === undefined) {
-        why_map = new Map();
-        task_map.set(task, why_map);
-      }
       let v = why_map.get(why);
       if (v === undefined) {
         v = { total: 0 };
@@ -69,16 +49,29 @@ export default class QueueDisplay extends Component {
       v.total++;
     });
 
-    const rows = [...task_map.entries()].sort().map((task_why_map) => {
-      const task = task_why_map[0];
-      const why_map = task_why_map[1];
-      const rows = [...why_map.entries()].sort().map(why_v => {
-        const why = why_v[0];
-        const v = why_v[1];
-        return <tr key={why}><th>{task}</th><td>{v.total}</td><td>{why}</td></tr>
-      });
-      return <Fragment key={task}>{rows}</Fragment>
+    const why_rows = [...why_map.entries()].sort().map(why_v => {
+      const why = why_v[0];
+      const v = why_v[1];
+      return <tr key={why}><th>{why}</th><td>{v.total}</td></tr>
     });
+
+    const task_map = new Map();
+    this.state.items.forEach((q) => {
+      const task = summarize_url(q.task.url);
+      let v = task_map.get(task);
+      if (v === undefined) {
+        v = { total: 0 };
+        task_map.set(task, v);
+      }
+      v.total++;
+    });
+
+    const task_rows = [...task_map.entries()].sort().map(task_v => {
+      const task = task_v[0];
+      const v = task_v[1];
+      return <tr key={task}><th>{task}</th><td>{v.total}</td></tr>
+    });
+
     return (
       <div>
         <h2>Queue <AsOf interval={this.props.interval}
@@ -86,7 +79,20 @@ export default class QueueDisplay extends Component {
                         currentTime={this.state.currentTime}
                         updateTime={this.state.updateTime} /></h2>
         <table>
-          <tbody>{rows}</tbody>
+          <tbody>
+            <tr>
+              <td width={300}>
+                <table>
+                  <tbody>{why_rows}</tbody>
+                </table>
+              </td>
+              <td className="right-cell" width={300}>
+                <table>
+                  <tbody>{task_rows}</tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
     );

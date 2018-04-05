@@ -1,7 +1,7 @@
 import React, { Component, Fragment } from 'react';
 import jenkins from './Jenkins.js';
 import AsOf from './AsOf.js';
-import { summarize_job } from './Summarize.js';
+import { summarize_job, summarize_date } from './Summarize.js';
 import * as d3 from 'd3v4';
 import parse_duration from 'parse-duration';
 
@@ -293,14 +293,7 @@ export default class BuildHistoryDisplay extends Component {
         }
       }
 
-      const date = new Date(build.timestamp);
-      const today = new Date();
-      let whenString;
-      if (today.toLocaleDateString() === date.toLocaleDateString()) {
-        whenString = date.toLocaleString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
-      } else {
-        whenString = date.toLocaleString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
-      }
+      const whenString = summarize_date(build.timestamp);
 
       return (
         <tr key={build.number}>
