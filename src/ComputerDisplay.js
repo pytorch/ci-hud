@@ -14,6 +14,7 @@ const centsPerHour = {
   'win-gpu': 114, // g3.4xlarge
   'osx': 13900/30/24, // MacStadium mini i7 250 elite
   'master': 17, // c5.xlarge
+  'packet': 7, // ???? Packet server ???
 };
 
 export default class ComputerDisplay extends Component {
@@ -81,6 +82,9 @@ export default class ComputerDisplay extends Component {
       }
       if (/^worker-osuosl-ppc64le-cpu-.*$/.test(node)) {
         return 'ppc';
+      }
+      if (/^worker-packet-type-0-.*$/.test(node)) {
+        return 'packet';
       }
       return node;
     }
