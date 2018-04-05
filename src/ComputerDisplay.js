@@ -126,7 +126,7 @@ export default class ComputerDisplay extends Component {
         </tr>);
     });
 
-    const busy_nodes = this.state.computer.filter((c) => !c.idle && c.displayName !== "master" && c.executors.length > 0);
+    const busy_nodes = this.state.computer.filter((c) => !c.idle && c.displayName !== "master" && c.executors.length > 0 && c.executors[0].currentExecutable);
     busy_nodes.sort((a, b) => a.executors[0].currentExecutable.timestamp - b.executors[0].currentExecutable.timestamp);
     const running_rows = busy_nodes.map((c) => {
       const executable = c.executors[0].currentExecutable;
