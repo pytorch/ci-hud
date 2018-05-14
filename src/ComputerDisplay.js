@@ -14,7 +14,9 @@ const centsPerHour = {
   'win-gpu': 114, // g3.4xlarge
   'osx': 13900/30/24, // MacStadium mini i7 250 elite
   'master': 17, // c5.xlarge
-  'packet': 7, // ???? Packet server ???
+  'packet': 40, // ???? Packet server ???
+  'rocm': 0, // we don't pay for it
+  'tc-gpu': 114, // g3.4xlarge
 };
 
 export default class ComputerDisplay extends Component {
@@ -83,8 +85,14 @@ export default class ComputerDisplay extends Component {
       if (/^worker-osuosl-ppc64le-cpu-.*$/.test(node)) {
         return 'ppc';
       }
-      if (/^worker-packet-type-0-.*$/.test(node)) {
+      if (/^worker-packet-type-1-.*$/.test(node)) {
         return 'packet';
+      }
+      if (/^jenkins-worker-rocm-.*$/.test(node)) {
+        return 'rocm';
+      }
+      if (/^worker-g3-4xlarge-.*$/.test(node)) {
+        return 'tc-gpu';
       }
       return node;
     }
