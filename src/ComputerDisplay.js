@@ -6,6 +6,7 @@ import { summarize_ago, summarize_url } from './Summarize.js';
 // Last updated 2018-03-01
 const centsPerHour = {
   'linux-cpu': 17, // c5.xlarge
+  'linux-bigcpu': 68, // c5.4xlarge
   'linux-gpu': 228, // g3.8xlarge
   'linux-tc-gpu': 228, // g3.8xlarge
   'linux-multigpu': 456, // g3.16xlarge
@@ -59,6 +60,9 @@ export default class ComputerDisplay extends Component {
       const node = n.displayName;
       if (/^c5.xlarge-i-.*$/.test(node)) {
         return 'linux-cpu';
+      }
+      if (/^c5.4xlarge-i-.*$/.test(node)) {
+        return 'linux-bigcpu';
       }
       if (/^g3.8xlarge-i-.*$/.test(node)) {
         if (n.assignedLabels.some((l) => l.name === "tc_gpu")) {

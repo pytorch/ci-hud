@@ -31,6 +31,7 @@ export default class QueueDisplay extends Component {
                 .replace(/docker&&cpu&&!ccache/, 'linux-cpu')
                 .replace(/docker&&cpu/, 'linux-cpu-any')
                 .replace(/docker&&gpu/, 'linux-gpu')
+                .replace(/docker&&bigcpu/, 'linux-bigcpu')
                 .replace(/windows&&cpu/, 'windows-cpu')
                 .replace(/windows&&gpu/, 'windows-gpu')
                 .replace(/g3.8xlarge-i-[^ ]+/, 'linux-gpu')
@@ -53,7 +54,7 @@ export default class QueueDisplay extends Component {
     const why_rows = [...why_map.entries()].sort().map(why_v => {
       const why = why_v[0];
       const v = why_v[1];
-      return <tr key={why}><th>{why}</th><td>{v.total}</td></tr>
+      return <tr key={why}><td style={{textAlign: "right", paddingRight: 15}}>{v.total}</td><th>{why}</th></tr>
     });
 
     const task_map = new Map();
@@ -67,10 +68,11 @@ export default class QueueDisplay extends Component {
       v.total++;
     });
 
-    const task_rows = [...task_map.entries()].sort().map(task_v => {
+    const task_map_max = 10;
+    const task_rows = [...task_map.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, task_map_max).map(task_v => {
       const task = task_v[0];
       const v = task_v[1];
-      return <tr key={task}><th>{task}</th><td>{v.total}</td></tr>
+      return <tr key={task}><td style={{textAlign: "right", paddingRight: 15}}>{v.total}</td><th>{task}</th></tr>
     });
 
     return (
@@ -82,14 +84,14 @@ export default class QueueDisplay extends Component {
         <table>
           <tbody>
             <tr>
-              <td width={300}>
+              <td width={300} style={{textOverflow: "clip", maxWidth: 300, overflow: "hidden"}}>
                 <table>
                   <tbody>{why_rows}</tbody>
                 </table>
               </td>
               <td className="right-cell" width={300}>
                 <table>
-                  <tbody>{task_rows}</tbody>
+                  <tbody>{task_rows}<tr><td></td><th>{ task_map.size > task_map_max ? "..." : "" }</th></tr></tbody>
                 </table>
               </td>
             </tr>
