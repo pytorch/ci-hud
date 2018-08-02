@@ -4,6 +4,7 @@ import AsOf from './AsOf.js';
 import { summarize_job, summarize_date } from './Summarize.js';
 import * as d3 from 'd3v4';
 import parse_duration from 'parse-duration';
+import Tooltip from 'rc-tooltip';
 
 // Ideas:
 //  - Put the master and pull request info together, so you can see what
@@ -203,7 +204,10 @@ export default class BuildHistoryDisplay extends Component {
                    </a>;
           }
         }
-        return <td key={jobName} style={{textAlign: "right", fontFamily: "sans-serif"}}>{cell}</td>;
+        return <Tooltip overlay={jobName}
+                      mouseLeaveDelay={0}
+                      placement="rightTop"
+                      destroyTooltipOnHide={true}><td key={jobName} className="icon-cell" style={{textAlign: "right", fontFamily: "sans-serif", padding: 0}}>{cell}</td></Tooltip>;
       });
 
       function drop_pr_number(msg) {
@@ -352,7 +356,7 @@ export default class BuildHistoryDisplay extends Component {
             </li>
           </ul>
         </div>
-        <table>
+        <table className="buildHistoryTable">
           <thead>
             <tr>
               <th></th>

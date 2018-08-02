@@ -21,7 +21,29 @@ td {
 }
 
 .icon {
-  text-decoration: none
+  text-decoration: none;
+  padding-left:2px;
+  padding-right:2px;
+}
+
+.buildHistoryTable {
+  border-collapse: collapse;
+}
+
+.buildHistoryTable td {
+  border: 0;
+}
+
+.buildHistoryTable th {
+  border: 0;
+}
+
+.buildHistoryTable tr:hover {
+  background: #CCC;
+}
+
+.icon-cell:hover {
+  background: #EEE;
 }
 
 .ralign {
@@ -110,4 +132,30 @@ code a { color: #AAA; }
   text-align: right;
   font-size: 0.7em;
   vertical-align: center;
+}
+
+
+.rc-tooltip {
+  position: absolute;
+  z-index: 1070;
+  display: block;
+  visibility: visible;
+  font-size: 12px;
+}
+
+.rc-tooltip-hidden {
+  display: none;
+}
+
+.rc-tooltip-placement-rightTop {
+  padding: 19px 0 0 0;
+}
+
+.rc-tooltip-inner {
+  padding: 2px 2px;
+  color: #fff;
+  text-align: left;
+  text-decoration: none;
+  background-color: #333;
+  width: 200px;
 }
