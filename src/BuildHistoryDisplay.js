@@ -9,6 +9,8 @@ import Tooltip from 'rc-tooltip';
 function classify_job_to_node(j) {
   if (j == 'short-perf-test-gpu') {
     return 'linux-gpu';
+  } else if (j == 'doc-push') {
+    return 'linux-cpu';
   } else if (/-win/.test(j)) {
     if (/-test/.test(j) && /-cuda/.test(j)) {
       return 'win-gpu';
@@ -17,7 +19,7 @@ function classify_job_to_node(j) {
     }
   } else if (/-macos/.test(j)) {
     return 'osx';
-  } else if (/-linux/.test(j) || /-ubuntu/.test(j) || /-centos/.test(j)) {
+  } else if (/-linux/.test(j) || /-ubuntu/.test(j) || /-centos/.test(j) || /-xenial/.test(j)) {
     if (/cuda/.test(j)) {
       if (/-multigpu-test/.test(j)) {
         return 'linux-multigpu';
@@ -376,7 +378,7 @@ export default class BuildHistoryDisplay extends Component {
                     height={durationHeight} />
             </svg>
           </td>
-          <td className="right-cell" style={{textAlign: "right"}}>{inProgressCost ? "≥ " : ""}{centsToDollars(cost)}{unknownCost ? "??" : ""}</td>
+          <td className="right-cell" style={{textAlign: "right"}}>{inProgressCost ? "≥ " : ""}{centsToDollars(cost)}{unknownCost ? "?" : ""}</td>
           <td className="right-cell">{author}</td>
           <td className="right-cell"><a href={pull_link} target="_blank">{desc}</a></td>
         </tr>
