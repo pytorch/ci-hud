@@ -15,13 +15,20 @@ export default class BuildHistoryDisplay extends Component {
     this.state = this.initialState();
   }
   initialState() {
-    return { builds: [], currentTime: new Date(), updateTime: new Date(0), showStale: false };
+    const prefs_str = localStorage.getItem("prefs");
+    const prefs = prefs_str ? JSON.parse(prefs_str) : { showStale: false, username: "" };
+    return { builds: [], currentTime: new Date(), updateTime: new Date(0), showStale: prefs.showStale, username: prefs.username };
   }
   componentDidMount() {
+    const prefs = localStorage.getItem("prefs");
+    if (prefs) {
+      this.setState(JSON.parse(prefs));
+    }
     this.update();
     this.interval = setInterval(this.update.bind(this), this.props.interval);
   }
   componentDidUpdate(prevProps) {
+    localStorage.setItem("prefs", JSON.stringify({showStale: this.state.showStale, username: this.state.username}));
     if (this.props.job !== prevProps.job) {
       this.setState(this.initialState());
       this.update();
@@ -278,7 +285,10 @@ export default class BuildHistoryDisplay extends Component {
         desc = title;
         if (seen_prs.has(pull_id)) {
           // TODO: do this filtering earlier
-          if (!this.state.showStale) return <Fragment />;
+          if (!this.state.showStale) return <Fragment key={build.number} />;
+        }
+        if (this.state.username !== "" && this.state.username !== author) {
+          return <Fragment key={build.number} />;
         }
         seen_prs.add(pull_id);
       } else {
@@ -332,6 +342,10 @@ export default class BuildHistoryDisplay extends Component {
             <li>
               <input type="checkbox" name="show-stale" value={this.state.showStale} onChange={(e) => { this.setState({showStale: e.target.checked}) }} />
               <label htmlFor="show-stale">Show stale builds of PRs</label>
+            </li>
+            <li>
+              <input type="text" name="username" value={this.state.username} onChange={(e) => { this.setState({username: e.target.value}) }} />
+              <label htmlFor="username" style={{backgroundColor: "white", position: "relative", zIndex: 3}}>Show builds from this user only</label>
             </li>
           </ul>
         </div>
