@@ -236,14 +236,18 @@ export default class BuildHistoryDisplay extends Component {
           const dur = parse_duration(sb.duration);
           cumulativeMs += dur;
           const node = classify_job_to_node(getJobName(sb));
+          let this_cost = 0;
           if (node == 'unknown') {
             unknownCost = true;
           } else {
-            cost += Math.ceil(centsPerHour[node] * dur / 1000 / 60 / 60);
+            this_cost = Math.ceil(centsPerHour[node] * dur / 1000 / 60 / 60);
           }
+          cost += this_cost;
           if (!sb.result) inProgressCost = true;
           if (this.props.mode === "perf") {
             cell = perf_report(sb)
+          } else if (this.props.mode == "cost") {
+            cell = <Fragment>{node == 'unknown' ? '?' : this_cost}&nbsp;&nbsp;</Fragment>;
           } else {
             cell = <a href={/^https?:\/\//.test(sb.url) ? sb.url + "/console" : jenkins.link(sb.url + "/console")}
                       className="icon"

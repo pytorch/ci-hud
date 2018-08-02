@@ -18,8 +18,8 @@ const App = () => (
          "translate",
          "rocm-pytorch",
         ].map((e) => <Fragment key={e}>
-                        <li><Link to={"/build/" + e + "-master"}>{e}-master</Link>&nbsp;(<Link to={"/build/" + e + "-master?mode=perf"}>perf</Link>)</li>
-                        <li><Link to={"/build/" + e + "-pull-request"}>{e}-pull-request</Link>&nbsp;(<Link to={"/build/" + e + "-pull-request?mode=perf"}>perf</Link>)</li>
+                        {["master", "pull-request"
+                        ].map((trigger) => <li><Link to={"/build/" + e + "-" + trigger}>{e}-{trigger}</Link>&nbsp;(<Link to={"/build/" + e + "-" + trigger + "?mode=perf"}>perf</Link>/<Link to={"/build/" + e + "-" + trigger + "?mode=cost"}>cost</Link>)</li>)}
                       </Fragment>)}
       </ul>
       <Route exact path="/" component={Home} />
