@@ -86,10 +86,10 @@ export default class BuildHistoryDisplay extends Component {
   }
   render() {
     function result_icon(result) {
-      if (result === 'SUCCESS') return <span role="img" aria-label="passed">✅</span>;
-      if (result === 'FAILURE') return <span role="img" aria-label="failed">❌</span>;
-      if (result === 'ABORTED') return <span role="img" aria-label="cancelled">⚪</span>;
-      if (!result) return <span className="animate-flicker" role="img" aria-label="in progress">🚧</span>;
+      if (result === 'SUCCESS') return <span role="img" style={{color:"green"}} aria-label="passed">0</span>;
+      if (result === 'FAILURE') return <span role="img" style={{color:"red"}} aria-label="failed">X</span>;
+      if (result === 'ABORTED') return <span role="img" style={{color:"gray"}} aria-label="cancelled">.</span>;
+      if (!result) return <span className="animate-flicker" role="img" style={{color:"goldenrod"}} aria-label="in progress">?</span>;
       return result;
     }
 
@@ -154,8 +154,11 @@ export default class BuildHistoryDisplay extends Component {
     builds.forEach(collect_known_jobs_set);
 
     const known_jobs = [...known_jobs_set.values()].sort();
+    //const known_jobs_head = known_jobs.map((jobName) =>
+    //  <th className="rotate" key={jobName}><div>{summarize_job(jobName)}</div></th>
+    //);
     const known_jobs_head = known_jobs.map((jobName) =>
-      <th className="rotate" key={jobName}><div>{summarize_job(jobName)}</div></th>
+      <th key={jobName}></th>
     );
 
     const durationWidth = 120;
