@@ -1,10 +1,43 @@
 import React, { Component, Fragment } from 'react';
 import jenkins from './Jenkins.js';
 import AsOf from './AsOf.js';
-import { summarize_job, summarize_date } from './Summarize.js';
+import { summarize_job, summarize_date, centsToDollars, centsPerHour } from './Summarize.js';
 import * as d3 from 'd3v4';
 import parse_duration from 'parse-duration';
 import Tooltip from 'rc-tooltip';
+
+function classify_job_to_node(j) {
+  if (j == 'short-perf-test-gpu') {
+    return 'linux-gpu';
+  } else if (/-win/.test(j)) {
+    if (/-test/.test(j) && /-cuda/.test(j)) {
+      return 'win-gpu';
+    } else {
+      return 'win-cpu';
+    }
+  } else if (/-macos/.test(j)) {
+    return 'osx';
+  } else if (/-linux/.test(j) || /-ubuntu/.test(j) || /-centos/.test(j)) {
+    if (/cuda/.test(j)) {
+      if (/-multigpu-test/.test(j)) {
+        return 'linux-multigpu';
+      } else if (/-test/.test(j)) {
+        return 'linux-gpu';
+      } else {
+        return 'linux-cpu';
+      }
+    } else if (/-rocm/.test(j)) {
+      if (/-test/.test(j)) {
+        return 'rocm';
+      } else {
+        return 'linux-bigcpu';
+      }
+    } else {
+      return 'linux-cpu';
+    }
+  }
+  return 'unknown';
+}
 
 // Ideas:
 //  - Put the master and pull request info together, so you can see what
@@ -162,7 +195,7 @@ export default class BuildHistoryDisplay extends Component {
       <th key={jobName}></th>
     );
 
-    const durationWidth = 120;
+    const durationWidth = 100;
     const durationHeight = 10;
     const durationScale = d3.scaleLinear().rangeRound([0, durationWidth]);
     durationScale.domain([0, d3.max(builds, (b) => b.duration)]);
@@ -189,10 +222,24 @@ export default class BuildHistoryDisplay extends Component {
         return <Fragment>{parse_duration(sb.duration)/1000}&nbsp;&nbsp;</Fragment>;
       }
 
+      let cumulativeMs = 0;
+      let cost = 0;
+      let unknownCost = false;
+      let inProgressCost = false;
+
       const status_cols = known_jobs.map((jobName) => {
         const sb = sb_map.get(jobName);
         let cell = <Fragment />;
         if (sb !== undefined) {
+          const dur = parse_duration(sb.duration);
+          cumulativeMs += dur;
+          const node = classify_job_to_node(getJobName(sb));
+          if (node == 'unknown') {
+            unknownCost = true;
+          } else {
+            cost += Math.ceil(centsPerHour[node] * dur / 1000 / 60 / 60);
+          }
+          if (!sb.result) inProgressCost = true;
           if (this.props.mode === "perf") {
             cell = perf_report(sb)
           } else {
@@ -329,8 +376,9 @@ export default class BuildHistoryDisplay extends Component {
                     height={durationHeight} />
             </svg>
           </td>
+          <td className="right-cell" style={{textAlign: "right"}}>{inProgressCost ? "≥ " : ""}{centsToDollars(cost)}{unknownCost ? "??" : ""}</td>
           <td className="right-cell">{author}</td>
-          <td className="right-cell">{desc}</td>
+          <td className="right-cell"><a href={pull_link} target="_blank">{desc}</a></td>
         </tr>
         );
     });
@@ -364,7 +412,8 @@ export default class BuildHistoryDisplay extends Component {
               <th className="left-cell">PR#</th>
               <th className="left-cell">Date</th>
               {known_jobs_head}
-              <th className="right-cell" colSpan="2">Total time (min)</th>
+              <th className="right-cell" colSpan="2">Latency (min)</th>
+              <th className="right-cell">Cost</th>
               <th className="right-cell">User</th>
               <th className="right-cell">Description</th>
             </tr>

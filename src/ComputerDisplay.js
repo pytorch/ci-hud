@@ -1,24 +1,7 @@
 import React, { Component } from 'react';
 import jenkins from './Jenkins.js';
 import AsOf from './AsOf.js';
-import { summarize_ago, summarize_url } from './Summarize.js';
-
-// Last updated 2018-03-01
-const centsPerHour = {
-  'linux-cpu': 17, // c5.xlarge
-  'linux-bigcpu': 68, // c5.4xlarge
-  'linux-gpu': 228, // g3.8xlarge
-  'linux-tc-gpu': 228, // g3.8xlarge
-  'linux-multigpu': 456, // g3.16xlarge
-  'linux-cpu-ccache': 17, // c5.xlarge
-  'win-cpu': 34, // c5.2xlarge
-  'win-gpu': 114, // g3.4xlarge
-  'osx': 13900/30/24, // MacStadium mini i7 250 elite
-  'master': 17, // c5.xlarge
-  'packet': 40, // ???? Packet server ???
-  'rocm': 0, // we don't pay for it
-  'tc-gpu': 114, // g3.4xlarge
-};
+import { summarize_ago, summarize_url, centsToDollars, centsPerHour } from './Summarize.js';
 
 export default class ComputerDisplay extends Component {
   constructor(props) {
@@ -121,13 +104,6 @@ export default class ComputerDisplay extends Component {
         totalCost += v.totalCost;
       }
     });
-
-    function centsToDollars(x) {
-      if (x === undefined) return "?";
-      // I feel a little dirty resorting to floating point math
-      // here...
-      return (x / 100).toLocaleString("en-US", {style: "currency", currency: "USD"});
-    }
 
     const rows = [...map.entries()].sort().map(kv => {
       const cost = centsToDollars(kv[1].totalCost);
