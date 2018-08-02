@@ -12,52 +12,40 @@ const App = () => (
         <h1 className="App-title">ci.pytorch.org HUD (<a href="https://github.com/ezyang/pytorch-ci-hud">GitHub</a>)</h1>
       </header>
       <ul className="menu">
-        <li>
-          <Link to="/">home</Link>
-        </li>
-        <li>
-          <Link to="/build/pytorch-master">pytorch-master</Link> (<Link to="/build/pytorch-master?mode=perf">perf</Link>)
-        </li>
-        <li>
-          <Link to="/build/pytorch-pull-request">pytorch-pull-request</Link> (<Link to="/build/pytorch-pull-request?mode=perf">perf</Link>)
-        </li>
-        <li>
-          <Link to="/build/caffe2-master">caffe2-master</Link> (<Link to="/build/caffe2-master?mode=perf">perf</Link>)
-        </li>
-        <li>
-          <Link to="/build/caffe2-pull-request">caffe2-pull-request</Link> (<Link to="/build/caffe2-pull-request?mode=perf">perf</Link>)
-        </li>
-        <li>
-          <Link to="/build/tensorcomp-master">tensorcomp-master</Link> (<Link to="/build/tensorcomp-master?mode=perf">perf</Link>)
-        </li>
-        <li>
-          <Link to="/build/tensorcomp-pull-request">tensorcomp-pull-request</Link> (<Link to="/build/tensorcomp-pull-request?mode=perf">perf</Link>)
-        </li>
-        <li>
-          <Link to="/build/private/job/ccache-cleanup-trigger">ccache-cleanup</Link>
-        </li>
-      </ul>
-      <ul className="menu">
         {[
-         "linux-trusty-py2.7-trigger",
-         "linux-trusty-py2.7.9-trigger",
-         "linux-trusty-py3.5-trigger",
-         "linux-trusty-py3.6-gcc4.8-trigger",
-         "linux-trusty-py3.6-gcc5.4-trigger",
-         "linux-trusty-py3.6-gcc7.2-trigger",
-         "linux-trusty-pynightly-trigger",
-         "linux-xenial-cuda8-cudnn6-py3-trigger",
-         "linux-xenial-cuda9-cudnn7-py2-trigger",
-         "linux-xenial-cuda9-cudnn7-py3-trigger",
-         "linux-xenial-py3-clang5-asan-trigger",
-         "win-ws2016-cuda9-cudnn7-py3-trigger",
-        ].map((e) => <li key={e}><Link to={"/build/pytorch-builds/job/pytorch-" + e}>{e}</Link></li>)}
+         "pytorch",
+         "caffe2",
+         "tensorcomp",
+         "translate",
+         "rocm-pytorch",
+         "rocm-caffe2",
+        ].map((e) => <Fragment key={e}>
+                        <li><Link to={"/build/" + e + "-master"}>{e}-master</Link>&nbsp;(<Link to={"/build/" + e + "-master?mode=perf"}>perf</Link>)</li>
+                        <li><Link to={"/build/" + e + "-pull-request"}>{e}-pull-request</Link>&nbsp;(<Link to={"/build/" + e + "-pull-request?mode=perf"}>perf</Link>)</li>
+                      </Fragment>)}
       </ul>
       <Route exact path="/" component={Home} />
       <Route path="/build" component={BuildRoute} />
     </div>
   </Router>
 );
+
+//    <ul className="menu">
+//      {[
+//       "linux-trusty-py2.7-trigger",
+//       "linux-trusty-py2.7.9-trigger",
+//       "linux-trusty-py3.5-trigger",
+//       "linux-trusty-py3.6-gcc4.8-trigger",
+//       "linux-trusty-py3.6-gcc5.4-trigger",
+//       "linux-trusty-py3.6-gcc7.2-trigger",
+//       "linux-trusty-pynightly-trigger",
+//       "linux-xenial-cuda8-cudnn6-py3-trigger",
+//       "linux-xenial-cuda9-cudnn7-py2-trigger",
+//       "linux-xenial-cuda9-cudnn7-py3-trigger",
+//       "linux-xenial-py3-clang5-asan-trigger",
+//       "win-ws2016-cuda9-cudnn7-py3-trigger",
+//      ].map((e) => <li key={e}><Link to={"/build/pytorch-builds/job/pytorch-" + e}>{e}</Link></li>)}
+//    </ul>
 
 const Home = () => (
   <div>
