@@ -14,11 +14,9 @@ const App = () => (
       <ul className="menu">
         {[
          "pytorch",
-         "caffe2",
          "tensorcomp",
          "translate",
          "rocm-pytorch",
-         "rocm-caffe2",
         ].map((e) => <Fragment key={e}>
                         <li><Link to={"/build/" + e + "-master"}>{e}-master</Link>&nbsp;(<Link to={"/build/" + e + "-master?mode=perf"}>perf</Link>)</li>
                         <li><Link to={"/build/" + e + "-pull-request"}>{e}-pull-request</Link>&nbsp;(<Link to={"/build/" + e + "-pull-request?mode=perf"}>perf</Link>)</li>
