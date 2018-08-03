@@ -49,22 +49,26 @@ export default class BuildHistoryDisplay extends Component {
   constructor(props) {
     super(props);
     this.state = this.initialState();
+    this.username = React.createRef();
+    this.showStale = React.createRef();
   }
   initialState() {
-    const prefs_str = localStorage.getItem("prefs");
-    const prefs = prefs_str ? JSON.parse(prefs_str) : { showStale: false, username: "" };
-    return { builds: [], currentTime: new Date(), updateTime: new Date(0), showStale: prefs.showStale, username: prefs.username };
+    return { builds: [], currentTime: new Date(), updateTime: new Date(0) };
   }
   componentDidMount() {
-    const prefs = localStorage.getItem("prefs");
-    if (prefs) {
-      this.setState(JSON.parse(prefs));
-    }
     this.update();
     this.interval = setInterval(this.update.bind(this), this.props.interval);
+    this.menuTimer = null;
+  }
+  handleMenuChange(delta) {
+    clearTimeout(this.menuTimer);
+    this.menuTimer = setTimeout(this.triggerMenuChange.bind(this), delta);
+    return true;
+  }
+  triggerMenuChange() {
+    this.props.onSubmit ? this.props.onSubmit(this.showStale, this.username) : undefined
   }
   componentDidUpdate(prevProps) {
-    localStorage.setItem("prefs", JSON.stringify({showStale: this.state.showStale, username: this.state.username}));
     if (this.props.job !== prevProps.job) {
       this.setState(this.initialState());
       this.update();
@@ -345,9 +349,9 @@ export default class BuildHistoryDisplay extends Component {
         desc = title;
         if (seen_prs.has(pull_id)) {
           // TODO: do this filtering earlier
-          if (!this.state.showStale) return <Fragment key={build.number} />;
+          if (!this.props.showStale) return <Fragment key={build.number} />;
         }
-        if (this.state.username !== "" && this.state.username !== author) {
+        if (this.props.username !== null && this.props.username !== '' && this.props.username !== author) {
           return <Fragment key={build.number} />;
         }
         seen_prs.add(pull_id);
@@ -399,16 +403,21 @@ export default class BuildHistoryDisplay extends Component {
                 updateTime={this.state.updateTime} />
         </h2>
         <div>
-          <ul className="menu">
-            <li>
-              <input type="checkbox" name="show-stale" value={this.state.showStale} onChange={(e) => { this.setState({showStale: e.target.checked}) }} />
-              <label htmlFor="show-stale">Show stale builds of PRs</label>
-            </li>
-            <li>
-              <input type="text" name="username" value={this.state.username} onChange={(e) => { this.setState({username: e.target.value}) }} />
-              <label htmlFor="username" style={{backgroundColor: "white", position: "relative", zIndex: 3}}>Show builds from this user only</label>
-            </li>
-          </ul>
+          <form>
+            <ul className="menu">
+              <li>
+                <input type="checkbox" name="showStale" defaultChecked={this.props.showStale} ref={this.showStale} onChange={(e) => this.handleMenuChange(1)} />&nbsp;
+                <label htmlFor="show-stale">Show stale builds of PRs</label>
+              </li>
+              <li>
+                <input type="text" name="username" defaultValue={this.props.username} ref={this.username} onChange={(e) => this.handleMenuChange(200)} />&nbsp;
+                <label htmlFor="username">Show builds from this user only</label>
+              </li>
+              <li>
+                <input type="Submit" value="Clear" onClick={(e) => {this.username.current.value = ''; this.showStale.current.checked = false;}} />
+              </li>
+            </ul>
+          </form>
         </div>
         <table className="buildHistoryTable">
           <thead>

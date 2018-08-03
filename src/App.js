@@ -9,7 +9,7 @@ const App = () => (
   <Router basename={process.env.PUBLIC_URL + '/'}>
     <div className="App">
       <header className="App-header">
-        <h1 className="App-title">ci.pytorch.org HUD (<a href="https://github.com/ezyang/pytorch-ci-hud">GitHub</a>)</h1>
+        <h1 className="App-title"><Link to="/">ci.pytorch.org HUD</Link> (<a href="https://github.com/ezyang/pytorch-ci-hud">GitHub</a>)</h1>
       </header>
       <ul className="menu">
         {[
@@ -52,10 +52,23 @@ const Home = () => (
   </div>
 );
 
-const Build = ({ match }) => {
+const Build = ({ match, history }) => {
   // Uhhh, am I really supposed to rob window.location here?
   const query = new URLSearchParams(window.location.search);
-  return <BuildHistoryDisplay interval={60000} job={match.url.replace(/^\/build\//, '')} mode={query.get('mode')} />
+  return <BuildHistoryDisplay interval={60000} job={match.url.replace(/^\/build\//, '')} mode={query.get('mode')} showStale={query.get('showStale')} username={query.get('username')} onSubmit={(showStale, username) => {
+      const new_query = new URLSearchParams(query);
+      if (username.current.value !== '') {
+        new_query.set('username', username.current.value);
+      } else {
+        new_query.delete('username');
+      }
+      if (showStale.current.checked) {
+        new_query.set('showStale', '1');
+      } else {
+        new_query.delete('showStale');
+      }
+      history.push(window.location.pathname + "?" + new_query.toString());
+    }} />;
 };
 
 const BuildRoute = ({ match }) => (
