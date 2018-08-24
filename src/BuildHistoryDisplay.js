@@ -1,15 +1,15 @@
 import React, { Component, Fragment } from 'react';
 import jenkins from './Jenkins.js';
 import AsOf from './AsOf.js';
-import { summarize_job, summarize_date, centsToDollars, centsPerHour } from './Summarize.js';
+import { summarize_date, centsToDollars, centsPerHour } from './Summarize.js';
 import * as d3 from 'd3v4';
 import parse_duration from 'parse-duration';
 import Tooltip from 'rc-tooltip';
 
 function classify_job_to_node(j) {
-  if (j == 'short-perf-test-gpu') {
+  if (j === 'short-perf-test-gpu') {
     return 'linux-gpu';
-  } else if (j == 'doc-push') {
+  } else if (j === 'doc-push') {
     return 'linux-cpu';
   } else if (/-win/.test(j)) {
     if (/-test/.test(j) && /-cuda/.test(j)) {
@@ -169,10 +169,11 @@ export default class BuildHistoryDisplay extends Component {
 
     function getJobName(subBuild) {
       const baseJobName = subBuild.jobName;
-      if (subBuild.build && subBuild.build.builtOn && baseJobName.match(/^ccache-cleanup-.*$/)) {
-        return baseJobName + "/" + subBuild.build.builtOn;
+      if (/caffe2-builds/.test(subBuild.url)) {
+        return 'caffe2-' + baseJobName;
+      } else {
+        return baseJobName;
       }
-      return baseJobName;
     }
 
     const known_jobs_set = new Set();
@@ -188,6 +189,7 @@ export default class BuildHistoryDisplay extends Component {
       topBuild.subBuilds.forEach(go);
     }
     builds.forEach(collect_known_jobs_set);
+    console.log(known_jobs_set);
 
     const known_jobs = [...known_jobs_set.values()].sort();
     //const known_jobs_head = known_jobs.map((jobName) =>
@@ -224,7 +226,7 @@ export default class BuildHistoryDisplay extends Component {
         return <Fragment>{parse_duration(sb.duration)/1000}&nbsp;&nbsp;</Fragment>;
       }
 
-      let cumulativeMs = 0;
+      // let cumulativeMs = 0;
       let cost = 0;
       let unknownCost = false;
       let inProgressCost = false;
@@ -234,10 +236,10 @@ export default class BuildHistoryDisplay extends Component {
         let cell = <Fragment />;
         if (sb !== undefined) {
           const dur = parse_duration(sb.duration);
-          cumulativeMs += dur;
+          // cumulativeMs += dur;
           const node = classify_job_to_node(getJobName(sb));
           let this_cost = 0;
-          if (node == 'unknown') {
+          if (node === 'unknown') {
             unknownCost = true;
           } else {
             this_cost = Math.ceil(centsPerHour[node] * dur / 1000 / 60 / 60);
@@ -246,8 +248,8 @@ export default class BuildHistoryDisplay extends Component {
           if (!sb.result) inProgressCost = true;
           if (this.props.mode === "perf") {
             cell = perf_report(sb)
-          } else if (this.props.mode == "cost") {
-            cell = <Fragment>{node == 'unknown' ? '?' : this_cost}&nbsp;&nbsp;</Fragment>;
+          } else if (this.props.mode === "cost") {
+            cell = <Fragment>{node === 'unknown' ? '?' : this_cost}&nbsp;&nbsp;</Fragment>;
           } else {
             cell = <a href={/^https?:\/\//.test(sb.url) ? sb.url + "/console" : jenkins.link(sb.url + "/console")}
                       className="icon"
