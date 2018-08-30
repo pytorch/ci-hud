@@ -222,8 +222,8 @@ export default class BuildHistoryDisplay extends Component {
       }
       collect_jobs(build);
 
-      function perf_report(sb) {
-        return <Fragment>{parse_duration(sb.duration)/1000}&nbsp;&nbsp;</Fragment>;
+      function perf_report(sb, result) {
+        return <Fragment><span className={result === 'SUCCESS' ? 'ok-duration' : 'suspect-duration'}>{parse_duration(sb.duration)/1000}</span>&nbsp;&nbsp;</Fragment>;
       }
 
       // let cumulativeMs = 0;
@@ -247,7 +247,7 @@ export default class BuildHistoryDisplay extends Component {
           cost += this_cost;
           if (!sb.result) inProgressCost = true;
           if (this.props.mode === "perf") {
-            cell = perf_report(sb)
+            cell = perf_report(sb, sb.result);
           } else if (this.props.mode === "cost") {
             cell = <Fragment>{node === 'unknown' ? '?' : this_cost}&nbsp;&nbsp;</Fragment>;
           } else {
@@ -336,6 +336,7 @@ export default class BuildHistoryDisplay extends Component {
 
       // TODO: Too lazy to set up PR numbers for the old ones
 
+      let stale = false;
       if (isRebuild) {
         desc = renderCauses(build);
       } else if (isPullRequest) {
@@ -348,6 +349,7 @@ export default class BuildHistoryDisplay extends Component {
         if (seen_prs.has(pull_id)) {
           // TODO: do this filtering earlier
           if (!this.state.showStale) return <Fragment key={build.number} />;
+          stale = true;
         }
         if (this.state.username !== "" && this.state.username !== author) {
           return <Fragment key={build.number} />;
@@ -368,7 +370,7 @@ export default class BuildHistoryDisplay extends Component {
       const whenString = summarize_date(build.timestamp);
 
       return (
-        <tr key={build.number}>
+        <tr key={build.number} className={stale ? "stale" : ""}>
           <th className="left-cell">{result_icon(sb_map.get(this_job).result)}</th>
           <th className="left-cell"><a href={build.url} target="_blank">{build.number}</a></th>
           <th className="left-cell"><a href={pull_link} target="_blank">{pull_id ? "#" + pull_id : ""}</a></th>

@@ -9,7 +9,7 @@ const App = () => (
   <Router basename={process.env.PUBLIC_URL + '/'}>
     <div className="App">
       <header className="App-header">
-        <h1 className="App-title">ci.pytorch.org HUD (<a href="https://github.com/ezyang/pytorch-ci-hud">GitHub</a>)</h1>
+        <h1 className="App-title"><Link to="/">ci.pytorch.org HUD</Link> (<a href="https://github.com/ezyang/pytorch-ci-hud">GitHub</a>)</h1>
       </header>
       <ul className="menu">
         {[
