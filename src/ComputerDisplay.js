@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import jenkins from './Jenkins.js';
 import AsOf from './AsOf.js';
-import { summarize_ago, summarize_url, centsToDollars, centsPerHour } from './Summarize.js';
+import { seconds2time, summarize_ago, summarize_url, centsToDollars, centsPerHour } from './Summarize.js';
 
 export default class ComputerDisplay extends Component {
   constructor(props) {
@@ -128,6 +128,37 @@ export default class ComputerDisplay extends Component {
               </tr>;
     });
 
+    const running_map = new Map();
+    busy_nodes.forEach((c) => {
+      const executable = c.executors[0].currentExecutable;
+      const task = summarize_url(executable.url);
+      let v = running_map.get(task);
+      if (v === undefined) {
+        v = { total: 0, cumulative_time: 0 };
+        running_map.set(task, v);
+      }
+      v.total++;
+
+      function delta_ago(timestamp) {
+        const date = new Date(timestamp);
+        const today = new Date();
+        return (today - date) / 1000;
+      }
+      v.cumulative_time += delta_ago(executable.timestamp);
+    });
+
+    const running_summary = [...running_map.entries()].sort((a, b) => b[1].total - a[1].total).map(task_v => {
+      const task = task_v[0];
+      const v = task_v[1];
+      return <tr key={task}><td style={{textAlign: "right", paddingRight: 15}}>{v.total}</td><th>{task}</th></tr>
+    });
+
+    const cumulative_running_time_summary = [...running_map.entries()].sort((a, b) => b[1].cumulative_time - a[1].cumulative_time).map(task_v => {
+      const task = task_v[0];
+      const v = task_v[1];
+      return <tr key={task}><td style={{textAlign: "right", paddingRight: 15}}>{seconds2time(Math.floor(v.cumulative_time))}</td><th>{task}</th></tr>
+    });
+
     return (
       <div>
         <h2>Computers <AsOf interval={this.props.interval} currentTime={this.state.currentTime} updateTime={this.state.updateTime} connectedIn={this.state.connectedIn} /></h2>
@@ -149,6 +180,22 @@ export default class ComputerDisplay extends Component {
                   </tbody>
                 </table>
               </td>
+              { /*
+              <td className="right-cell">
+                <table>
+                  <tbody>
+                    {running_summary}
+                  </tbody>
+                </table>
+              </td>
+              <td className="right-cell">
+                <table>
+                  <tbody>
+                    {cumulative_running_time_summary}
+                  </tbody>
+                </table>
+              </td>
+              */ }
             </tr>
           </tbody>
         </table>

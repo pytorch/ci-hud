@@ -13,7 +13,7 @@ export function summarize_date(timestamp) {
 }
 
 // https://stackoverflow.com/questions/6312993/javascript-seconds-to-time-string-with-format-hhmmss
-function seconds2time (seconds) {
+export function seconds2time (seconds) {
     let hours   = Math.floor(seconds / 3600);
     let minutes = Math.floor((seconds - (hours * 3600)) / 60);
     seconds = seconds - (hours * 3600) - (minutes * 60);
