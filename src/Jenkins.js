@@ -10,9 +10,19 @@ export class Jenkins {
 
   async get(url, options) {
     if (options === undefined) options = {};
-    const r = await axios.get(url, { params: options });
-    // TODO: check status
-    return r.data;
+    var r;
+    await axios.get(url, { params: options })
+    .then(response => {
+      r = response;
+    })
+    .catch(error => {
+      // console.log("error.response: ", error.response)
+    });
+    if (typeof r !== 'undefined') {
+      return r.data;
+    } else {
+      return null;
+    }
   }
 
   async computer(options) { return this.get(this.url("computer"), options); }

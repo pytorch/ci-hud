@@ -117,15 +117,42 @@ export default class BuildHistoryDisplay extends Component {
     if (data.allBuilds !== undefined) {
       data.builds = data.allBuilds;
     }
+
+    // Get build statuses from Github for CircleCI
+    async function get_github_commit_statuses() {
+      var github_commit_statuses = {}
+      for (const commit of data.builds) {
+        if (commit.changeSet.items.length > 0) {
+          for (var i = 0; i < commit.changeSet.items.length; i++) {
+            var commitId = commit.changeSet.items[i].commitId;
+            if (!(github_commit_statuses.hasOwnProperty(commitId))) {
+              github_commit_statuses[commitId] = {};
+            }
+            let jobs = await jenkins.get("https://s3.amazonaws.com/ossci-job-status/master/"+commitId+".json");
+            if (jobs) {
+              for (var job_name in jobs) {
+                var job = jobs[job_name];
+                if (!(github_commit_statuses[commitId].hasOwnProperty(job_name))) {
+                  github_commit_statuses[commitId][job_name] = {"duration": "0", "result": job.status, "url": job.build_url}
+                }
+              };
+            }
+          }
+        }
+      }
+      return github_commit_statuses;
+    }
+    data.github_commit_statuses = await get_github_commit_statuses();
+
     // TODO: This can cause spurious state updates
     this.setState(data);
   }
   render() {
     function result_icon(result) {
-      if (result === 'SUCCESS') return <span role="img" style={{color:"green"}} aria-label="passed">0</span>;
-      if (result === 'FAILURE') return <span role="img" style={{color:"red"}} aria-label="failed">X</span>;
+      if (result === 'SUCCESS' || result === 'success') return <span role="img" style={{color:"green"}} aria-label="passed">0</span>;
+      if (result === 'FAILURE' || result === 'failure' || result === 'error') return <span role="img" style={{color:"red"}} aria-label="failed">X</span>;
       if (result === 'ABORTED') return <span role="img" style={{color:"gray"}} aria-label="cancelled">.</span>;
-      if (!result) return <span className="animate-flicker" role="img" style={{color:"goldenrod"}} aria-label="in progress">?</span>;
+      if (!result || result === 'pending') return <span className="animate-flicker" role="img" style={{color:"goldenrod"}} aria-label="in progress">?</span>;
       return result;
     }
 
@@ -145,6 +172,7 @@ export default class BuildHistoryDisplay extends Component {
     //        subBuilds:
 
     let builds = this.state.builds;
+    let github_commit_statuses = this.state.github_commit_statuses;
 
     // TODO: This deeply assumes that you are viewing a thing with
     // subbuilds, not the actual build.
@@ -189,6 +217,16 @@ export default class BuildHistoryDisplay extends Component {
       topBuild.subBuilds.forEach(go);
     }
     builds.forEach(collect_known_jobs_set);
+
+    if (github_commit_statuses) {
+      Object.keys(github_commit_statuses).forEach(function(commit) {
+        var jobs = github_commit_statuses[commit];
+        Object.keys(jobs).forEach(function(job_name) {
+          known_jobs_set.add(job_name);
+        });
+      });
+    }
+
     console.log(known_jobs_set);
 
     const known_jobs = [...known_jobs_set.values()].sort();
@@ -209,6 +247,7 @@ export default class BuildHistoryDisplay extends Component {
     const rows = builds.map((build) => {
       const sb_map = new Map();
 
+      // Collect job status from Jenkins
       function collect_jobs(topBuild) {
         function go(subBuild) {
           if (subBuild.build && subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
@@ -221,6 +260,22 @@ export default class BuildHistoryDisplay extends Component {
         topBuild.subBuilds.forEach(go);
       }
       collect_jobs(build);
+
+      // Collect job status for non-Jenkins jobs (i.e. CircleCI jobs)
+      async function collect_jobs_from_github_status(build) {
+        if (build.changeSet.items.length > 0) {
+          for (var i = 0; i < build.changeSet.items.length; i++) {
+            let commitId = build.changeSet.items[i].commitId;
+            if (github_commit_statuses) {
+              Object.keys(github_commit_statuses[commitId]).forEach(function(job_name) {
+                var job = github_commit_statuses[commitId][job_name];
+                sb_map.set(job_name, {"duration": job.duration, "result": job.result, "url": job.url});
+              });
+            }
+          }
+        }
+      }
+      collect_jobs_from_github_status(build);
 
       function perf_report(sb, result) {
         return <Fragment><span className={result === 'SUCCESS' ? 'ok-duration' : 'suspect-duration'}>{parse_duration(sb.duration)/1000}</span>&nbsp;&nbsp;</Fragment>;
