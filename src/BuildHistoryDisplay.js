@@ -222,7 +222,7 @@ export default class BuildHistoryDisplay extends Component {
       Object.keys(github_commit_statuses).forEach(function(commit) {
         var jobs = github_commit_statuses[commit];
         Object.keys(jobs).forEach(function(job_name) {
-          known_jobs_set.add(job_name);
+          known_jobs_set.add("_" + job_name);  // Add "_" before name to make sure CircleCI builds always show up on the left
         });
       });
     }
@@ -269,7 +269,7 @@ export default class BuildHistoryDisplay extends Component {
             if (github_commit_statuses) {
               Object.keys(github_commit_statuses[commitId]).forEach(function(job_name) {
                 var job = github_commit_statuses[commitId][job_name];
-                sb_map.set(job_name, {"duration": job.duration, "result": job.result, "url": job.url});
+                sb_map.set("_" + job_name, {"duration": job.duration, "result": job.result, "url": job.url});
               });
             }
           }
