@@ -120,26 +120,36 @@ export default class BuildHistoryDisplay extends Component {
 
     // Get build statuses from Github for CircleCI
     async function get_github_commit_statuses() {
-      var github_commit_statuses = {}
-      for (const commit of data.builds) {
-        if (commit.changeSet.items.length > 0) {
-          for (var i = 0; i < commit.changeSet.items.length; i++) {
-            var commitId = commit.changeSet.items[i].commitId;
-            if (!(github_commit_statuses.hasOwnProperty(commitId))) {
-              github_commit_statuses[commitId] = {};
+      let github_commit_statuses = {}
+      let requests = [];
+
+      function add_jobs(jobs, index) {
+        let commitId = requests[index].commitId;
+        if (jobs) {
+          for (let job_name in jobs) {
+            let job = jobs[job_name];
+            if (!(github_commit_statuses[commitId].hasOwnProperty(job_name))) {
+              github_commit_statuses[commitId][job_name] = {"duration": "0", "result": job.status, "url": job.build_url};
             }
-            let jobs = await jenkins.get("https://s3.amazonaws.com/ossci-job-status/master/"+commitId+".json");
-            if (jobs) {
-              for (var job_name in jobs) {
-                var job = jobs[job_name];
-                if (!(github_commit_statuses[commitId].hasOwnProperty(job_name))) {
-                  github_commit_statuses[commitId][job_name] = {"duration": "0", "result": job.status, "url": job.build_url}
-                }
-              };
-            }
-          }
+          };
         }
       }
+
+      for (const commit of data.builds) {
+        for (let i = 0; i < commit.changeSet.items.length; i++) {
+          let commitId = commit.changeSet.items[i].commitId;
+          if (!(github_commit_statuses.hasOwnProperty(commitId))) {
+            github_commit_statuses[commitId] = {};
+          }
+          requests.push({
+            url: "https://s3.amazonaws.com/ossci-job-status/master/" + commitId + ".json",
+            commitId
+          });
+        }
+
+      }
+      let results = await jenkins.batch_get(requests.map(request => request.url));
+      results.forEach(add_jobs);
       return github_commit_statuses;
     }
     data.github_commit_statuses = await get_github_commit_statuses();
