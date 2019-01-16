@@ -232,7 +232,9 @@ export default class BuildHistoryDisplay extends Component {
       Object.keys(github_commit_statuses).forEach(function(commit) {
         var jobs = github_commit_statuses[commit];
         Object.keys(jobs).forEach(function(job_name) {
-          known_jobs_set.add("_" + job_name);  // Add "_" before name to make sure CircleCI builds always show up on the left
+          if (!(job_name.includes("binary_") || job_name.includes("smoke_"))) {  // Exclude binary builds and smoke tests from master HUD
+            known_jobs_set.add("_" + job_name);  // Add "_" before name to make sure CircleCI builds always show up on the left
+          }
         });
       });
     }
