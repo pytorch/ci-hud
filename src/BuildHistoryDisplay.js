@@ -6,6 +6,21 @@ import * as d3 from 'd3v4';
 import parse_duration from 'parse-duration';
 import Tooltip from 'rc-tooltip';
 
+var binary_and_smoke_tests_on_pr = [
+  "binary_linux_manywheel_2.7mu_cpu_build",
+  "binary_linux_manywheel_3.7m_cu100_build",
+  "binary_linux_conda_2.7_cpu_build",
+  "binary_linux_conda_3.6_cu90_build",
+  "binary_linux_libtorch_2.7m_cu80_build",
+  "binary_macos_wheel_3.6_cpu_build",
+  "binary_macos_conda_2.7_cpu_build",
+  "binary_macos_libtorch_2.7_cpu_build",
+  "binary_linux_manywheel_2.7mu_cpu_test",
+  "binary_linux_manywheel_3.7m_cu100_test",
+  "binary_linux_conda_2.7_cpu_test",
+  "binary_linux_conda_3.6_cu90_test"
+];
+
 function classify_job_to_node(j) {
   if (j === 'short-perf-test-gpu') {
     return 'linux-gpu';
@@ -232,7 +247,13 @@ export default class BuildHistoryDisplay extends Component {
       Object.keys(github_commit_statuses).forEach(function(commit) {
         var jobs = github_commit_statuses[commit];
         Object.keys(jobs).forEach(function(job_name) {
-          if (!(job_name.includes("binary_") || job_name.includes("smoke_"))) {  // Exclude binary builds and smoke tests from master HUD
+          for (var i = 0; i < binary_and_smoke_tests_on_pr.length; i++) {
+            if (job_name.endsWith(binary_and_smoke_tests_on_pr[i])) {
+              known_jobs_set.add("_" + job_name);  // Add "_" before name to make sure CircleCI builds always show up on the left
+              break;
+            }
+          }
+          if (!(job_name.includes("binary_") || job_name.includes("smoke_"))) {  // Exclude binary builds and smoke tests that are not running on every PR
             known_jobs_set.add("_" + job_name);  // Add "_" before name to make sure CircleCI builds always show up on the left
           }
         });
