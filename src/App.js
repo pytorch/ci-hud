@@ -21,6 +21,7 @@ const App = () => (
                         {["master", "pull-request"
                         ].map((trigger) => <li><Link to={"/build/" + e + "-" + trigger}>{e}-{trigger}</Link>&nbsp;(<Link to={"/build/" + e + "-" + trigger + "?mode=perf"}>perf</Link>/<Link to={"/build/" + e + "-" + trigger + "?mode=cost"}>cost</Link>)</li>)}
                       </Fragment>)}
+        <Fragment key="nightlies-uploaded"><li><Link to={"/build/nightlies-uploaded"}>nightlies-uploaded</Link></li></Fragment>
       </ul>
       <Route exact path="/" component={Home} />
       <Route path="/build" component={BuildRoute} />
