@@ -238,20 +238,37 @@ export default class BuildHistoryDisplay extends Component {
       }
       topBuild.subBuilds.forEach(go);
     }
-    builds.forEach(collect_known_jobs_set);
+    const props_mode = this.props.mode;
+    if (props_mode !== "binary") {
+      builds.forEach(collect_known_jobs_set);
+    }
 
     if (github_commit_statuses) {
       Object.keys(github_commit_statuses).forEach(function(commit) {
         var jobs = github_commit_statuses[commit];
         Object.keys(jobs).forEach(function(job_name) {
-          for (var i = 0; i < binary_and_smoke_tests_on_pr.length; i++) {
-            if (job_name.endsWith(binary_and_smoke_tests_on_pr[i])) {
-              known_jobs_set.add("_" + job_name);  // Add "_" before name to make sure CircleCI builds always show up on the left
-              break;
+          if (props_mode !== "binary") {
+            // Warning: quadratic police!
+            for (var i = 0; i < binary_and_smoke_tests_on_pr.length; i++) {
+              if (job_name.endsWith(binary_and_smoke_tests_on_pr[i])) {
+                known_jobs_set.add("_" + job_name);  // Add "_" before name to make sure CircleCI builds always show up on the left
+                break;
+              }
             }
-          }
-          if (!(job_name.includes("binary_") || job_name.includes("smoke_"))) {  // Exclude binary builds and smoke tests that are not running on every PR
-            known_jobs_set.add("_" + job_name);  // Add "_" before name to make sure CircleCI builds always show up on the left
+            if (!(job_name.includes("binary_") || job_name.includes("smoke_"))) {  // Exclude binary builds and smoke tests that are not running on every PR
+              known_jobs_set.add("_" + job_name);  // Add "_" before name to make sure CircleCI builds always show up on the left
+            }
+          } else {
+            if (job_name.includes("binary_") || job_name.includes("smoke_")) {
+              let found = false;
+              for (var i = 0; i < binary_and_smoke_tests_on_pr.length; i++) {
+                if (job_name.endsWith(binary_and_smoke_tests_on_pr[i])) {
+                  found = true;
+                  break;
+                }
+              }
+              if (!found) known_jobs_set.add("_" + job_name);
+            }
           }
         });
       });
@@ -315,11 +332,13 @@ export default class BuildHistoryDisplay extends Component {
       let cost = 0;
       let unknownCost = false;
       let inProgressCost = false;
+      let found = false;
 
       const status_cols = known_jobs.map((jobName) => {
         const sb = sb_map.get(jobName);
         let cell = <Fragment />;
         if (sb !== undefined) {
+          found = true;
           const dur = parse_duration(sb.duration);
           // cumulativeMs += dur;
           const node = classify_job_to_node(getJobName(sb));
@@ -453,6 +472,10 @@ export default class BuildHistoryDisplay extends Component {
       }
 
       const whenString = summarize_date(build.timestamp);
+
+      if (!found) {
+        return <Fragment />
+      }
 
       return (
         <tr key={build.number} className={stale ? "stale" : ""}>
