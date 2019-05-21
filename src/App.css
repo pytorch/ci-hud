@@ -76,16 +76,18 @@ tfoot td {
 
 /* Not a fan... */
 th.rotate {
-  height: 180px; /* ugh */
+  height: 220px; /* ugh */
   white-space: nowrap;
   vertical-align: top;
 }
 
 th.rotate > div {
   transform:
-    translate(10px, 155px) /* ugh */
+    translate(10px, 200px) /* (_, height - offset) */
     rotate(315deg);
-  width: 20px;
+  width: 10px;
+  font-weight: normal;
+  font-size:0.8em;
 }
 
 th { vertical-align: top; }

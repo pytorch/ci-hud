@@ -1,5 +1,5 @@
 export function summarize_job(job) {
-  return job.replace(/^pytorch-/, '').replace(/-trigger$/, '').replace(/^private\//, '').replace(/^ccache-cleanup-/, '');
+  return job.replace(/^pytorch-/, '').replace(/-trigger$/, '').replace(/^private\//, '').replace(/^ccache-cleanup-/, '').replace(/_ci\/circleci: /, '').replace(/AAA_/, '');
 }
 
 export function summarize_date(timestamp) {

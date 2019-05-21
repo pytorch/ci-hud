@@ -1,7 +1,7 @@
 import React, { Component, Fragment } from 'react';
 import jenkins from './Jenkins.js';
 import AsOf from './AsOf.js';
-import { summarize_date, centsToDollars, centsPerHour } from './Summarize.js';
+import { summarize_job, summarize_date, centsToDollars, centsPerHour } from './Summarize.js';
 import * as d3 from 'd3v4';
 import parse_duration from 'parse-duration';
 import Tooltip from 'rc-tooltip';
@@ -263,12 +263,12 @@ export default class BuildHistoryDisplay extends Component {
     console.log(known_jobs_set);
 
     const known_jobs = [...known_jobs_set.values()].sort();
-    //const known_jobs_head = known_jobs.map((jobName) =>
-    //  <th className="rotate" key={jobName}><div>{summarize_job(jobName)}</div></th>
-    //);
     const known_jobs_head = known_jobs.map((jobName) =>
-      <th key={jobName}></th>
+      <th className="rotate" key={jobName}><div>{summarize_job(jobName)}</div></th>
     );
+    // const known_jobs_head = known_jobs.map((jobName) =>
+    //  <th key={jobName}></th>
+    //);
 
     const durationWidth = 100;
     const durationHeight = 10;
