@@ -64,19 +64,38 @@ export default class BuildHistoryDisplay extends Component {
   }
   initialState() {
     const prefs_str = localStorage.getItem("prefs");
-    const prefs = prefs_str ? JSON.parse(prefs_str) : { showStale: false, username: "" };
-    return { builds: [], currentTime: new Date(), updateTime: new Date(0), showStale: prefs.showStale, username: prefs.username };
+    let prefs = {};
+    if (prefs_str) {
+      prefs = JSON.parse(prefs_str);
+    }
+    if (!("showStale" in prefs)) prefs["showStale"] = false;
+    if (!("username" in prefs)) prefs["username"] = "";
+    if (!("showNotifications" in prefs)) prefs["showNotifications"] = false;
+    return {
+      builds: [],
+      currentTime: new Date(),
+      updateTime: new Date(0),
+      showStale: prefs.showStale,
+      username: prefs.username,
+      showNotifications: prefs.showNotifications
+    };
   }
   componentDidMount() {
-    const prefs = localStorage.getItem("prefs");
-    if (prefs) {
-      this.setState(JSON.parse(prefs));
-    }
     this.update();
     this.interval = setInterval(this.update.bind(this), this.props.interval);
+    if (this.state.showNotifications && Notification.permission != "granted") {
+      Notification.requestPermission();
+    }
   }
   componentDidUpdate(prevProps) {
-    localStorage.setItem("prefs", JSON.stringify({showStale: this.state.showStale, username: this.state.username}));
+    localStorage.setItem("prefs", JSON.stringify({
+      showNotifications: this.state.showNotifications,
+      showStale: this.state.showStale,
+      username: this.state.username
+    }));
+    if (this.state.showNotifications && !prevProps.showNotifications && Notification.permission != "granted") {
+      Notification.requestPermission();
+    }
     if (this.props.job !== prevProps.job) {
       this.setState(this.initialState());
       this.update();
@@ -373,7 +392,9 @@ export default class BuildHistoryDisplay extends Component {
                    </a>;
           }
         }
-        return <Tooltip overlay={jobName}
+        return <Tooltip
+                      key={jobName}
+                      overlay={jobName}
                       mouseLeaveDelay={0}
                       placement="rightTop"
                       destroyTooltipOnHide={true}><td key={jobName} className="icon-cell" style={{textAlign: "right", fontFamily: "sans-serif", padding: 0}}>{cell}</td></Tooltip>;
@@ -506,11 +527,12 @@ export default class BuildHistoryDisplay extends Component {
           </td>
           <td className="right-cell" style={{textAlign: "right"}}>{inProgressCost ? "≥ " : ""}{centsToDollars(cost)}{unknownCost ? "?" : ""}</td>
           <td className="right-cell">{author}</td>
-          <td className="right-cell"><a href={pull_link} target="_blank">{desc}</a></td>
+          <td className="right-cell">{desc}</td>
         </tr>
         );
     });
 
+    console.log(this.state);
     return (
       <div>
         <h2>
@@ -523,12 +545,18 @@ export default class BuildHistoryDisplay extends Component {
         <div>
           <ul className="menu">
             <li>
-              <input type="checkbox" name="show-stale" value={this.state.showStale} onChange={(e) => { this.setState({showStale: e.target.checked}) }} />
+              <input type="checkbox" name="show-stale" checked={this.state.showStale} onChange={(e) => { this.setState({showStale: e.target.checked}) }} />
               <label htmlFor="show-stale">Show stale builds of PRs</label>
             </li>
             <li>
               <input type="text" name="username" value={this.state.username} onChange={(e) => { this.setState({username: e.target.value}) }} />
               <label htmlFor="username" style={{backgroundColor: "white", position: "relative", zIndex: 3}}>Show builds from this user only</label>
+            </li>
+            <li>
+              <input type="checkbox" name="show-notifications" checked={this.state.showNotifications} onChange={(e) => this.setState({showNotifications: e.target.checked}) } />
+              <label htmlFor="show-notifications">Show notifications on master failure
+                { Notification.permission == "denied" ? <Fragment> <strong>(WARNING: notifications are currently denied)</strong></Fragment> : "" }
+              </label>
             </li>
           </ul>
         </div>

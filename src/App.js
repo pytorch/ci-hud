@@ -19,7 +19,7 @@ const App = () => (
          "rocm-pytorch",
         ].map((e) => <Fragment key={e}>
                         {["master", "pull-request"
-                        ].map((trigger) => <li>
+                        ].map((trigger) => <li key={e + "-" + trigger}>
                           <Link to={"/build/" + e + "-" + trigger}>{e}-{trigger}</Link>&nbsp;
                           (<Link to={"/build/" + e + "-" + trigger + "?mode=perf"}>perf</Link>/
                            <Link to={"/build/" + e + "-" + trigger + "?mode=cost"}>cost</Link>
