@@ -370,7 +370,7 @@ export default class BuildHistoryDisplay extends Component {
         data.consecutive_failure_count.forEach((v, k) => {
           msgs.push(summarize_job(k));
         });
-        new Notification("❌ " + this.props.job, {"body": msgs.join(", ")});
+        new Notification("❌ " + this.props.job, {"body": msgs.join(", "), "requireInteraction": true});
       }
     }
 
