@@ -90,6 +90,11 @@ th.rotate > div {
   font-size:0.8em;
 }
 
+th.rotate > div.failing-header {
+  color: #C00;
+  font-weight: bold;
+}
+
 th { vertical-align: top; }
 td { vertical-align: top; }
 

@@ -6,20 +6,18 @@ import * as d3 from 'd3v4';
 import parse_duration from 'parse-duration';
 import Tooltip from 'rc-tooltip';
 
-function compareMaps(map1, map2) {
-    var testVal;
-    if (map1.size !== map2.size) {
-        return false;
+function sameKeys(a, b) {
+  if (a.size != b.size) {
+    return false;
+  }
+
+  for (let key in a.keys()) {
+    if (!b.has(key)) {
+      return false;
     }
-    for (var [key, val] of map1) {
-        testVal = map2.get(key);
-        // in cases of an undefined value, make sure the key
-        // actually exists on the object so there are no false positives
-        if (testVal !== val || (testVal === undefined && !map2.has(key))) {
-            return false;
-        }
-    }
-    return true;
+  }
+
+  return true;
 }
 
 var binary_and_smoke_tests_on_pr = [
@@ -327,6 +325,7 @@ export default class BuildHistoryDisplay extends Component {
     //  - pytorch_doc_push: don't care about this
     //  - nightlies: these don't run all the time
 
+    const failure_window = 10;
     if (this.props.job.includes("master")) {
       const still_unknown_set = new Set();
       const consecutive_failure_count = new Map();
@@ -339,7 +338,7 @@ export default class BuildHistoryDisplay extends Component {
       for (let i = 0; i < data.builds.length; i++) {
         // After some window, don't look anymore; the job may have been
         // removed
-        if (i > 10) break;
+        if (i > failure_window) break;
         if (!still_unknown_set.size) break;
         const build = data.builds[i];
         const sb_map = build.sb_map;
@@ -350,9 +349,6 @@ export default class BuildHistoryDisplay extends Component {
             let count = consecutive_failure_count.get(jobName) || 0;
             count++;
             consecutive_failure_count.set(jobName, count);
-            if (count >= 5) {
-              still_unknown_set.delete(jobName);
-            }
           } else if (is_success(sb.result)) {
             still_unknown_set.delete(jobName);
           }
@@ -361,24 +357,18 @@ export default class BuildHistoryDisplay extends Component {
 
       // Prune uninteresting alarms
       consecutive_failure_count.forEach((v, k) => {
+        // Require two consecutive failure to alert
         if (v <= 1) {
-          consecutive_failure_count.delete(k);
-        }
-        // After we've alerted a bunch of times, stop alerting; we know
-        // about it already!
-        // TODO: Maybe have the user explicitly acknowledge the alert
-        // instead
-        if (v > 4) {
           consecutive_failure_count.delete(k);
         }
       });
 
       data.consecutive_failure_count = consecutive_failure_count;
 
-      if ((!this.state.consecutive_failure_count || !compareMaps(this.state.consecutive_failure_count, consecutive_failure_count)) && consecutive_failure_count.size) {
+      if ((!this.state.consecutive_failure_count || !sameKeys(this.state.consecutive_failure_count, consecutive_failure_count)) && consecutive_failure_count.size) {
         let msgs = [];
         data.consecutive_failure_count.forEach((v, k) => {
-          msgs.push(k + ": " + v + " times");
+          msgs.push(summarize_job(k));
         });
         new Notification("❌ " + this.props.job, {"body": msgs.join(", ")});
       }
@@ -414,10 +404,11 @@ export default class BuildHistoryDisplay extends Component {
 
     let builds = this.state.builds;
     let github_commit_statuses = this.state.github_commit_statuses;
+    let consecutive_failure_count = this.state.consecutive_failure_count;
 
     const known_jobs = this.state.known_jobs;
     const known_jobs_head = known_jobs.map((jobName) =>
-      <th className="rotate" key={jobName}><div>{summarize_job(jobName)}</div></th>
+      <th className="rotate" key={jobName}><div className={consecutive_failure_count.has(jobName) ? "failing-header" : ""}>{summarize_job(jobName)}</div></th>
     );
     // const known_jobs_head = known_jobs.map((jobName) =>
     //  <th key={jobName}></th>
