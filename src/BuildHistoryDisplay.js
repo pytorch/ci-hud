@@ -6,6 +6,22 @@ import * as d3 from 'd3v4';
 import parse_duration from 'parse-duration';
 import Tooltip from 'rc-tooltip';
 
+function compareMaps(map1, map2) {
+    var testVal;
+    if (map1.size !== map2.size) {
+        return false;
+    }
+    for (var [key, val] of map1) {
+        testVal = map2.get(key);
+        // in cases of an undefined value, make sure the key
+        // actually exists on the object so there are no false positives
+        if (testVal !== val || (testVal === undefined && !map2.has(key))) {
+            return false;
+        }
+    }
+    return true;
+}
+
 var binary_and_smoke_tests_on_pr = [
   "binary_linux_manywheel_2.7mu_cpu_devtoolset3_build",
   "binary_linux_manywheel_3.7m_cu100_devtoolset3_build",
@@ -17,6 +33,31 @@ var binary_and_smoke_tests_on_pr = [
   "binary_linux_manywheel_3.7m_cu100_devtoolset3_test",
   "binary_linux_conda_2.7_cpu_test",
 ];
+
+function is_success(result) {
+  return result === 'SUCCESS' || result === 'success';
+}
+
+function is_failure(result) {
+  return result === 'FAILURE' || result === 'failure' || result === 'error';
+}
+
+function is_aborted(result) {
+  return result === 'ABORTED';
+}
+
+function is_pending(result) {
+  return !result || result === 'pending';
+}
+
+function getJobName(subBuild) {
+  const baseJobName = subBuild.jobName;
+  if (/caffe2-builds/.test(subBuild.url)) {
+    return 'caffe2-' + baseJobName;
+  } else {
+    return baseJobName;
+  }
+}
 
 function classify_job_to_node(j) {
   if (j === 'short-perf-test-gpu') {
@@ -70,9 +111,10 @@ export default class BuildHistoryDisplay extends Component {
     }
     if (!("showStale" in prefs)) prefs["showStale"] = false;
     if (!("username" in prefs)) prefs["username"] = "";
-    if (!("showNotifications" in prefs)) prefs["showNotifications"] = false;
+    if (!("showNotifications" in prefs)) prefs["showNotifications"] = true;
     return {
       builds: [],
+      known_jobs: [],
       currentTime: new Date(),
       updateTime: new Date(0),
       showStale: prefs.showStale,
@@ -93,9 +135,6 @@ export default class BuildHistoryDisplay extends Component {
       showStale: this.state.showStale,
       username: this.state.username
     }));
-    if (this.state.showNotifications && !prevProps.showNotifications && Notification.permission != "granted") {
-      Notification.requestPermission();
-    }
     if (this.props.job !== prevProps.job) {
       this.setState(this.initialState());
       this.update();
@@ -195,68 +234,7 @@ export default class BuildHistoryDisplay extends Component {
     }
     data.github_commit_statuses = await get_github_commit_statuses();
 
-    // TODO: This can cause spurious state updates
-    this.setState(data);
-  }
-  render() {
-    function result_icon(result) {
-      if (result === 'SUCCESS' || result === 'success') return <span role="img" style={{color:"green"}} aria-label="passed">0</span>;
-      if (result === 'FAILURE' || result === 'failure' || result === 'error') return <span role="img" style={{color:"red"}} aria-label="failed">X</span>;
-      if (result === 'ABORTED') return <span role="img" style={{color:"gray"}} aria-label="cancelled">.</span>;
-      if (!result || result === 'pending') return <span className="animate-flicker" role="img" style={{color:"goldenrod"}} aria-label="in progress">?</span>;
-      return result;
-    }
-
-    // Sigh... the place where you can get the information you're
-    // interested in at the top level is NOT the same as where you get
-    // it inside, because of how Jenkins handles depth (Jenkins
-    // *will* give you information for everything recursively, just
-    // not in the place you might expect it.
-    //
-    //  class: "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
-    //  id: "3772"
-    //  subBuilds:
-    //    0:
-    //      jobName: "whatever"
-    //      build:
-    //        class: "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
-    //        subBuilds:
-
-    let builds = this.state.builds;
-    let github_commit_statuses = this.state.github_commit_statuses;
-
-    // TODO: This deeply assumes that you are viewing a thing with
-    // subbuilds, not the actual build.
-
-    function isInterestingBuild(b) {
-      // Has to have executed at least one sub-build
-      //  (usually, failing this means there was a merge conflict)
-      // if (b.subBuilds.length === 0) return false;
-      // Did not have all sub-builds cancelled
-      // if (b.subBuilds.every((sb) => sb.result === 'ABORTED')) return false;
-      // This would filter for only passing builds
-      // if (b.subBuilds.some((sb) => sb.result === 'FAILURE' || sb.result === 'ABORTED')) return false;
-      // This data is corrupt, ignore it
-      if (b.url === "https://ci.pytorch.org/jenkins/job/pytorch-pull-request/4026/") return false;
-      if (b.url === "https://ci.pytorch.org/jenkins/job/pytorch-pull-request/4027/") return false;
-      if (b.url === "https://ci.pytorch.org/jenkins/job/pytorch-pull-request/4025/") return false;
-      if (b.url === "https://ci.pytorch.org/jenkins/job/pytorch-master/1172/") return false;
-      if (b.url === "https://ci.pytorch.org/jenkins/job/pytorch-master/1103/") return false;
-      return true;
-    }
-    builds = builds.filter(isInterestingBuild);
-
-    function getJobName(subBuild) {
-      const baseJobName = subBuild.jobName;
-      if (/caffe2-builds/.test(subBuild.url)) {
-        return 'caffe2-' + baseJobName;
-      } else {
-        return baseJobName;
-      }
-    }
-
     const known_jobs_set = new Set();
-    const this_job = "*"; // this.props.job;
     function collect_known_jobs_set(topBuild) {
       function go(subBuild) {
         if (subBuild.build && subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
@@ -269,12 +247,12 @@ export default class BuildHistoryDisplay extends Component {
     }
     const props_mode = this.props.mode;
     if (props_mode !== "binary") {
-      builds.forEach(collect_known_jobs_set);
+      data.builds.forEach(collect_known_jobs_set);
     }
 
-    if (github_commit_statuses) {
-      Object.keys(github_commit_statuses).forEach(function(commit) {
-        var jobs = github_commit_statuses[commit];
+    if (data.github_commit_statuses) {
+      Object.keys(data.github_commit_statuses).forEach(function(commit) {
+        var jobs = data.github_commit_statuses[commit];
         Object.keys(jobs).forEach(function(job_name) {
           if (props_mode !== "binary") {
             // Warning: quadratic police!
@@ -303,9 +281,141 @@ export default class BuildHistoryDisplay extends Component {
       });
     }
 
-    console.log(known_jobs_set);
+    data.known_jobs = [...known_jobs_set.values()].sort();
 
-    const known_jobs = [...known_jobs_set.values()].sort();
+    data.builds.forEach((build) => {
+      const sb_map = new Map();
+
+      // Collect job status from Jenkins
+      function collect_jobs(topBuild) {
+        function go(subBuild) {
+          if (subBuild.build && subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
+            subBuild.build.subBuilds.forEach(go);
+          } else {
+            sb_map.set(getJobName(subBuild), subBuild);
+          }
+        }
+        topBuild.subBuilds.forEach(go);
+      }
+      collect_jobs(build);
+
+      // Collect job status for non-Jenkins jobs (i.e. CircleCI jobs)
+      async function collect_jobs_from_github_status(build) {
+        if (build.changeSet.items.length > 0) {
+          for (var i = 0; i < build.changeSet.items.length; i++) {
+            let commitId = build.changeSet.items[i].commitId;
+            if (data.github_commit_statuses) {
+              Object.keys(data.github_commit_statuses[commitId]).forEach(function(job_name) {
+                var job = data.github_commit_statuses[commitId][job_name];
+                sb_map.set("_" + job_name, {"duration": job.duration, "result": job.result, "url": job.url});
+              });
+            }
+          }
+        }
+      }
+      collect_jobs_from_github_status(build);
+      build.sb_map = sb_map;
+    });
+
+    // Figure out if we think something is broken or not.
+    //  1. Consider the MOST RECENT finished build for any given sub
+    //     build type.  If it is success, it's fine.
+    //  2. Otherwise, check builds prior to it.  If the previous build
+    //     also failed, we think it's broken!
+    //
+    // Special cases:
+    //  - pytorch_doc_push: don't care about this
+    //  - nightlies: these don't run all the time
+
+    if (this.props.job.includes("master")) {
+      const still_unknown_set = new Set();
+      const consecutive_failure_count = new Map();
+      data.known_jobs.forEach((job) => {
+        if (job == "pytorch_doc_push") return;
+        if (job.includes("nightlies")) return;
+        still_unknown_set.add(job);
+      });
+      const result_map = new Map();
+      for (let i = 0; i < data.builds.length; i++) {
+        // After some window, don't look anymore; the job may have been
+        // removed
+        if (i > 10) break;
+        if (!still_unknown_set.size) break;
+        const build = data.builds[i];
+        const sb_map = build.sb_map;
+        sb_map.forEach((sb, jobName) => {
+          if (!still_unknown_set.has(jobName)) {
+            // do nothing
+          } else if (is_failure(sb.result)) {
+            let count = consecutive_failure_count.get(jobName) || 0;
+            count++;
+            consecutive_failure_count.set(jobName, count);
+            if (count >= 5) {
+              still_unknown_set.delete(jobName);
+            }
+          } else if (is_success(sb.result)) {
+            still_unknown_set.delete(jobName);
+          }
+        });
+      }
+
+      // Prune uninteresting alarms
+      consecutive_failure_count.forEach((v, k) => {
+        if (v <= 1) {
+          consecutive_failure_count.delete(k);
+        }
+        // After we've alerted a bunch of times, stop alerting; we know
+        // about it already!
+        // TODO: Maybe have the user explicitly acknowledge the alert
+        // instead
+        if (v > 4) {
+          consecutive_failure_count.delete(k);
+        }
+      });
+
+      data.consecutive_failure_count = consecutive_failure_count;
+
+      if ((!this.state.consecutive_failure_count || !compareMaps(this.state.consecutive_failure_count, consecutive_failure_count)) && consecutive_failure_count.size) {
+        let msgs = [];
+        data.consecutive_failure_count.forEach((v, k) => {
+          msgs.push(k + ": " + v + " times");
+        });
+        new Notification("❌ " + this.props.job, {"body": msgs.join(", ")});
+      }
+    }
+
+    // TODO: This can cause spurious state updates
+    this.setState(data);
+  }
+
+  render() {
+    function result_icon(result) {
+      if (is_success(result)) return <span role="img" style={{color:"green"}} aria-label="passed">0</span>;
+      if (is_failure(result)) return <span role="img" style={{color:"red"}} aria-label="failed">X</span>;
+      if (is_aborted(result)) return <span role="img" style={{color:"gray"}} aria-label="cancelled">.</span>;
+      if (is_pending(result)) return <span className="animate-flicker" role="img" style={{color:"goldenrod"}} aria-label="in progress">?</span>;
+      return result;
+    }
+
+    // Sigh... the place where you can get the information you're
+    // interested in at the top level is NOT the same as where you get
+    // it inside, because of how Jenkins handles depth (Jenkins
+    // *will* give you information for everything recursively, just
+    // not in the place you might expect it.
+    //
+    //  class: "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
+    //  id: "3772"
+    //  subBuilds:
+    //    0:
+    //      jobName: "whatever"
+    //      build:
+    //        class: "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
+    //        subBuilds:
+
+    let builds = this.state.builds;
+    let github_commit_statuses = this.state.github_commit_statuses;
+
+    const known_jobs = this.state.known_jobs;
     const known_jobs_head = known_jobs.map((jobName) =>
       <th className="rotate" key={jobName}><div>{summarize_job(jobName)}</div></th>
     );
@@ -321,40 +431,10 @@ export default class BuildHistoryDisplay extends Component {
     const seen_prs = new Set();
 
     const rows = builds.map((build) => {
-      const sb_map = new Map();
-
-      // Collect job status from Jenkins
-      function collect_jobs(topBuild) {
-        function go(subBuild) {
-          if (subBuild.build && subBuild.build._class === "com.tikal.jenkins.plugins.multijob.MultiJobBuild") {
-            subBuild.build.subBuilds.forEach(go);
-          } else {
-            sb_map.set(getJobName(subBuild), subBuild);
-          }
-        }
-        sb_map.set(this_job, topBuild);
-        topBuild.subBuilds.forEach(go);
-      }
-      collect_jobs(build);
-
-      // Collect job status for non-Jenkins jobs (i.e. CircleCI jobs)
-      async function collect_jobs_from_github_status(build) {
-        if (build.changeSet.items.length > 0) {
-          for (var i = 0; i < build.changeSet.items.length; i++) {
-            let commitId = build.changeSet.items[i].commitId;
-            if (github_commit_statuses) {
-              Object.keys(github_commit_statuses[commitId]).forEach(function(job_name) {
-                var job = github_commit_statuses[commitId][job_name];
-                sb_map.set("_" + job_name, {"duration": job.duration, "result": job.result, "url": job.url});
-              });
-            }
-          }
-        }
-      }
-      collect_jobs_from_github_status(build);
+      const sb_map = build.sb_map;
 
       function perf_report(sb, result) {
-        return <Fragment><span className={result === 'SUCCESS' ? 'ok-duration' : 'suspect-duration'}>{parse_duration(sb.duration)/1000}</span>&nbsp;&nbsp;</Fragment>;
+        return <Fragment><span className={is_success(result) ? 'ok-duration' : 'suspect-duration'}>{parse_duration(sb.duration)/1000}</span>&nbsp;&nbsp;</Fragment>;
       }
 
       // let cumulativeMs = 0;
@@ -510,7 +590,6 @@ export default class BuildHistoryDisplay extends Component {
 
       return (
         <tr key={build.number} className={stale ? "stale" : ""}>
-          <th className="left-cell">{result_icon(sb_map.get(this_job).result)}</th>
           <th className="left-cell"><a href={build.url} target="_blank">{build.number}</a></th>
           <th className="left-cell"><a href={pull_link} target="_blank">{pull_id ? "#" + pull_id : ""}</a></th>
           <td className="left-cell">{whenString}</td>
@@ -532,7 +611,6 @@ export default class BuildHistoryDisplay extends Component {
         );
     });
 
-    console.log(this.state);
     return (
       <div>
         <h2>
@@ -563,7 +641,6 @@ export default class BuildHistoryDisplay extends Component {
         <table className="buildHistoryTable">
           <thead>
             <tr>
-              <th></th>
               <th className="left-cell">J#</th>
               <th className="left-cell">PR#</th>
               <th className="left-cell">Date</th>
