@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import jenkins from './Jenkins.js';
 import AsOf from './AsOf.js';
-import { seconds2time, summarize_ago, summarize_url, centsToDollars, centsPerHour } from './Summarize.js';
+import { summarize_ago, summarize_url, centsToDollars, centsPerHour } from './Summarize.js';
 
 export default class ComputerDisplay extends Component {
   constructor(props) {
@@ -147,6 +147,7 @@ export default class ComputerDisplay extends Component {
       v.cumulative_time += delta_ago(executable.timestamp);
     });
 
+    /*
     const running_summary = [...running_map.entries()].sort((a, b) => b[1].total - a[1].total).map(task_v => {
       const task = task_v[0];
       const v = task_v[1];
@@ -158,6 +159,7 @@ export default class ComputerDisplay extends Component {
       const v = task_v[1];
       return <tr key={task}><td style={{textAlign: "right", paddingRight: 15}}>{seconds2time(Math.floor(v.cumulative_time))}</td><th>{task}</th></tr>
     });
+    */
 
     return (
       <div>

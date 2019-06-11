@@ -6,20 +6,6 @@ import * as d3 from 'd3v4';
 import parse_duration from 'parse-duration';
 import Tooltip from 'rc-tooltip';
 
-function sameKeys(a, b) {
-  if (a.size != b.size) {
-    return false;
-  }
-
-  for (let key in a.keys()) {
-    if (!b.has(key)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 var binary_and_smoke_tests_on_pr = [
   "binary_linux_manywheel_2.7mu_cpu_devtoolset3_build",
   "binary_linux_manywheel_3.7m_cu100_devtoolset3_build",
@@ -123,7 +109,7 @@ export default class BuildHistoryDisplay extends Component {
   componentDidMount() {
     this.update();
     this.interval = setInterval(this.update.bind(this), this.props.interval);
-    if (this.state.showNotifications && Notification.permission != "granted") {
+    if (this.state.showNotifications && Notification.permission !== "granted") {
       Notification.requestPermission();
     }
   }
@@ -266,7 +252,7 @@ export default class BuildHistoryDisplay extends Component {
           } else {
             if (job_name.includes("binary_") || job_name.includes("smoke_")) {
               let found = false;
-              for (var i = 0; i < binary_and_smoke_tests_on_pr.length; i++) {
+              for (let i = 0; i < binary_and_smoke_tests_on_pr.length; i++) {
                 if (job_name.endsWith(binary_and_smoke_tests_on_pr[i])) {
                   found = true;
                   break;
@@ -330,11 +316,11 @@ export default class BuildHistoryDisplay extends Component {
       const still_unknown_set = new Set();
       const consecutive_failure_count = new Map();
       data.known_jobs.forEach((job) => {
-        if (job == "pytorch_doc_push") return;
+        if (job === "pytorch_doc_push") return;
+        if (job === "__dr.ci") return;
         if (job.includes("nightlies")) return;
         still_unknown_set.add(job);
       });
-      const result_map = new Map();
       for (let i = 0; i < data.builds.length; i++) {
         // After some window, don't look anymore; the job may have been
         // removed
@@ -365,13 +351,24 @@ export default class BuildHistoryDisplay extends Component {
 
       data.consecutive_failure_count = consecutive_failure_count;
 
-      if ((!this.state.consecutive_failure_count || !sameKeys(this.state.consecutive_failure_count, consecutive_failure_count)) && consecutive_failure_count.size) {
-        let msgs = [];
-        data.consecutive_failure_count.forEach((v, k) => {
-          msgs.push(summarize_job(k));
+      // Compute what notifications to show
+      // We'll take a diff and then give notifications for keys that
+      // changed
+      if (this.state.consecutive_failure_count) {
+        this.state.consecutive_failure_count.forEach((v, key) => {
+          if (!consecutive_failure_count.has(key)) {
+            // It's fixed!
+            new Notification("✅ " + this.props.job, {"body": summarize_job(key), "requireInteraction": true});
+          }
         });
-        new Notification("❌ " + this.props.job, {"body": msgs.join(", "), "requireInteraction": true});
       }
+      consecutive_failure_count.forEach((v, key) => {
+        // Don't produce notifications for initial failure!
+        if (this.state.consecutive_failure_count && !this.state.consecutive_failure_count.has(key)) {
+          // It's failed!
+          new Notification("❌ " + this.props.job, {"body": summarize_job(key), "requireInteraction": true});
+        }
+      });
     }
 
     // TODO: This can cause spurious state updates
@@ -403,7 +400,6 @@ export default class BuildHistoryDisplay extends Component {
     //        subBuilds:
 
     let builds = this.state.builds;
-    let github_commit_statuses = this.state.github_commit_statuses;
     let consecutive_failure_count = this.state.consecutive_failure_count;
 
     const known_jobs = this.state.known_jobs;
@@ -624,7 +620,7 @@ export default class BuildHistoryDisplay extends Component {
             <li>
               <input type="checkbox" name="show-notifications" checked={this.state.showNotifications} onChange={(e) => this.setState({showNotifications: e.target.checked}) } />
               <label htmlFor="show-notifications">Show notifications on master failure
-                { Notification.permission == "denied" ? <Fragment> <strong>(WARNING: notifications are currently denied)</strong></Fragment> : "" }
+                { Notification.permission === "denied" ? <Fragment> <strong>(WARNING: notifications are currently denied)</strong></Fragment> : "" }
               </label>
             </li>
           </ul>
