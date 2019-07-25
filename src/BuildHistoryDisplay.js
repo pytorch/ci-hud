@@ -7,15 +7,15 @@ import parse_duration from 'parse-duration';
 import Tooltip from 'rc-tooltip';
 
 var binary_and_smoke_tests_on_pr = [
-  "binary_linux_manywheel_2.7mu_cpu_devtoolset3_build",
-  "binary_linux_manywheel_3.7m_cu100_devtoolset3_build",
-  "binary_linux_conda_2.7_cpu_build",
+  "binary_linux_manywheel_2.7mu_cpu_devtoolset7_build",
+  "binary_linux_manywheel_3.7m_cu100_devtoolset7_build",
+  "binary_linux_conda_2.7_cpu_devtoolset7_build",
   "binary_macos_wheel_3.6_cpu_build",
   "binary_macos_conda_2.7_cpu_build",
   "binary_macos_libtorch_2.7_cpu_build",
-  "binary_linux_manywheel_2.7mu_cpu_devtoolset3_test",
-  "binary_linux_manywheel_3.7m_cu100_devtoolset3_test",
-  "binary_linux_conda_2.7_cpu_test",
+  "binary_linux_manywheel_2.7mu_cpu_devtoolset7_test",
+  "binary_linux_manywheel_3.7m_cu100_devtoolset7_test",
+  "binary_linux_conda_2.7_cpu_devtoolset7_test",
 ];
 
 function is_success(result) {
