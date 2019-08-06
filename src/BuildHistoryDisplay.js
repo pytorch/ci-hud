@@ -198,20 +198,10 @@ export default class BuildHistoryDisplay extends Component {
           if (!(github_commit_statuses.hasOwnProperty(commitId))) {
             github_commit_statuses[commitId] = {};
           }
-          // TODO: Use https://s3.amazonaws.com/ossci-job-status/combined/ to get both master
-          // and PR commit statuses from one place.
-          if (commit.url.includes("master")) {
-            requests.push({
-              url: "https://s3.amazonaws.com/ossci-job-status/master/" + commitId + ".json",
-              commitId
-            });
-          }
-          if (commit.url.includes("pull-request")) {
-            requests.push({
-              url: "https://s3.amazonaws.com/ossci-job-status/pr/" + commitId + ".json",
-              commitId
-            });
-          }
+          requests.push({
+            url: "https://s3.amazonaws.com/ossci-job-status/combined/" + commitId + ".json",
+            commitId
+          });
         }
 
       }
