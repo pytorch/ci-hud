@@ -18,16 +18,19 @@ var binary_and_smoke_tests_on_pr = [
   "binary_linux_conda_2.7_cpu_devtoolset7_test",
 ];
 
+// TODO: checks also supports neutral and action_required
+
 function is_success(result) {
   return result === 'SUCCESS' || result === 'success';
 }
 
 function is_failure(result) {
-  return result === 'FAILURE' || result === 'failure' || result === 'error';
+  // TODO: maybe classify timeout differently
+  return result === 'FAILURE' || result === 'failure' || result === 'error' || result === 'timed_out';
 }
 
 function is_aborted(result) {
-  return result === 'ABORTED';
+  return result === 'ABORTED' || result == 'cancelled';
 }
 
 function is_pending(result) {
