@@ -355,7 +355,7 @@ export default class BuildHistoryDisplay extends Component {
         this.state.consecutive_failure_count.forEach((v, key) => {
           if (!consecutive_failure_count.has(key)) {
             // It's fixed!
-            new Notification("✅ " + this.props.job, {"body": summarize_job(key), "requireInteraction": true});
+            new Notification("✅ " + this.props.job, {"body": summarize_job(key)});
           }
         });
       }
@@ -363,7 +363,7 @@ export default class BuildHistoryDisplay extends Component {
         // Don't produce notifications for initial failure!
         if (this.state.consecutive_failure_count && !this.state.consecutive_failure_count.has(key)) {
           // It's failed!
-          new Notification("❌ " + this.props.job, {"body": summarize_job(key), "requireInteraction": true});
+          new Notification("❌ " + this.props.job, {"body": summarize_job(key)});
         }
       });
     }
