@@ -74,6 +74,7 @@ export default class BuildHistoryDisplay extends Component {
       return build;
     })
     const builds = await axios.all(requests)
+    builds.reverse()
 
     const data = {}
 
@@ -119,6 +120,7 @@ export default class BuildHistoryDisplay extends Component {
     const rows = builds.map((build) => {
       let found = false;
       const sb_map = build.sb_map;
+      console.log(build);
 
       const status_cols = known_jobs.map((jobName) => {
         const sb = sb_map[jobName];
@@ -129,7 +131,7 @@ export default class BuildHistoryDisplay extends Component {
                     className="icon"
                     target="_blank"
                     alt={jobName}>
-                   {result_icon(sb.result)}
+                   {result_icon(sb.status)}
                  </a>;
         }
         return <Tooltip
@@ -149,15 +151,20 @@ export default class BuildHistoryDisplay extends Component {
         if (m) {
           return <Fragment><a href={"https://github.com/pytorch/pytorch/pull/" + m[1]} target="_blank">#{m[1]}</a></Fragment>;
         }
+        m = comment.match(/https:\/\/github.com\/pytorch\/pytorch\/pull\/(\d+)/);
+        if (m) {
+          return <Fragment><a href={"https://github.com/pytorch/pytorch/pull/" + m[1]} target="_blank">#{m[1]}</a></Fragment>;
+        }
         return <Fragment />;
       }
 
-      let author = "";
+      let author = build.author.username ? build.author.username : build.author.name;
       let pull_link;
       let pull_id;
 
       const desc =
           <div key={build.id}>
+            {drop_pr_number(build.message).split('\n')[0]}{' '}
             <code><a href={"https://github.com/pytorch/pytorch/commit/" + build.id}
                      target="_blank">{build.id.slice(0, 7)}</a></code>
           </div>;
@@ -167,8 +174,7 @@ export default class BuildHistoryDisplay extends Component {
       let stale = false;
 
       // TODO: need to store this in index or payload
-      // const whenString = summarize_date(build.timestamp);
-      const whenString = "WHEN";
+      const whenString = summarize_date(build.timestamp);
 
       if (!found) {
         return <Fragment key={build.id} />
@@ -176,8 +182,8 @@ export default class BuildHistoryDisplay extends Component {
 
       return (
         <tr key={build.id} className={stale ? "stale" : ""}>
-          <th className="left-cell">PR</th>
-          <td className="left-cell">{whenString}</td>
+          <th className="left-cell">{renderPullRequestNumber(build.message)}</th>
+          <td className="left-cell" title={build.timestamp}>{whenString}</td>
           {status_cols}
           <td className="right-cell">{author}</td>
           <td className="right-cell">{desc}</td>
