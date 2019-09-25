@@ -3,6 +3,7 @@ import './App.css';
 import ComputerDisplay from './ComputerDisplay.js';
 import QueueDisplay from './QueueDisplay.js';
 import BuildHistoryDisplay from './BuildHistoryDisplay.js';
+import GitHubStatusDisplay from './GitHubStatusDisplay.js'
 import { BrowserRouter as Router, Route, Link } from "react-router-dom";
 
 const App = () => (
@@ -31,6 +32,7 @@ const App = () => (
       </ul>
       <Route exact path="/" component={Home} />
       <Route path="/build" component={BuildRoute} />
+      <Route path="/build2" component={Build2Route} />
     </div>
   </Router>
 );
@@ -65,10 +67,23 @@ const Build = ({ match }) => {
   return <BuildHistoryDisplay interval={60000} job={match.url.replace(/^\/build\//, '')} mode={query.get('mode')} />
 };
 
+const Build2 = ({ match }) => {
+  // Uhhh, am I really supposed to rob window.location here?
+  const query = new URLSearchParams(window.location.search);
+  return <GitHubStatusDisplay interval={60000} job={match.url.replace(/^\/build\//, '')} mode={query.get('mode')} />
+};
+
 const BuildRoute = ({ match }) => (
   <Fragment>
     <Route exact path={match.url} component={Build} />
     <Route path={`${match.url}/:segment`} component={BuildRoute} />
+  </Fragment>
+);
+
+const Build2Route = ({ match }) => (
+  <Fragment>
+    <Route exact path={match.url} component={Build2} />
+    <Route path={`${match.url}/:segment`} component={Build2Route} />
   </Fragment>
 );
 
