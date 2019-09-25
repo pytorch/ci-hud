@@ -14,11 +14,19 @@ function is_failure(result) {
 }
 
 function is_aborted(result) {
-  return result === 'ABORTED' || result == 'cancelled';
+  return result === 'ABORTED' || result === 'cancelled';
 }
 
 function is_pending(result) {
   return !result || result === 'pending';
+}
+
+function objToStrMap(obj) {
+  let strMap = new Map();
+  for (let k of Object.keys(obj)) {
+    strMap.set(k, obj[k]);
+  }
+  return strMap;
 }
 
 export default class BuildHistoryDisplay extends Component {
@@ -66,15 +74,16 @@ export default class BuildHistoryDisplay extends Component {
     const requests = commits.data.map(async build => {
       try {
         const r = await axios.get("https://s3.amazonaws.com/ossci-job-status/master/" + build.id + ".json")
-        build.sb_map = r.data;
+        build.sb_map = objToStrMap(r.data);
       } catch (e) {
-        build.sb_map = {};
+        build.sb_map = new Map();
         // swallow
       }
       return build;
     })
     const builds = await axios.all(requests)
     builds.reverse()
+    console.log(builds);
 
     const data = {}
 
@@ -83,7 +92,7 @@ export default class BuildHistoryDisplay extends Component {
 
     const known_jobs_set = new Set();
     builds.forEach(build => {
-      Object.keys(build.sb_map).forEach(job_name => {
+      build.sb_map.forEach((sb, job_name) => {
         known_jobs_set.add(job_name);
       });
     });
@@ -91,10 +100,76 @@ export default class BuildHistoryDisplay extends Component {
     data.known_jobs = [...known_jobs_set.values()].sort();
     data.builds = builds;
 
-    // TODO
-    data.consecutive_failure_count = new Map();
+    // Figure out if we think something is broken or not.
+    //  1. Consider the MOST RECENT finished build for any given sub
+    //     build type.  If it is success, it's fine.
+    //  2. Otherwise, check builds prior to it.  If the previous build
+    //     also failed, we think it's broken!
+    //
+    // Special cases:
+    //  - pytorch_doc_push: don't care about this
+    //  - nightlies: these don't run all the time
 
-    // TODO: This can cause spurious state updates
+    const failure_window = 10;
+    if (this.props.job.includes("master")) {
+      const still_unknown_set = new Set();
+      const consecutive_failure_count = new Map();
+      data.known_jobs.forEach((job) => {
+        if (job === "pytorch_doc_push") return;
+        if (job === "__dr.ci") return;
+        if (job.includes("nightlies")) return;
+        still_unknown_set.add(job);
+      });
+      for (let i = 0; i < data.builds.length; i++) {
+        // After some window, don't look anymore; the job may have been
+        // removed
+        if (i > failure_window) break;
+        if (!still_unknown_set.size) break;
+        const build = data.builds[i];
+        const sb_map = build.sb_map;
+        sb_map.forEach((sb, jobName) => {
+          if (!still_unknown_set.has(jobName)) {
+            // do nothing
+          } else if (is_failure(sb.status)) {
+            let count = consecutive_failure_count.get(jobName) || 0;
+            count++;
+            consecutive_failure_count.set(jobName, count);
+          } else if (is_success(sb.status)) {
+            still_unknown_set.delete(jobName);
+          }
+        });
+      }
+
+      // Prune uninteresting alarms
+      consecutive_failure_count.forEach((v, k) => {
+        // Require two consecutive failure to alert
+        if (v <= 1) {
+          consecutive_failure_count.delete(k);
+        }
+      });
+
+      data.consecutive_failure_count = consecutive_failure_count;
+
+      // Compute what notifications to show
+      // We'll take a diff and then give notifications for keys that
+      // changed
+      if (this.state.consecutive_failure_count) {
+        this.state.consecutive_failure_count.forEach((v, key) => {
+          if (!consecutive_failure_count.has(key)) {
+            // It's fixed!
+            new Notification("✅ " + this.props.job, {"body": summarize_job(key)});
+          }
+        });
+      }
+      consecutive_failure_count.forEach((v, key) => {
+        // Don't produce notifications for initial failure!
+        if (this.state.consecutive_failure_count && !this.state.consecutive_failure_count.has(key)) {
+          // It's failed!
+          new Notification("❌ " + this.props.job, {"body": summarize_job(key)});
+        }
+      });
+    }
+
     this.setState(data);
   }
 
@@ -123,7 +198,7 @@ export default class BuildHistoryDisplay extends Component {
       console.log(build);
 
       const status_cols = known_jobs.map((jobName) => {
-        const sb = sb_map[jobName];
+        const sb = sb_map.get(jobName);
         let cell = <Fragment />;
         if (sb !== undefined) {
           found = true;
