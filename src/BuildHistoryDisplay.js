@@ -34,7 +34,7 @@ function is_failure(result) {
 }
 
 function is_aborted(result) {
-  return result === 'ABORTED' || result == 'cancelled';
+  return result === 'ABORTED' || result === 'cancelled';
 }
 
 function is_pending(result) {

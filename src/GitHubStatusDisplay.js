@@ -190,8 +190,6 @@ export default class BuildHistoryDisplay extends Component {
       <th className="rotate" key={jobName}><div className={consecutive_failure_count.has(jobName) ? "failing-header" : ""}>{summarize_job(jobName)}</div></th>
     );
 
-    const seen_prs = new Set();
-
     const rows = builds.map((build) => {
       let found = false;
       const sb_map = build.sb_map;
@@ -234,8 +232,6 @@ export default class BuildHistoryDisplay extends Component {
       }
 
       let author = build.author.username ? build.author.username : build.author.name;
-      let pull_link;
-      let pull_id;
 
       const desc =
           <div key={build.id}>
