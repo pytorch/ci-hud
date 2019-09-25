@@ -13,26 +13,31 @@ const App = () => (
         <h1 className="App-title"><Link to="/">ci.pytorch.org HUD</Link> (<a href="https://github.com/ezyang/pytorch-ci-hud">GitHub</a>)</h1>
       </header>
       <ul className="menu">
+        <li>New-style:</li>
+        <li><Link to="/build/pytorch-master">pytorch-master</Link></li>
+      </ul>
+      <ul className="deprecated-menu">
+        <li>Old-style:</li>
         {[
          "pytorch",
-         "tensorcomp",
-         "translate",
+         // "tensorcomp",
+         // "translate",
          "rocm-pytorch",
         ].map((e) => <Fragment key={e}>
                         {["master", "pull-request"
                         ].map((trigger) => <li key={e + "-" + trigger}>
-                          <Link to={"/build/" + e + "-" + trigger}>{e}-{trigger}</Link>&nbsp;
-                          (<Link to={"/build/" + e + "-" + trigger + "?mode=perf"}>perf</Link>/
-                           <Link to={"/build/" + e + "-" + trigger + "?mode=cost"}>cost</Link>
-                           {e === "pytorch" && trigger === "master" ? <Fragment>/<Link to={"/build/" + e + "-" + trigger + "?mode=binary"}>binary</Link></Fragment> : <Fragment />}
+                          <Link to={"/build1/" + e + "-" + trigger}>{e}-{trigger}</Link>&nbsp;
+                          (<Link to={"/build1/" + e + "-" + trigger + "?mode=perf"}>perf</Link>/
+                           <Link to={"/build1/" + e + "-" + trigger + "?mode=cost"}>cost</Link>
+                           {e === "pytorch" && trigger === "master" ? <Fragment>/<Link to={"/build1/" + e + "-" + trigger + "?mode=binary"}>binary</Link></Fragment> : <Fragment />}
                            )
                           </li>)}
                       </Fragment>)}
-        <Fragment key="nightlies-uploaded"><li><Link to={"/build/nightlies-uploaded"}>nightlies-uploaded</Link></li></Fragment>
+        <Fragment key="nightlies-uploaded"><li><Link to={"/build1/nightlies-uploaded"}>nightlies-uploaded</Link></li></Fragment>
       </ul>
       <Route exact path="/" component={Home} />
-      <Route path="/build" component={BuildRoute} />
-      <Route path="/build2" component={Build2Route} />
+      <Route path="/build1" component={Build1Route} />
+      <Route path="/build" component={Build2Route} />
     </div>
   </Router>
 );
@@ -61,10 +66,10 @@ const Home = () => (
   </div>
 );
 
-const Build = ({ match }) => {
+const Build1 = ({ match }) => {
   // Uhhh, am I really supposed to rob window.location here?
   const query = new URLSearchParams(window.location.search);
-  return <BuildHistoryDisplay interval={60000} job={match.url.replace(/^\/build\//, '')} mode={query.get('mode')} />
+  return <BuildHistoryDisplay interval={60000} job={match.url.replace(/^\/build1\//, '')} mode={query.get('mode')} />
 };
 
 const Build2 = ({ match }) => {
@@ -73,10 +78,10 @@ const Build2 = ({ match }) => {
   return <GitHubStatusDisplay interval={60000} job={match.url.replace(/^\/build\//, '')} mode={query.get('mode')} />
 };
 
-const BuildRoute = ({ match }) => (
+const Build1Route = ({ match }) => (
   <Fragment>
-    <Route exact path={match.url} component={Build} />
-    <Route path={`${match.url}/:segment`} component={BuildRoute} />
+    <Route exact path={match.url} component={Build1} />
+    <Route path={`${match.url}/:segment`} component={Build1Route} />
   </Fragment>
 );
 

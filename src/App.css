@@ -102,6 +102,10 @@ code a { color: #AAA; }
 
 .menu li { display: inline; margin-right: 1em; }
 
+.deprecated-menu li { display: inline; margin-right: 1em; }
+.deprecated-menu li a { color: #AAF; }
+
+
 @keyframes flickerAnimation {
   0%   { opacity:1; }
   50%  { opacity:0; }
