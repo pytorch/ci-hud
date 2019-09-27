@@ -4,6 +4,26 @@ import { summarize_job, summarize_date } from './Summarize.js';
 import Tooltip from 'rc-tooltip';
 import axios from 'axios';
 
+const binary_and_smoke_tests_on_pr = [
+  "binary_linux_manywheel_2_7mu_cpu_devtoolset7_build",
+  "binary_linux_manywheel_3_7m_cu100_devtoolset7_build",
+  "binary_linux_conda_2_7_cpu_devtoolset7_build",
+  "binary_macos_wheel_3_6_cpu_build",
+  "binary_macos_conda_2_7_cpu_build",
+  "binary_macos_libtorch_2_7_cpu_build",
+  "binary_linux_manywheel_2_7mu_cpu_devtoolset7_test",
+  "binary_linux_manywheel_3_7m_cu100_devtoolset7_test",
+  "binary_linux_conda_2_7_cpu_devtoolset7_test",
+  "binary_linux_libtorch_2_7m_cpu_devtoolset7_shared-with-deps_build",
+  "binary_linux_libtorch_2_7m_cpu_devtoolset7_shared-with-deps_test",
+  "binary_linux_libtorch_2_7m_cpu_gcc5_4_cxx11-abi_shared-with-deps",
+  "pytorch_linux_xenial_pynightly",
+];
+
+function nightly_run_on_pr(job_name) {
+  return binary_and_smoke_tests_on_pr.some((n) => job_name.includes(n));
+}
+
 function is_success(result) {
   return result === 'SUCCESS' || result === 'success';
 }
@@ -90,10 +110,17 @@ export default class BuildHistoryDisplay extends Component {
     data.updateTime = new Date();
     data.connectedIn = data.updateTime - currentTime;
 
+    const props_mode = this.props.mode;
+
     const known_jobs_set = new Set();
     builds.forEach(build => {
       build.sb_map.forEach((sb, job_name) => {
-        known_jobs_set.add(job_name);
+        const nightly_candidates = job_name.includes("binary_") || job_name.includes("smoke_") || job_name.includes("nightly_") || job_name.includes("nigthly_");
+        const is_nightly = nightly_candidates && !nightly_run_on_pr(job_name);
+        if ((props_mode !== "nightly" && !is_nightly) ||
+            (props_mode === "nightly" && is_nightly)) {
+          known_jobs_set.add(job_name);
+        }
       });
     });
  

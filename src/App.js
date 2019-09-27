@@ -14,7 +14,7 @@ const App = () => (
       </header>
       <ul className="menu">
         <li>New-style:</li>
-        <li><Link to="/build/pytorch-master">pytorch-master</Link></li>
+        <li><Link to="/build/pytorch-master">pytorch-master</Link> (<Link to="/build/pytorch-master?mode=nightly">nightly</Link>)</li>
       </ul>
       <ul className="deprecated-menu">
         <li>Old-style:</li>
