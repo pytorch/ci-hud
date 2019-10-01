@@ -13,8 +13,8 @@ const App = () => (
         <h1 className="App-title"><Link to="/">ci.pytorch.org HUD</Link> (<a href="https://github.com/ezyang/pytorch-ci-hud">GitHub</a>)</h1>
       </header>
       <ul className="menu">
-        <li>New-style:</li>
-        <li><Link to="/build/pytorch-master">pytorch-master</Link> (<Link to="/build/pytorch-master?mode=nightly">nightly</Link>)</li>
+        <li>New-style (warning, does NOT show Jenkins builds):</li>
+        <li><Link to="/build2/pytorch-master">pytorch-master</Link> (<Link to="/build2/pytorch-master?mode=nightly">nightly</Link>)</li>
       </ul>
       <ul className="deprecated-menu">
         <li>Old-style:</li>
@@ -36,8 +36,9 @@ const App = () => (
         <Fragment key="nightlies-uploaded"><li><Link to={"/build1/nightlies-uploaded"}>nightlies-uploaded</Link></li></Fragment>
       </ul>
       <Route exact path="/" component={Home} />
+      <Route path="/build" component={BuildRoute} />
       <Route path="/build1" component={Build1Route} />
-      <Route path="/build" component={Build2Route} />
+      <Route path="/build2" component={Build2Route} />
     </div>
   </Router>
 );
@@ -66,6 +67,12 @@ const Home = () => (
   </div>
 );
 
+const Build = ({ match }) => {
+  // Uhhh, am I really supposed to rob window.location here?
+  const query = new URLSearchParams(window.location.search);
+  return <BuildHistoryDisplay interval={60000} job={match.url.replace(/^\/build\//, '')} mode={query.get('mode')} />
+};
+
 const Build1 = ({ match }) => {
   // Uhhh, am I really supposed to rob window.location here?
   const query = new URLSearchParams(window.location.search);
@@ -75,8 +82,15 @@ const Build1 = ({ match }) => {
 const Build2 = ({ match }) => {
   // Uhhh, am I really supposed to rob window.location here?
   const query = new URLSearchParams(window.location.search);
-  return <GitHubStatusDisplay interval={60000} job={match.url.replace(/^\/build\//, '')} mode={query.get('mode')} />
+  return <GitHubStatusDisplay interval={60000} job={match.url.replace(/^\/build2\//, '')} mode={query.get('mode')} />
 };
+
+const BuildRoute = ({ match }) => (
+  <Fragment>
+    <Route exact path={match.url} component={Build} />
+    <Route path={`${match.url}/:segment`} component={BuildRoute} />
+  </Fragment>
+);
 
 const Build1Route = ({ match }) => (
   <Fragment>
