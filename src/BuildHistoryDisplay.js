@@ -6,6 +6,50 @@ import * as d3 from 'd3v4';
 import parse_duration from 'parse-duration';
 import Tooltip from 'rc-tooltip';
 
+var jobs_on_pr = [
+  '_',
+  'setup',
+  'caffe2-py2-cuda9.0-cudnn7-windows',
+  'caffe2-py2-devtoolset7-rocmrpm-centos7.5',
+  'py3.6-clang7-rocmdeb-ubuntu16.04',
+  'win-ws2016-cuda9-cudnn7-py3',
+
+  'pytorch_linux_xenial_py2_7_9',
+  'pytorch_linux_xenial_cuda9_cudnn7_py3',
+  'pytorch_linux_xenial_py3_clang5_asan',
+  'pytorch_linux_xenial_py3_6_gcc5_4',
+  'pytorch_libtorch_linux_xenial_cuda9_cudnn7_py3',
+
+  'caffe2_py2_mkl_ubuntu16_04',
+  'caffe2_py3_5_cuda10_1_cudnn7_ubuntu16_04',
+  'caffe2_onnx_py2_gcc5_ubuntu16_04',
+  'caffe2_onnx_py3_6_clang7_ubuntu16_04',
+  'caffe2_py2_clang7_ubuntu16_04',
+  'caffe2_cmake_cuda9_0_cudnn7_ubuntu16_04',
+  'caffe2_py3_6_devtoolset7_cuda9_0_cudnn7_centos7',
+
+  'binary_linux_manywheel_2_7mu_cpu_devtoolset7',
+  'binary_linux_libtorch_2_7m_cpu_devtoolset7',
+  'binary_linux_libtorch_2_7m_cpu_gcc5_4_cxx11-abi',
+  'binary_linux_libtorch_2_7_cpu',
+
+  'caffe2_py2_android_ubuntu16_04',
+  'caffe2_py2_system_macos10_13',
+  'pytorch_macos_10_13_py3',
+  'pytorch_macos_10_13_cuda9_2_cudnn7_py3',
+  'pytorch-linux_xenial_py3_clang5_android_ndk_r19c_x86_32_build',
+  'pytorch-linux-xenial-py3-clang5-android-ndk-r19c-gradle-build-x86_32',
+  'pytorch_ios_10_2_1_x86_64_build',
+  'pytorch_ios_10_2_1_arm64_build',
+
+  'pytorch_linux_backward_compatibility_check_test',
+
+  'pytorch_xla_linux_xenial_py3_6_clang7',
+
+  'pytorch_python_doc_push',
+  'pytorch_cpp_doc_push',
+]
+
 var binary_and_smoke_tests_on_pr = [
   "binary_linux_manywheel_2_7mu_cpu_devtoolset7_build",
   "binary_linux_manywheel_3_7m_cu100_devtoolset7_build",
@@ -262,7 +306,16 @@ export default class BuildHistoryDisplay extends Component {
       });
     }
 
-    data.known_jobs = [...known_jobs_set.values()].sort();
+    function compareFun(x, y) {
+      const sx = jobs_on_pr.some((e) => summarize_job(x).startsWith(e))
+      const sy = jobs_on_pr.some((e) => summarize_job(y).startsWith(e))
+      if (sx < sy) return 1;
+      else if (sx > sy) return -1;
+      else if (x < y) return -1;
+      else if (x > y) return 1;
+      else return 0;
+    }
+    data.known_jobs = [...known_jobs_set.values()].sort(compareFun);
 
     data.builds.forEach((build) => {
       const sb_map = new Map();
@@ -401,7 +454,10 @@ export default class BuildHistoryDisplay extends Component {
 
     const known_jobs = this.state.known_jobs;
     const known_jobs_head = known_jobs.map((jobName) =>
-      <th className="rotate" key={jobName}><div className={consecutive_failure_count.has(jobName) ? "failing-header" : ""}>{summarize_job(jobName)}</div></th>
+      <th className="rotate" key={jobName}><div className={
+        (jobs_on_pr.some((e) => summarize_job(jobName).startsWith(e)) ? "pr-header" : "master-only-header") + " " +
+        (consecutive_failure_count.has(jobName) ? "failing-header" : "")
+        }>{jobs_on_pr.some((e) => summarize_job(jobName).startsWith(e)) ? "" : "• "}{summarize_job(jobName)}</div></th>
     );
     // const known_jobs_head = known_jobs.map((jobName) =>
     //  <th key={jobName}></th>
@@ -604,6 +660,7 @@ export default class BuildHistoryDisplay extends Component {
                 currentTime={this.state.currentTime}
                 updateTime={this.state.updateTime} />
         </h2>
+        <div style={{"color": "#909"}}>• Purple bulleted jobs run on master only.</div>
         <div>
           <ul className="menu">
             <li>

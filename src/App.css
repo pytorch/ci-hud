@@ -94,6 +94,12 @@ th.rotate > div.failing-header {
   color: #C00;
   font-weight: bold;
 }
+th.rotate > div.master-only-header {
+  color: #909;
+}
+th.rotate > div.master-only-header.failing-header {
+  color: #C88;
+}
 
 th { vertical-align: top; }
 td { vertical-align: top; }
