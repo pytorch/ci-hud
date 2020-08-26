@@ -506,7 +506,15 @@ export default class BuildHistoryDisplay extends Component {
           } else if (this.props.mode === "cost") {
             cell = <Fragment>{node === 'unknown' ? '?' : this_cost}&nbsp;&nbsp;</Fragment>;
           } else {
-            cell = <a href={/^https?:\/\//.test(sb.url) ? sb.url + "/console" : jenkins.link(sb.url + "/console")}
+            var cellHref = sb.url;
+            if (/^https?:\/\//.test(cellHref)) {
+              if (cellHref.includes('jenkins')) {
+                cellHref = cellHref + "/console";
+              }
+            } else {
+              cellHref = jenkins.link(cellHref + "/console")
+            }
+            cell = <a href={cellHref}
                       className="icon"
                       target="_blank"
                       alt={getJobName(sb)}>
