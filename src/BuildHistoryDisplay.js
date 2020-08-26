@@ -514,7 +514,6 @@ export default class BuildHistoryDisplay extends Component {
             } else {
               cellHref = jenkins.link(cellHref + "/console")
             }
-            const cellHref = /^https?:\/\//.test(sb.url) ?
             cell = <a href={cellHref}
                       className="icon"
                       target="_blank"
