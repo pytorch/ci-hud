@@ -69,6 +69,7 @@ export default class BuildHistoryDisplay extends Component {
       updateTime: new Date(0),
       showNotifications: prefs.showNotifications,
       showServiceJobs: prefs.showServiceJobs,
+      jobNameFilter: "",
     };
   }
   componentDidMount() {
@@ -207,6 +208,10 @@ export default class BuildHistoryDisplay extends Component {
   }
 
   shouldShowJob(name) {
+     const jobNameFilter = this.state.jobNameFilter;
+     if (jobNameFilter.length > 0 && !name.includes(jobNameFilter)) {
+         return false;
+     }
      if (this.state.showServiceJobs) {
          return true;
      }
@@ -324,6 +329,10 @@ export default class BuildHistoryDisplay extends Component {
             <li>
               <input type="checkbox" name="show-service-jobs" checked={this.state.showServiceJobs} onChange={(e) => this.setState({showServiceJobs: e.target.checked}) } />
               <label htmlFor="show-service-jobs">Show service jobs</label>
+            </li><br/>
+            <li>
+              <label htmlFor="job-name-filter">Name filter:&nbsp;</label>
+              <input type="input" name="job-name-filter" value={this.state.jobNameFilter} onChange={(e) => this.setState({jobNameFilter: e.target.value}) } />
             </li>
           </ul>
         </div>
