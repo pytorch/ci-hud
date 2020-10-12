@@ -61,12 +61,14 @@ export default class BuildHistoryDisplay extends Component {
       prefs = JSON.parse(prefs_str);
     }
     if (!("showNotifications" in prefs)) prefs["showNotifications"] = true;
+    if (!("showServiceJobs" in prefs)) prefs["showServiceJobs"] = true;
     return {
       builds: [],
       known_jobs: [],
       currentTime: new Date(),
       updateTime: new Date(0),
-      showNotifications: prefs.showNotifications
+      showNotifications: prefs.showNotifications,
+      showServiceJobs: prefs.showServiceJobs,
     };
   }
   componentDidMount() {
@@ -79,6 +81,7 @@ export default class BuildHistoryDisplay extends Component {
   componentDidUpdate(prevProps) {
     localStorage.setItem("prefs2", JSON.stringify({
       showNotifications: this.state.showNotifications,
+      showServiceJobs: this.state.showServiceJobs,
     }));
     if (this.props.job !== prevProps.job) {
       this.setState(this.initialState());
@@ -203,6 +206,15 @@ export default class BuildHistoryDisplay extends Component {
     this.setState(data);
   }
 
+  shouldShowJob(name) {
+     if (this.state.showServiceJobs) {
+         return true;
+     }
+     const isDockerJob = name.startsWith("ci/circleci: docker")
+     const isGCJob = name.startsWith("ci/circleci: ecr_gc")
+     return !(isDockerJob || name === "welcome" || isGCJob);
+  }
+
   render() {
     function result_icon(result) {
       if (is_success(result)) return <span role="img" style={{color:"green"}} aria-label="passed">0</span>;
@@ -215,8 +227,8 @@ export default class BuildHistoryDisplay extends Component {
     let builds = this.state.builds;
     let consecutive_failure_count = this.state.consecutive_failure_count;
 
-    const known_jobs = this.state.known_jobs;
-    const known_jobs_head = known_jobs.map((jobName) =>
+    const visible_jobs = this.state.known_jobs.filter((name) => this.shouldShowJob(name));
+    const visible_jobs_head = visible_jobs.map((jobName) =>
       <th className="rotate" key={jobName}><div className={consecutive_failure_count.has(jobName) ? "failing-header" : ""}>{summarize_job(jobName)}</div></th>
     );
 
@@ -225,7 +237,7 @@ export default class BuildHistoryDisplay extends Component {
       const sb_map = build.sb_map;
       console.log(build);
 
-      const status_cols = known_jobs.map((jobName) => {
+      const status_cols = visible_jobs.map((jobName) => {
         const sb = sb_map.get(jobName);
         let cell = <Fragment />;
         if (sb !== undefined) {
@@ -308,6 +320,10 @@ export default class BuildHistoryDisplay extends Component {
               <label htmlFor="show-notifications">Show notifications on master failure
                 { Notification.permission === "denied" ? <Fragment> <strong>(WARNING: notifications are currently denied)</strong></Fragment> : "" }
               </label>
+            </li><br/>
+            <li>
+              <input type="checkbox" name="show-service-jobs" checked={this.state.showServiceJobs} onChange={(e) => this.setState({showServiceJobs: e.target.checked}) } />
+              <label htmlFor="show-service-jobs">Show service jobs</label>
             </li>
           </ul>
         </div>
@@ -316,7 +332,7 @@ export default class BuildHistoryDisplay extends Component {
             <tr>
               <th className="left-cell">PR#</th>
               <th className="left-cell">Date</th>
-              {known_jobs_head}
+              {visible_jobs_head}
               <th className="right-cell">User</th>
               <th className="right-cell">Description</th>
             </tr>
