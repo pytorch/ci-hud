@@ -87,13 +87,16 @@ export default class BuildHistoryDisplay extends Component {
   }
   async update() {
     const currentTime = new Date();
+    const branch = this.props.job.replace(/^pytorch-/, '')
+    const build_prefix = branch === 'master' ? branch : 'pr';
+    const url_prefix = 'https://s3.amazonaws.com/ossci-job-status';
     this.setState({currentTime: currentTime});
 
-    const commits = await axios.get("https://s3.amazonaws.com/ossci-job-status/master/index.json");
+    const commits = await axios.get(`${url_prefix}/${branch}/index.json`);
 
     const requests = commits.data.map(async build => {
       try {
-        const r = await axios.get("https://s3.amazonaws.com/ossci-job-status/master/" + build.id + ".json")
+        const r = await axios.get(`${url_prefix}/${build_prefix}/${build.id}.json`)
         build.sb_map = objToStrMap(r.data);
       } catch (e) {
         build.sb_map = new Map();
@@ -123,7 +126,7 @@ export default class BuildHistoryDisplay extends Component {
         }
       });
     });
- 
+
     data.known_jobs = [...known_jobs_set.values()].sort();
     data.builds = builds;
 
@@ -138,7 +141,7 @@ export default class BuildHistoryDisplay extends Component {
     //  - nightlies: these don't run all the time
 
     const failure_window = 10;
-    if (this.props.job.includes("master")) {
+    if (this.props.job.startsWith("pytorch-")) {
       const still_unknown_set = new Set();
       const consecutive_failure_count = new Map();
       data.known_jobs.forEach((job) => {

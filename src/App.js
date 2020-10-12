@@ -14,7 +14,9 @@ const App = () => (
       </header>
       <ul className="menu">
         <li>New-style (warning, does NOT show Jenkins builds):</li>
-        <li><Link to="/build2/pytorch-master">pytorch-master</Link> (<Link to="/build2/pytorch-master?mode=nightly">nightly</Link>)</li>
+        <li><Link to="/build2/pytorch-master">pytorch-master</Link></li>
+        <li><Link to="/build2/pytorch-nightly">pytorch-nightly</Link></li>
+        <li><Link to="/build2/pytorch-release/1.7">pytorch-release/1.7</Link></li>
       </ul>
       <ul className="deprecated-menu">
         <li>Old-style:</li>
