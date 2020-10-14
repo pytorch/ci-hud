@@ -84,7 +84,7 @@ export default class BuildHistoryDisplay extends Component {
       showNotifications: this.state.showNotifications,
       showServiceJobs: this.state.showServiceJobs,
     }));
-    if (this.props.job !== prevProps.job) {
+    if (this.props.job !== prevProps.job || this.props.mode !== prevProps.mode) {
       this.setState(this.initialState());
       this.update();
     }
