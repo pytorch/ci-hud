@@ -97,25 +97,21 @@ export default class PerfHistoryDisplay extends Component {
   }
   
   render() {
-    function gen_summary(stats) {
-      let diff_prev = (stats["mean"] - stats["prev_mean"]) / stats["prev_mean"];
-      diff_prev = Math.round(diff_prev * 10000) / 100;
-      if (diff_prev >= 0) {
-        diff_prev = "+" + diff_prev;
+    function gen_summary(delta) {
+      delta = Math.round(delta * 10000) / 100;
+      if (delta >= 0) {
+        delta = "+" + delta;
       }
-      diff_prev += "%";
-      const out = round_float(stats["mean"]) + "(" + diff_prev + ")";
-      return out;
+      delta += "%";
+      return delta;
     }
 
-    function is_optimized(stats) {
-      let diff_prev = (stats["mean"] - stats["prev_mean"]) / stats["prev_mean"];
-      return (diff_prev < (-1 * THRESHOLD));
+    function is_optimized(delta) {
+      return (delta < (-1 * THRESHOLD));
     }
 
-    function is_regression(stats) {
-      let diff_prev = (stats["mean"] - stats["prev_mean"]) / stats["prev_mean"];
-      return (diff_prev > THRESHOLD);
+    function is_regression(delta) {
+      return (delta > THRESHOLD);
     }
 
     function result_icon(result) {
@@ -137,14 +133,17 @@ export default class PerfHistoryDisplay extends Component {
         const sb = sb_map.get("benchmarks")[benchmark_index.get(jobName)];
         const colkey = pytorch_version + "-" + jobName;
         let cell = <Fragment />;
+        const prev_delta = (sb["stats"]["mean"] - sb["stats"]["prev_mean"]) / sb["stats"]["prev_mean"];
         if (sb !== undefined) {
           cell = <a href="#" className="icon" alt={jobName}>
-                    {result_icon(sb["stats"])}
+                    {result_icon(prev_delta)}
                  </a>;
         }
         return <Tooltip
           key={jobName}
-          overlay={jobName + " Mean: " + round_float(sb["stats"]["mean"]) + ", prev mean: " + round_float(sb["stats"]["prev_mean"])}
+          overlay={jobName + " Mean: " + round_float(sb["stats"]["mean"])
+                   + ", prev mean: " + round_float(sb["stats"]["prev_mean"])
+                   + ", delta: " + gen_summary(prev_delta)}
           mouseLeaveDelay={0}
           placement="rightTop"
           destroyTooltipOnHide={true}>
