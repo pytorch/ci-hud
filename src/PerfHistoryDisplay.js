@@ -1,4 +1,5 @@
 import React, { Component, Fragment } from 'react';
+import Tooltip from 'rc-tooltip';
 import axios from 'axios';
 
 function objToStrMap(obj) {
@@ -9,12 +10,12 @@ function objToStrMap(obj) {
   return strMap;
 }
 
-function is_optimized(result) {
-  return (result <= -0.1);
-}
+// define the threshold to determine whether it is regression/optimization
+const THRESHOLD = 0.10;
+const ROUND_PRECISION = 100000;
 
-function is_regression(result) {
-  return (result >= 0.1);
+function round_float(mean) {
+  return Math.round(mean * ROUND_PRECISION) / ROUND_PRECISION;
 }
 
 export default class PerfHistoryDisplay extends Component {
@@ -53,25 +54,28 @@ export default class PerfHistoryDisplay extends Component {
     // Use the oldest benchmark run as the standard
     const standard_benchmark = builds[0].sb_map.get("benchmarks");
     const benchmark_index = new Map();
+
     standard_benchmark.forEach((benchmark, index) => {
       known_jobs_set.add(benchmark["name"]);
       benchmark_index.set(benchmark["name"], index);
     });
     console.log(known_jobs_set);
     // Figure out if we think there is performance regression or not.
-    // 1. Use the first build as the "standard"
-    // 2. If the test mean is >10% smaller than the standard, it is an optimization
-    // 3. If the test mean is >10% bigger than the standard, it is a regression
+    // 1. If the test mean is >10% smaller than the previous mean, it is an optimization
+    // 3. If the test mean is >10% larger than the previous mean, it is a regression
     // 4. Otherwise, it is a stable result
     for (let i = 0; i < builds.length; i++) {
-      const build = builds[i];
-      const sb_map = build.sb_map;
+      const sb_map = builds[i].sb_map;
       // Get the test
       sb_map.get("benchmarks").forEach((benchmark) => {
-        const standard_benchmark_mean = standard_benchmark[benchmark_index.get(benchmark["name"])]["stats"]["mean"];
         const build_benchmark_mean = benchmark["stats"]["mean"];
-        const diff_mean = (build_benchmark_mean - standard_benchmark_mean) / standard_benchmark_mean;
-        benchmark["stats"]["diff_mean"] = diff_mean;
+        const build_benchmark_index = benchmark_index.get(benchmark["name"]);
+        if (i === 0) {
+          benchmark["stats"]["prev_mean"] = build_benchmark_mean;
+        } else {
+          const prev_mean = builds[i-1].sb_map.get("benchmarks")[build_benchmark_index]["stats"]["mean"];
+          benchmark["stats"]["prev_mean"] = prev_mean;
+        }
       });
     }
 
@@ -93,6 +97,27 @@ export default class PerfHistoryDisplay extends Component {
   }
   
   render() {
+    function gen_summary(stats) {
+      let diff_prev = (stats["mean"] - stats["prev_mean"]) / stats["prev_mean"];
+      diff_prev = Math.round(diff_prev * 10000) / 100;
+      if (diff_prev >= 0) {
+        diff_prev = "+" + diff_prev;
+      }
+      diff_prev += "%";
+      const out = round_float(stats["mean"]) + "(" + diff_prev + ")";
+      return out;
+    }
+
+    function is_optimized(stats) {
+      let diff_prev = (stats["mean"] - stats["prev_mean"]) / stats["prev_mean"];
+      return (diff_prev < (-1 * THRESHOLD));
+    }
+
+    function is_regression(stats) {
+      let diff_prev = (stats["mean"] - stats["prev_mean"]) / stats["prev_mean"];
+      return (diff_prev > THRESHOLD);
+    }
+
     function result_icon(result) {
       if (is_optimized(result)) return <span role="img" style={{color:"green"}} aria-label="passed">0</span>;
       if (is_regression(result)) return <span role="img" style={{color:"red"}} aria-label="failed">X</span>;
@@ -107,20 +132,28 @@ export default class PerfHistoryDisplay extends Component {
     
     const rows = builds.map((build) => {
       const sb_map = build.sb_map;
+      const pytorch_version = build.sb_map.get("machine_info")["pytorch_version"];
       const status_cols = visible_jobs.map((jobName) => {
         const sb = sb_map.get("benchmarks")[benchmark_index.get(jobName)];
+        const colkey = pytorch_version + "-" + jobName;
         let cell = <Fragment />;
         if (sb !== undefined) {
           cell = <a href="#" className="icon" alt={jobName}>
-                    {result_icon(sb["stats"]["diff_mean"])}
+                    {result_icon(sb["stats"])}
                  </a>;
         }
-        return <td key={jobName} className="icon-cell" style={{textAlign: "right", fontFamily: "sans-serif", padding: 0}}> {cell} </td>;
+        return <Tooltip
+          key={jobName}
+          overlay={jobName + " Mean: " + round_float(sb["stats"]["mean"]) + ", prev mean: " + round_float(sb["stats"]["prev_mean"])}
+          mouseLeaveDelay={0}
+          placement="rightTop"
+          destroyTooltipOnHide={true}>
+          <td key={colkey} className="icon-cell" style={{textAlign: "right", fontFamily: "sans-serif", padding: 0}}> {cell} </td></Tooltip>;
       });
 
       return (
-        <tr>
-          <th className="left-cell"> torch-{build.sb_map.get("machine_info")["pytorch_version"]} </th>
+        <tr key={pytorch_version}>
+          <th className="left-cell"> torch-{pytorch_version} </th>
           {status_cols}
         </tr>
       );
