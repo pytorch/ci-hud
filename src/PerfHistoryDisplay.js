@@ -36,7 +36,7 @@ export default class PerfHistoryDisplay extends Component {
   componentDidUpdate(prevProps) {
   }
   async update() {
-    const url_prefix = 'http://s3.amazonaws.com/ossci-metrics/torchbench_v0_nightly';
+    const url_prefix = 'https://s3.amazonaws.com/ossci-metrics/torchbench_v0_nightly';
     // branch: v0-nightly
     const indexes = await axios.get(`${url_prefix}/index.json`)
     console.log(indexes.data);
@@ -80,7 +80,7 @@ export default class PerfHistoryDisplay extends Component {
     }
 
     builds.reverse();
- 
+
     const data = {};
     data.known_jobs = [...known_jobs_set.values()].sort();
     data.benchmark_index = benchmark_index;
@@ -95,7 +95,7 @@ export default class PerfHistoryDisplay extends Component {
      }
      return true;
   }
-  
+
   render() {
     function gen_summary(delta) {
       delta = Math.round(delta * 10000) / 100;
@@ -125,7 +125,7 @@ export default class PerfHistoryDisplay extends Component {
     const visible_jobs_head = visible_jobs.map((jobName) =>
       <th className="rotate" key={jobName} width="20px;"><div>{jobName}</div></th>);
     const benchmark_index = this.state.benchmark_index;
-    
+
     const rows = builds.map((build) => {
       const sb_map = build.sb_map;
       const pytorch_version = build.sb_map.get("machine_info")["pytorch_version"];
