@@ -3,7 +3,8 @@ import './App.css';
 import ComputerDisplay from './ComputerDisplay.js';
 import QueueDisplay from './QueueDisplay.js';
 import BuildHistoryDisplay from './BuildHistoryDisplay.js';
-import GitHubStatusDisplay from './GitHubStatusDisplay.js'
+import GitHubStatusDisplay from './GitHubStatusDisplay.js';
+import PerfHistoryDisplay  from './PerfHistoryDisplay.js';
 import { BrowserRouter as Router, Route, Link } from "react-router-dom";
 
 const App = () => (
@@ -21,6 +22,7 @@ const App = () => (
                         (<Link to={`/build2/${e}-${trigger}?mode=nightly`}>binary</Link>)
                 </li>)}
         </Fragment>)}
+        {["torchbench-v0-nightly"].map((e) => <li key={`${e}`}><Link to={`/${e}`}>{e}</Link></li>)}
       </ul>
       <ul className="deprecated-menu">
         <li>Old-style:</li>
@@ -45,6 +47,7 @@ const App = () => (
       <Route path="/build" component={BuildRoute} />
       <Route path="/build1" component={Build1Route} />
       <Route path="/build2" component={Build2Route} />
+      <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
     </div>
   </Router>
 );
@@ -109,6 +112,12 @@ const Build2Route = ({ match }) => (
   <Fragment>
     <Route exact path={match.url} component={Build2} />
     <Route path={`${match.url}/:segment`} component={Build2Route} />
+  </Fragment>
+);
+
+const TorchBenchRoute = ({ match }) => (
+  <Fragment>
+    <Route exact path={match.url} component={PerfHistoryDisplay} />
   </Fragment>
 );
 
