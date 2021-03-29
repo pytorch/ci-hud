@@ -41,6 +41,10 @@ function is_pending(result) {
   return !result || result === 'pending';
 }
 
+function is_skipped(result) {
+  return result === 'skipped';
+}
+
 function objToStrMap(obj) {
   let strMap = new Map();
   for (let k of Object.keys(obj)) {
@@ -223,6 +227,7 @@ export default class BuildHistoryDisplay extends Component {
   render() {
     function result_icon(result) {
       if (is_success(result)) return <span role="img" style={{color:"green"}} aria-label="passed">0</span>;
+      if (is_skipped(result)) return <span role="img" style={{color:"gray"}} aria-label="skipped">S</span>;
       if (is_failure(result)) return <span role="img" style={{color:"red"}} aria-label="failed">X</span>;
       if (is_aborted(result)) return <span role="img" style={{color:"gray"}} aria-label="cancelled">.</span>;
       if (is_pending(result)) return <span className="animate-flicker" role="img" style={{color:"goldenrod"}} aria-label="in progress">?</span>;
