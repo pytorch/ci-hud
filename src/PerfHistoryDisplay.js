@@ -135,9 +135,7 @@ export default class PerfHistoryDisplay extends Component {
         let cell = <Fragment />;
         const prev_delta = (sb["stats"]["mean"] - sb["stats"]["prev_mean"]) / sb["stats"]["prev_mean"];
         if (sb !== undefined) {
-          cell = <a href="#" className="icon" alt={jobName}>
-                    {result_icon(prev_delta)}
-                 </a>;
+          cell = result_icon(prev_delta);
         }
         return <Tooltip
           key={jobName}
