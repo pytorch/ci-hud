@@ -24,15 +24,6 @@ function nightly_run_on_pr(job_name) {
   return binary_and_smoke_tests_on_pr.some((n) => job_name.includes(n));
 }
 
-const gha_workflow_run_job_names = new Set([
-  'annotate',
-  'cancel',
-])
-
-function gha_workflow_run_job(job_name) {
-  return gha_workflow_run_job_names.has(job_name.split(' ')[0]);
-}
-
 function is_success(result) {
   return result === 'SUCCESS' || result === 'success';
 }
@@ -137,10 +128,8 @@ export default class BuildHistoryDisplay extends Component {
       build.sb_map.forEach((sb, job_name) => {
         const nightly_candidates = job_name.includes("binary_") || job_name.includes("smoke_") || job_name.includes("nightly_") || job_name.includes("nigthly_");
         const is_nightly = nightly_candidates && !nightly_run_on_pr(job_name);
-        const correct_nightliness =
-          (props_mode !== "nightly" && !is_nightly) ||
-          (props_mode === "nightly" && is_nightly);
-        if (correct_nightliness && !gha_workflow_run_job(job_name)) {
+        if ((props_mode !== "nightly" && !is_nightly) ||
+            (props_mode === "nightly" && is_nightly)) {
           known_jobs_set.add(job_name);
         }
       });
