@@ -16,7 +16,7 @@ const App = () => (
       <ul className="menu">
         <li>New-style (warning, does NOT show Jenkins builds):</li>
         {["pytorch"].map((e) => <Fragment key={e}>
-                {["master", "nightly", "release/1.8"
+                {["master", "nightly", "release/1.9"
                 ].map((trigger) => <li key={`${e}-${trigger}`}>
                         <Link to={`/build2/${e}-${trigger}`}>{e}-{trigger}</Link>&nbsp;
                         (<Link to={`/build2/${e}-${trigger}?mode=nightly`}>binary</Link>)
