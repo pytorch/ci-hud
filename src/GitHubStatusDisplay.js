@@ -45,6 +45,10 @@ function is_skipped(result) {
   return result === 'skipped';
 }
 
+function is_infra_failure(result) {
+  return result === 'infrastructure_fail';
+}
+
 function objToStrMap(obj) {
   let strMap = new Map();
   for (let k of Object.keys(obj)) {
@@ -231,6 +235,7 @@ export default class BuildHistoryDisplay extends Component {
       if (is_failure(result)) return <span role="img" style={{color:"red"}} aria-label="failed">X</span>;
       if (is_aborted(result)) return <span role="img" style={{color:"gray"}} aria-label="cancelled">.</span>;
       if (is_pending(result)) return <span className="animate-flicker" role="img" style={{color:"goldenrod"}} aria-label="in progress">?</span>;
+      if (is_infra_failure(result)) return <span role="img" style={{color:"grey"}} aria-label="failed">X</span>;
       return result;
     }
 
