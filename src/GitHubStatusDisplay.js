@@ -57,6 +57,18 @@ function objToStrMap(obj) {
   return strMap;
 }
 
+function sameGroup(job1, job2) {
+  const split1 = job1.split(' / ', 2);
+  const split2 = job2.split(' / ', 2);
+  if (split1.length !== split2.length) {
+    return false;
+  }
+  if (split1.length < 2) {
+    return true;
+  }
+  return split1[0] === split2[0];
+}
+
 export default class BuildHistoryDisplay extends Component {
   constructor(props) {
     super(props);
@@ -247,6 +259,22 @@ export default class BuildHistoryDisplay extends Component {
       <th className="rotate" key={jobName}><div className={consecutive_failure_count.has(jobName) ? "failing-header" : ""}>{summarize_job(jobName)}</div></th>
     );
 
+    const visible_job_groups = [];
+    let prevJob = null;
+    let jobGroup = [];
+    for (const foo of visible_jobs) {
+      if (prevJob && !sameGroup(prevJob, foo)) {
+        visible_job_groups.push(<colgroup className="job-group">{jobGroup}</colgroup>);
+        jobGroup = [];
+      }
+      prevJob = foo;
+      jobGroup.push(<col/>);
+    }
+    if (jobGroup) {
+      visible_job_groups.push(<colgroup className="job-group">{jobGroup}</colgroup>);
+      jobGroup = [];
+    }
+
     const rows = builds.map((build) => {
       let found = false;
       const sb_map = build.sb_map;
@@ -347,6 +375,11 @@ export default class BuildHistoryDisplay extends Component {
           </ul>
         </div>
         <table className="buildHistoryTable">
+          <colgroup>
+            <col/>
+            <col/>
+          </colgroup>
+          {visible_job_groups}
           <thead>
             <tr>
               <th className="left-cell">PR#</th>
