@@ -14,7 +14,7 @@
     "react-router-dom": "^4.2.2",
     "react-scripts": "^4.0.3"
   },
-  "homepage": "https://hud.pytorch.org",
+  "homepage": "https://driazati.github.io/pytorch-ci-hud",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
