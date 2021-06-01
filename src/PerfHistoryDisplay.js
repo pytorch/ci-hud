@@ -1,6 +1,6 @@
-import React, { Component, Fragment } from 'react';
-import Tooltip from 'rc-tooltip';
-import axios from 'axios';
+import React, { Component, Fragment } from "react";
+import Tooltip from "rc-tooltip";
+import axios from "axios";
 
 function objToStrMap(obj) {
   let strMap = new Map();
@@ -11,7 +11,7 @@ function objToStrMap(obj) {
 }
 
 // define the threshold to determine whether it is regression/optimization
-const THRESHOLD = 0.10;
+const THRESHOLD = 0.1;
 const ROUND_PRECISION = 100000;
 
 function round_float(mean) {
@@ -28,23 +28,23 @@ export default class PerfHistoryDisplay extends Component {
       builds: [],
       known_jobs: [],
       jobNameFilter: "",
-    }
+    };
   }
   componentDidMount() {
     this.update();
   }
-  componentDidUpdate(prevProps) {
-  }
+  componentDidUpdate(prevProps) {}
   async update() {
-    const url_prefix = 'https://s3.amazonaws.com/ossci-metrics/torchbench_v0_nightly';
+    const url_prefix =
+      "https://s3.amazonaws.com/ossci-metrics/torchbench_v0_nightly";
     // branch: v0-nightly
-    const indexes = await axios.get(`${url_prefix}/index.json`)
+    const indexes = await axios.get(`${url_prefix}/index.json`);
     console.log(indexes.data);
-    const requests = indexes.data.map(async run => {
+    const requests = indexes.data.map(async (run) => {
       try {
-        const r = await axios.get(`${url_prefix}/${run.result.relpath}`)
+        const r = await axios.get(`${url_prefix}/${run.result.relpath}`);
         run.sb_map = objToStrMap(r.data);
-      } catch(e) {
+      } catch (e) {
         run.sb_map = new Map();
       }
       return run;
@@ -73,7 +73,10 @@ export default class PerfHistoryDisplay extends Component {
         if (i === 0) {
           benchmark["stats"]["prev_mean"] = build_benchmark_mean;
         } else {
-          const prev_mean = builds[i-1].sb_map.get("benchmarks")[build_benchmark_index]["stats"]["mean"];
+          const prev_mean =
+            builds[i - 1].sb_map.get("benchmarks")[build_benchmark_index][
+              "stats"
+            ]["mean"];
           benchmark["stats"]["prev_mean"] = prev_mean;
         }
       });
@@ -89,11 +92,11 @@ export default class PerfHistoryDisplay extends Component {
   }
 
   shouldShowJob(name) {
-     const jobNameFilter = this.state.jobNameFilter;
-     if (jobNameFilter.length > 0 && !name.includes(jobNameFilter)) {
-         return false;
-     }
-     return true;
+    const jobNameFilter = this.state.jobNameFilter;
+    if (jobNameFilter.length > 0 && !name.includes(jobNameFilter)) {
+      return false;
+    }
+    return true;
   }
 
   render() {
@@ -107,45 +110,88 @@ export default class PerfHistoryDisplay extends Component {
     }
 
     function is_optimized(delta) {
-      return (delta < (-1 * THRESHOLD));
+      return delta < -1 * THRESHOLD;
     }
 
     function is_regression(delta) {
-      return (delta > THRESHOLD);
+      return delta > THRESHOLD;
     }
 
     function result_icon(result) {
-      if (is_optimized(result)) return <span role="img" style={{color:"green"}} aria-label="passed">0</span>;
-      if (is_regression(result)) return <span role="img" style={{color:"red"}} aria-label="failed">X</span>;
-      return <span role="img" style={{color:"grey"}} aria-label="passed">-</span>;
+      if (is_optimized(result))
+        return (
+          <span role="img" style={{ color: "green" }} aria-label="passed">
+            0
+          </span>
+        );
+      if (is_regression(result))
+        return (
+          <span role="img" style={{ color: "red" }} aria-label="failed">
+            X
+          </span>
+        );
+      return (
+        <span role="img" style={{ color: "grey" }} aria-label="passed">
+          -
+        </span>
+      );
     }
 
     let builds = this.state.builds;
-    const visible_jobs = this.state.known_jobs.filter((name) => this.shouldShowJob(name));
-    const visible_jobs_head = visible_jobs.map((jobName) =>
-      <th className="rotate" key={jobName} width="20px;"><div>{jobName}</div></th>);
+    const visible_jobs = this.state.known_jobs.filter((name) =>
+      this.shouldShowJob(name)
+    );
+    const visible_jobs_head = visible_jobs.map((jobName) => (
+      <th className="rotate" key={jobName} width="20px;">
+        <div>{jobName}</div>
+      </th>
+    ));
     const benchmark_index = this.state.benchmark_index;
 
     const rows = builds.map((build) => {
       const sb_map = build.sb_map;
-      const pytorch_version = build.sb_map.get("machine_info")["pytorch_version"];
+      const pytorch_version =
+        build.sb_map.get("machine_info")["pytorch_version"];
       const status_cols = visible_jobs.map((jobName) => {
         const sb = sb_map.get("benchmarks")[benchmark_index.get(jobName)];
         const colkey = pytorch_version + "-" + jobName;
         let cell = <Fragment />;
-        const prev_delta = (sb["stats"]["mean"] - sb["stats"]["prev_mean"]) / sb["stats"]["prev_mean"];
+        const prev_delta =
+          (sb["stats"]["mean"] - sb["stats"]["prev_mean"]) /
+          sb["stats"]["prev_mean"];
         if (sb !== undefined) {
           cell = result_icon(prev_delta);
         }
-        return <Tooltip
-          key={jobName}
-          overlay={jobName + " Mean: " + round_float(sb["stats"]["mean"])
-                   + ", prev mean: " + round_float(sb["stats"]["prev_mean"])
-                   + ", delta: " + gen_summary(prev_delta)}
-          mouseLeaveDelay={0}
-          placement="rightTop"
-          destroyTooltipOnHide={true}>
-          <td key={colkey} className="icon-cell" style={{textAlign: "right", fontFamily: "sans-serif", padding: 0}}> {cell} </td></Tooltip>;
+        return (
+          <Tooltip
+            key={jobName}
+            overlay={
+              jobName +
+              " Mean: " +
+              round_float(sb["stats"]["mean"]) +
+              ", prev mean: " +
+              round_float(sb["stats"]["prev_mean"]) +
+              ", delta: " +
+              gen_summary(prev_delta)
+            }
+            mouseLeaveDelay={0}
+            placement="rightTop"
+            destroyTooltipOnHide={true}
+          >
+            <td
+              key={colkey}
+              className="icon-cell"
+              style={{
+                textAlign: "right",
+                fontFamily: "sans-serif",
+                padding: 0,
+              }}
+            >
+              {" "}
+              {cell}{" "}
+            </td>
+          </Tooltip>
+        );
       });
 
       return (
@@ -159,8 +205,7 @@ export default class PerfHistoryDisplay extends Component {
       <div>
         <h2>TorchBench v0 nightly testing result</h2>
         <div>
-          <ul className="menu">
-         </ul>
+          <ul className="menu"></ul>
         </div>
         <table className="perfHistoryTable">
           <thead>

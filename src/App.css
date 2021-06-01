@@ -22,8 +22,8 @@ td {
 
 .icon {
   text-decoration: none;
-  padding-left:2px;
-  padding-right:2px;
+  padding-left: 2px;
+  padding-right: 2px;
 }
 
 .buildHistoryTable {
@@ -39,11 +39,11 @@ td {
 }
 
 .buildHistoryTable tr:hover {
-  background: #CCC;
+  background: #ccc;
 }
 
 .icon-cell:hover {
-  background: #EEE;
+  background: #eee;
 }
 
 .ralign {
@@ -55,7 +55,7 @@ table {
 }
 
 tfoot {
-  border-top: 1px solid #CCC;
+  border-top: 1px solid #ccc;
 }
 
 tbody td:last-child {
@@ -71,7 +71,7 @@ tfoot td {
 }
 
 .disconnected {
-  background-color: #F5D76E;
+  background-color: #f5d76e;
 }
 
 /* Not a fan... */
@@ -82,61 +82,94 @@ th.rotate {
 }
 
 th.rotate > div {
-  transform:
-    translate(10px, 200px) /* (_, height - offset) */
-    rotate(315deg);
+  transform: translate(10px, 200px) /* (_, height - offset) */ rotate(315deg);
   width: 10px;
   font-weight: normal;
-  font-size:0.8em;
+  font-size: 0.8em;
 }
 
 th.rotate > div.failing-header {
-  color: #C00;
+  color: #c00;
   font-weight: bold;
 }
 th.rotate > div.master-only-header {
   color: #909;
 }
 th.rotate > div.master-only-header.failing-header {
-  color: #C88;
+  color: #c88;
 }
 
-th { vertical-align: top; }
-td { vertical-align: top; }
+th {
+  vertical-align: top;
+}
+td {
+  vertical-align: top;
+}
 
-code a { color: #AAA; }
+code a {
+  color: #aaa;
+}
 
-.menu li { display: inline; margin-right: 1em; }
+.menu li {
+  display: inline;
+  margin-right: 1em;
+}
 
-.deprecated-menu li { display: inline; margin-right: 1em; }
+.deprecated-menu li {
+  display: inline;
+  margin-right: 1em;
+}
 /* .deprecated-menu li a { color: #AAF; } */
 
-
 @keyframes flickerAnimation {
-  0%   { opacity:1; }
-  50%  { opacity:0; }
-  100% { opacity:1; }
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
-@-o-keyframes flickerAnimation{
-  0%   { opacity:1; }
-  50%  { opacity:0; }
-  100% { opacity:1; }
+@-o-keyframes flickerAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
-@-moz-keyframes flickerAnimation{
-  0%   { opacity:1; }
-  50%  { opacity:0; }
-  100% { opacity:1; }
+@-moz-keyframes flickerAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
-@-webkit-keyframes flickerAnimation{
-  0%   { opacity:1; }
-  50%  { opacity:0; }
-  100% { opacity:1; }
+@-webkit-keyframes flickerAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 .animate-flicker {
-   -webkit-animation: flickerAnimation 1s infinite;
-   -moz-animation: flickerAnimation 1s infinite;
-   -o-animation: flickerAnimation 1s infinite;
-    animation: flickerAnimation 1s infinite;
+  -webkit-animation: flickerAnimation 1s infinite;
+  -moz-animation: flickerAnimation 1s infinite;
+  -o-animation: flickerAnimation 1s infinite;
+  animation: flickerAnimation 1s infinite;
 }
 
 .bar {
@@ -150,7 +183,6 @@ code a { color: #AAA; }
   font-size: 0.7em;
   vertical-align: center;
 }
-
 
 .rc-tooltip {
   position: absolute;
@@ -178,9 +210,9 @@ code a { color: #AAA; }
 }
 
 .stale {
-  background-color: #EEE;
+  background-color: #eee;
 }
 
 .suspect-duration {
-  color: #DDA;
+  color: #dda;
 }
