@@ -1,12 +1,22 @@
-import React, { Component } from 'react';
-import jenkins from './Jenkins.js';
-import AsOf from './AsOf.js';
-import { summarize_ago, summarize_url, centsToDollars, centsPerHour } from './Summarize.js';
+import React, { Component } from "react";
+import jenkins from "./Jenkins.js";
+import AsOf from "./AsOf.js";
+import {
+  summarize_ago,
+  summarize_url,
+  centsToDollars,
+  centsPerHour,
+} from "./Summarize.js";
 
 export default class ComputerDisplay extends Component {
   constructor(props) {
     super(props);
-    this.state = { computer: [], currentTime: new Date(), updateTime: new Date(0), connectedIn: 0 };
+    this.state = {
+      computer: [],
+      currentTime: new Date(),
+      updateTime: new Date(0),
+      connectedIn: 0,
+    };
   }
   componentDidMount() {
     this.update();
@@ -17,9 +27,9 @@ export default class ComputerDisplay extends Component {
   }
   async update() {
     const currentTime = new Date();
-    this.setState({currentTime: currentTime});
-    const data = await jenkins.computer(
-      {tree: `computer[
+    this.setState({ currentTime: currentTime });
+    const data = await jenkins.computer({
+      tree: `computer[
                 offline,
                 idle,
                 displayName,
@@ -33,7 +43,8 @@ export default class ComputerDisplay extends Component {
                   ],
                   idle
                 ]
-              ]`.replace(/\s+/g, '')});
+              ]`.replace(/\s+/g, ""),
+    });
     data.updateTime = new Date();
     data.connectedIn = data.updateTime - currentTime;
     this.setState(data);
@@ -42,44 +53,44 @@ export default class ComputerDisplay extends Component {
     function classify_node(n) {
       const node = n.displayName;
       if (/^c5.xlarge-i-.*$/.test(node)) {
-        return 'linux-cpu';
+        return "linux-cpu";
       }
       if (/^c5.4xlarge-i-.*$/.test(node)) {
-        return 'linux-bigcpu';
+        return "linux-bigcpu";
       }
       if (/^g3.8xlarge-i-.*$/.test(node)) {
         if (n.assignedLabels.some((l) => l.name === "tc_gpu")) {
-          return 'linux-tc-gpu';
+          return "linux-tc-gpu";
         } else {
-          return 'linux-gpu';
+          return "linux-gpu";
         }
       }
       if (/^g3.16xlarge-i-.*$/.test(node)) {
-        return 'linux-multigpu';
+        return "linux-multigpu";
       }
       if (/^worker-c5-xlarge-.*$/.test(node)) {
-        return 'linux-cpu-ccache';
+        return "linux-cpu-ccache";
       }
       if (/^worker-macos-high-sierra-.*$/.test(node)) {
-        return 'osx';
+        return "osx";
       }
       if (/^worker-win-c5.2xlarge-i-.*$/.test(node)) {
-        return 'win-cpu';
+        return "win-cpu";
       }
       if (/^worker-win-g3.4xlarge-i-.*$/.test(node)) {
-        return 'win-gpu';
+        return "win-gpu";
       }
       if (/^worker-osuosl-ppc64le-cpu-.*$/.test(node)) {
-        return 'ppc';
+        return "ppc";
       }
       if (/^worker-packet-type-1-.*$/.test(node)) {
-        return 'packet';
+        return "packet";
       }
       if (/^jenkins-worker-rocm-.*$/.test(node)) {
-        return 'rocm';
+        return "rocm";
       }
       if (/^worker-g3-4xlarge-.*$/.test(node)) {
-        return 'tc-gpu';
+        return "tc-gpu";
       }
       return node;
     }
@@ -105,27 +116,41 @@ export default class ComputerDisplay extends Component {
       }
     });
 
-    const rows = [...map.entries()].sort().map(kv => {
+    const rows = [...map.entries()].sort().map((kv) => {
       const cost = centsToDollars(kv[1].totalCost);
-      return (<tr key={kv[0]}>
+      return (
+        <tr key={kv[0]}>
           <th>{kv[0]}</th>
-          <td>{kv[1].busy} / {kv[1].total}</td>
+          <td>
+            {kv[1].busy} / {kv[1].total}
+          </td>
           <td className="ralign">{cost}/hr</td>
-        </tr>);
+        </tr>
+      );
     });
 
-    const busy_nodes = this.state.computer.filter((c) => !c.idle && c.displayName !== "master" && c.executors.length > 0 && c.executors[0].currentExecutable);
-    busy_nodes.sort((a, b) => a.executors[0].currentExecutable.timestamp - b.executors[0].currentExecutable.timestamp);
+    const busy_nodes = this.state.computer.filter(
+      (c) =>
+        !c.idle &&
+        c.displayName !== "master" &&
+        c.executors.length > 0 &&
+        c.executors[0].currentExecutable
+    );
+    busy_nodes.sort(
+      (a, b) =>
+        a.executors[0].currentExecutable.timestamp -
+        b.executors[0].currentExecutable.timestamp
+    );
     const running_rows = busy_nodes.map((c) => {
       const executable = c.executors[0].currentExecutable;
-      return <tr key={c.displayName}>
-                <td className="left-cell">{summarize_ago(executable.timestamp)}</td>
-                <td>
-                  <a href={executable.url}>
-                    {summarize_url(executable.url)}
-                  </a>
-                </td>
-              </tr>;
+      return (
+        <tr key={c.displayName}>
+          <td className="left-cell">{summarize_ago(executable.timestamp)}</td>
+          <td>
+            <a href={executable.url}>{summarize_url(executable.url)}</a>
+          </td>
+        </tr>
+      );
     });
 
     const running_map = new Map();
@@ -163,7 +188,15 @@ export default class ComputerDisplay extends Component {
 
     return (
       <div>
-        <h2>Computers <AsOf interval={this.props.interval} currentTime={this.state.currentTime} updateTime={this.state.updateTime} connectedIn={this.state.connectedIn} /></h2>
+        <h2>
+          Computers{" "}
+          <AsOf
+            interval={this.props.interval}
+            currentTime={this.state.currentTime}
+            updateTime={this.state.updateTime}
+            connectedIn={this.state.connectedIn}
+          />
+        </h2>
         <table>
           <tbody>
             <tr>
@@ -171,18 +204,21 @@ export default class ComputerDisplay extends Component {
                 <table>
                   <tbody>{rows}</tbody>
                   <tfoot>
-                    <tr><td></td><td className="ralign" colSpan="2">{centsToDollars(totalCost*24*30)}/mo</td></tr>
+                    <tr>
+                      <td></td>
+                      <td className="ralign" colSpan="2">
+                        {centsToDollars(totalCost * 24 * 30)}/mo
+                      </td>
+                    </tr>
                   </tfoot>
                 </table>
               </td>
               <td className="right-cell">
                 <table>
-                  <tbody>
-                    {running_rows}
-                  </tbody>
+                  <tbody>{running_rows}</tbody>
                 </table>
               </td>
-              { /*
+              {/*
               <td className="right-cell">
                 <table>
                   <tbody>
@@ -197,12 +233,11 @@ export default class ComputerDisplay extends Component {
                   </tbody>
                 </table>
               </td>
-              */ }
+              */}
             </tr>
           </tbody>
         </table>
       </div>
-      );
+    );
   }
 }
-
