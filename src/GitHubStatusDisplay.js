@@ -118,7 +118,6 @@ export default class BuildHistoryDisplay extends Component {
     })
     const builds = await axios.all(requests)
     builds.reverse()
-    console.log(builds);
 
     const data = {}
 
@@ -250,7 +249,6 @@ export default class BuildHistoryDisplay extends Component {
     const rows = builds.map((build) => {
       let found = false;
       const sb_map = build.sb_map;
-      console.log(build);
 
       const status_cols = visible_jobs.map((jobName) => {
         const sb = sb_map.get(jobName);

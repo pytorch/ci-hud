@@ -1,54 +1,103 @@
-import React, { Fragment } from 'react';
-import './App.css';
-import ComputerDisplay from './ComputerDisplay.js';
-import QueueDisplay from './QueueDisplay.js';
-import GitHubActionsDisplay from './GitHubActionsDisplay';
-import BuildHistoryDisplay from './BuildHistoryDisplay.js';
-import GitHubStatusDisplay from './GitHubStatusDisplay.js';
-import PerfHistoryDisplay  from './PerfHistoryDisplay.js';
-import { BrowserRouter as Router, Route, Link } from "react-router-dom";
+import React, { Fragment } from "react";
+import "./App.css";
+import ComputerDisplay from "./ComputerDisplay.js";
+import QueueDisplay from "./QueueDisplay.js";
+import GitHubActionsDisplay from "./GitHubActionsDisplay";
+import BuildHistoryDisplay from "./BuildHistoryDisplay.js";
+import GitHubStatusDisplay from "./GitHubStatusDisplay.js";
+import PerfHistoryDisplay from "./PerfHistoryDisplay.js";
+import {
+  BrowserRouter as Router,
+  Route,
+  Link,
+  Switch,
+  Redirect,
+} from "react-router-dom";
 
 const App = () => (
-  <Router basename={process.env.PUBLIC_URL + '/'}>
+  <Router basename={process.env.PUBLIC_URL + "/"}>
     <div className="App">
       <header className="App-header">
-        <h1 className="App-title"><Link to="/">ci.pytorch.org HUD</Link> (<a href="https://github.com/pytorch/pytorch-ci-hud">GitHub</a>)</h1>
+        <h1 className="App-title">
+          <Link to="/">ci.pytorch.org HUD</Link> (
+          <a href="https://github.com/pytorch/pytorch-ci-hud">GitHub</a>)
+        </h1>
       </header>
       <ul className="menu">
         <li>New-style (warning, does NOT show Jenkins builds):</li>
-        {["pytorch"].map((e) => <Fragment key={e}>
-                {["master", "nightly", "release/1.9"
-                ].map((trigger) => <li key={`${e}-${trigger}`}>
-                        <Link to={`/build2/${e}-${trigger}`}>{e}-{trigger}</Link>&nbsp;
-                        (<Link to={`/build2/${e}-${trigger}?mode=nightly`}>binary</Link>)
-                </li>)}
-        </Fragment>)}
-        {["torchbench-v0-nightly"].map((e) => <li key={`${e}`}><Link to={`/${e}`}>{e}</Link></li>)}
+        {["pytorch"].map((e) => (
+          <Fragment key={e}>
+            {["master", "nightly", "release/1.9"].map((trigger) => (
+              <li key={`${e}-${trigger}`}>
+                <Link to={`/build2/${e}-${trigger}`}>
+                  {e}-{trigger}
+                </Link>
+                &nbsp; (
+                <Link to={`/build2/${e}-${trigger}?mode=nightly`}>binary</Link>)
+              </li>
+            ))}
+          </Fragment>
+        ))}
+        {["torchbench-v0-nightly", "status"].map((e) => (
+          <li key={`${e}`}>
+            <Link to={`/${e}`}>{e}</Link>
+          </li>
+        ))}
       </ul>
       <ul className="deprecated-menu">
         <li>Old-style:</li>
         {[
-         "pytorch",
-         // "tensorcomp",
-         // "translate",
-         "rocm-pytorch",
-        ].map((e) => <Fragment key={e}>
-                        {["master", "pull-request"
-                        ].map((trigger) => <li key={e + "-" + trigger}>
-                          <Link to={"/build1/" + e + "-" + trigger}>{e}-{trigger}</Link>&nbsp;
-                          (<Link to={"/build1/" + e + "-" + trigger + "?mode=perf"}>perf</Link>/
-                           <Link to={"/build1/" + e + "-" + trigger + "?mode=cost"}>cost</Link>
-                           {e === "pytorch" && trigger === "master" ? <Fragment>/<Link to={"/build1/" + e + "-" + trigger + "?mode=binary"}>binary</Link></Fragment> : <Fragment />}
-                           )
-                          </li>)}
-                      </Fragment>)}
-        <Fragment key="nightlies-uploaded"><li><Link to={"/build1/nightlies-uploaded"}>nightlies-uploaded</Link></li></Fragment>
+          "pytorch",
+          // "tensorcomp",
+          // "translate",
+          "rocm-pytorch",
+        ].map((e) => (
+          <Fragment key={e}>
+            {["master", "pull-request"].map((trigger) => (
+              <li key={e + "-" + trigger}>
+                <Link to={"/build1/" + e + "-" + trigger}>
+                  {e}-{trigger}
+                </Link>
+                &nbsp; (
+                <Link to={"/build1/" + e + "-" + trigger + "?mode=perf"}>
+                  perf
+                </Link>
+                /
+                <Link to={"/build1/" + e + "-" + trigger + "?mode=cost"}>
+                  cost
+                </Link>
+                {e === "pytorch" && trigger === "master" ? (
+                  <Fragment>
+                    /
+                    <Link to={"/build1/" + e + "-" + trigger + "?mode=binary"}>
+                      binary
+                    </Link>
+                  </Fragment>
+                ) : (
+                  <Fragment />
+                )}
+                )
+              </li>
+            ))}
+          </Fragment>
+        ))}
+        <Fragment key="nightlies-uploaded">
+          <li>
+            <Link to={"/build1/nightlies-uploaded"}>nightlies-uploaded</Link>
+          </li>
+        </Fragment>
       </ul>
-      <Route exact path="/" component={Home} />
-      <Route path="/build" component={BuildRoute} />
-      <Route path="/build1" component={Build1Route} />
-      <Route path="/build2" component={Build2Route} />
-      <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
+      <Switch>
+        <Route exact path="/">
+          <Redirect to="/build2/pytorch-master" />
+        </Route>
+        {/* <Route exact path="/"><GitHubStatusDisplay interval={60000} job="pytorch-master" /></Route> */}
+        <Route path="/build" component={BuildRoute} />
+        <Route path="/build1" component={Build1Route} />
+        <Route path="/build2" component={Build2Route} />
+        <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
+        <Route exact path="/status" component={Home} />
+      </Switch>
     </div>
   </Router>
 );
@@ -81,19 +130,37 @@ const Home = () => (
 const Build = ({ match }) => {
   // Uhhh, am I really supposed to rob window.location here?
   const query = new URLSearchParams(window.location.search);
-  return <BuildHistoryDisplay interval={60000} job={match.url.replace(/^\/build\//, '')} mode={query.get('mode')} />
+  return (
+    <BuildHistoryDisplay
+      interval={60000}
+      job={match.url.replace(/^\/build\//, "")}
+      mode={query.get("mode")}
+    />
+  );
 };
 
 const Build1 = ({ match }) => {
   // Uhhh, am I really supposed to rob window.location here?
   const query = new URLSearchParams(window.location.search);
-  return <BuildHistoryDisplay interval={60000} job={match.url.replace(/^\/build1\//, '')} mode={query.get('mode')} />
+  return (
+    <BuildHistoryDisplay
+      interval={60000}
+      job={match.url.replace(/^\/build1\//, "")}
+      mode={query.get("mode")}
+    />
+  );
 };
 
 const Build2 = ({ match }) => {
   // Uhhh, am I really supposed to rob window.location here?
   const query = new URLSearchParams(window.location.search);
-  return <GitHubStatusDisplay interval={60000} job={match.url.replace(/^\/build2\//, '')} mode={query.get('mode')} />
+  return (
+    <GitHubStatusDisplay
+      interval={60000}
+      job={match.url.replace(/^\/build2\//, "")}
+      mode={query.get("mode")}
+    />
+  );
 };
 
 const BuildRoute = ({ match }) => (

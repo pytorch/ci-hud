@@ -1,6 +1,5 @@
 import React, { Component } from "react";
 import "@toast-ui/chart/dist/toastui-chart.css"
-import { queue } from "d3-queue";
 import Chart from "@toast-ui/chart";
 
 export default class GitHubActionsDisplay extends Component {
@@ -24,6 +23,9 @@ export default class GitHubActionsDisplay extends Component {
   }
 
   componentDidUpdate() {
+    if (!this.state.actions_statuses) {
+      return;
+    }
     const series = {
       dates: [],
     };
@@ -55,7 +57,7 @@ export default class GitHubActionsDisplay extends Component {
     const el = document.getElementById("chart");
     el.innerHTML = "";
     const options = {};
-    const chart = Chart.lineChart({ el, data, options });  
+    Chart.lineChart({ el, data, options });
   }
 
   render() {
