@@ -3,7 +3,7 @@ import "@toast-ui/chart/dist/toastui-chart.css"
 import Chart from "@toast-ui/chart";
 
 
-export default class GitHubActionsDisplay extends Component {
+export default class JobCorrelationHeatmap extends Component {
   constructor(props) {
     super(props);
     this.state = {};
