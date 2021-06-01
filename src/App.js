@@ -5,6 +5,8 @@ import QueueDisplay from "./QueueDisplay.js";
 import BuildHistoryDisplay from "./BuildHistoryDisplay.js";
 import GitHubStatusDisplay from "./GitHubStatusDisplay.js";
 import PerfHistoryDisplay from "./PerfHistoryDisplay.js";
+import JobCorrelationHeatmap from "./JobCorrelationHeatmap.js";
+import GitHubActionsDisplay from "./GitHubActionsDisplay.js";
 import {
   BrowserRouter as Router,
   Route,
@@ -116,6 +118,8 @@ const App = () => (
 
 const Status = () => (
   <div>
+    <GitHubActionsDisplay />
+    <JobCorrelationHeatmap />
     <QueueDisplay interval={1000} />
     <ComputerDisplay interval={1000} />
   </div>
