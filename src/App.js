@@ -2,6 +2,7 @@ import React, { Fragment } from 'react';
 import './App.css';
 import ComputerDisplay from './ComputerDisplay.js';
 import QueueDisplay from './QueueDisplay.js';
+import GitHubActionsDisplay from './GitHubActionsDisplay';
 import BuildHistoryDisplay from './BuildHistoryDisplay.js';
 import GitHubStatusDisplay from './GitHubStatusDisplay.js';
 import PerfHistoryDisplay  from './PerfHistoryDisplay.js';
@@ -71,6 +72,7 @@ const App = () => (
 
 const Home = () => (
   <div>
+    <GitHubActionsDisplay interval={5000} />
     <QueueDisplay interval={1000} />
     <ComputerDisplay interval={1000} />
   </div>

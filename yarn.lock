@@ -2,6 +2,11 @@
 # yarn lockfile v1
 
 
+"@toast-ui/chart@^4.3.4":
+  version "4.3.4"
+  resolved "https://registry.yarnpkg.com/@toast-ui/chart/-/chart-4.3.4.tgz#a5caa3becba58fb7e55c9fe9e04ddaea93fcc98a"
+  integrity sha512-WotuMGTJO7N8k7FoZar0oy7nWZP1ST1nj1wpTUWrcnfN4pSH06ihQFvg5n4pK+POzeaU4PfvmKNXhN2QUtJ4Zg==
+
 abab@^1.0.3:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/abab/-/abab-1.0.4.tgz#5faad9c2c07f60dd76770f71cf025b62a63cfd4e"
