@@ -5,7 +5,12 @@ import QueueDisplay from "./QueueDisplay.js";
 import BuildHistoryDisplay from "./BuildHistoryDisplay.js";
 import GitHubStatusDisplay from "./GitHubStatusDisplay.js";
 import PerfHistoryDisplay from "./PerfHistoryDisplay.js";
-import { BrowserRouter as Router, Route, Link } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Link,
+  Redirect,
+} from "react-router-dom";
 
 const App = () => (
   <Router basename={process.env.PUBLIC_URL + "/"}>
@@ -31,7 +36,7 @@ const App = () => (
             ))}
           </Fragment>
         ))}
-        {["torchbench-v0-nightly"].map((e) => (
+        {["torchbench-v0-nightly", "status"].map((e) => (
           <li key={`${e}`}>
             <Link to={`/${e}`}>{e}</Link>
           </li>
@@ -80,11 +85,14 @@ const App = () => (
           </li>
         </Fragment>
       </ul>
-      <Route exact path="/" component={Home} />
+      <Route exact path="/">
+        <Redirect to="/build2/pytorch-master" />
+      </Route>
       <Route path="/build" component={BuildRoute} />
       <Route path="/build1" component={Build1Route} />
       <Route path="/build2" component={Build2Route} />
       <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
+      <Route exact path="/status" component={Status} />
     </div>
   </Router>
 );
@@ -106,7 +114,7 @@ const App = () => (
 //      ].map((e) => <li key={e}><Link to={"/build/pytorch-builds/job/pytorch-" + e}>{e}</Link></li>)}
 //    </ul>
 
-const Home = () => (
+const Status = () => (
   <div>
     <QueueDisplay interval={1000} />
     <ComputerDisplay interval={1000} />
