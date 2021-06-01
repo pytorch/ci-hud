@@ -3,6 +3,7 @@ import "./App.css";
 import ComputerDisplay from "./ComputerDisplay.js";
 import QueueDisplay from "./QueueDisplay.js";
 import GitHubActionsDisplay from "./GitHubActionsDisplay";
+import JobCorrelationHeatmap from "./JobCorrelationHeatmap";
 import BuildHistoryDisplay from "./BuildHistoryDisplay.js";
 import GitHubStatusDisplay from "./GitHubStatusDisplay.js";
 import PerfHistoryDisplay from "./PerfHistoryDisplay.js";
@@ -96,7 +97,7 @@ const App = () => (
         <Route path="/build1" component={Build1Route} />
         <Route path="/build2" component={Build2Route} />
         <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
-        <Route exact path="/status" component={Home} />
+        <Route exact path="/status" component={Status} />
       </Switch>
     </div>
   </Router>
@@ -119,9 +120,10 @@ const App = () => (
 //      ].map((e) => <li key={e}><Link to={"/build/pytorch-builds/job/pytorch-" + e}>{e}</Link></li>)}
 //    </ul>
 
-const Home = () => (
+const Status = () => (
   <div>
     <GitHubActionsDisplay interval={5000} />
+    <JobCorrelationHeatmap interval={5000} />
     <QueueDisplay interval={1000} />
     <ComputerDisplay interval={1000} />
   </div>
