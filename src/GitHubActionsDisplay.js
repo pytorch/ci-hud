@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import "@toast-ui/chart/dist/toastui-chart.css"
+import "@toast-ui/chart/dist/toastui-chart.css";
 import Chart from "@toast-ui/chart";
 
 export default class GitHubActionsDisplay extends Component {
@@ -51,8 +51,8 @@ export default class GitHubActionsDisplay extends Component {
     }
     const data = {
       categories: series.dates,
-      series: data_series
-    }
+      series: data_series,
+    };
 
     const el = document.getElementById("chart");
     el.innerHTML = "";
@@ -64,8 +64,7 @@ export default class GitHubActionsDisplay extends Component {
     return (
       <div>
         <h2>GitHub Actions Status</h2>
-        <div id="chart" style={{width: "600px", height: "400px"}}>
-        </div>
+        <div id="chart" style={{ width: "600px", height: "400px" }}></div>
       </div>
     );
   }
