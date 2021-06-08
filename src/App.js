@@ -17,6 +17,7 @@ import {
   Route,
   Link,
   Redirect,
+  Switch,
 } from "react-router-dom";
 
 const App = () => (
@@ -24,7 +25,7 @@ const App = () => (
     <div className="App">
       <header className="App-header">
         <h1 className="App-title">
-          <Link to="/">ci.pytorch.org HUD</Link> (
+          <Link to="/">hud.pytorch.org</Link> (
           <a href="https://github.com/pytorch/pytorch-ci-hud">GitHub</a>)
         </h1>
       </header>
@@ -92,14 +93,16 @@ const App = () => (
           </li>
         </Fragment>
       </ul>
-      <Route exact path="/">
-        <Redirect to="/build2/pytorch-master" />
-      </Route>
-      <Route path="/build" component={BuildRoute} />
-      <Route path="/build1" component={Build1Route} />
-      <Route path="/build2" component={Build2Route} />
-      <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
-      <Route exact path="/status" component={Status} />
+      <Switch>
+        <Route path="/build" component={BuildRoute} />
+        <Route path="/build1" component={Build1Route} />
+        <Route path="/build2" component={Build2Route} />
+        <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
+        <Route path="/status" component={Status} />
+        <Route exact path="/">
+          <Redirect to="/build2/pytorch-master" />
+        </Route>
+      </Switch>
     </div>
   </Router>
 );
