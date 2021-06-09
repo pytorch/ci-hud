@@ -223,3 +223,7 @@ code a {
 .suspect-duration {
   color: #dda;
 }
+
+body {
+  padding: 20px;
+}
