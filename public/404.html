@@ -24,6 +24,11 @@
       // https://username.github.io/repo-name/?p=/one/two&q=a=b~and~c=d#qwe
       // Otherwise, leave segmentCount as 0.
       var segmentCount = 0;
+      let origin = (new URL(window.location.href)).origin;
+      if (origin.endsWith(".github.io")) {
+        // Assume github.io domains are all subprojects
+        segmentCount = 1;
+      }
 
       var l = window.location;
       l.replace(
