@@ -10,8 +10,10 @@ import QueueDisplay from "./QueueDisplay.js";
 import BuildHistoryDisplay from "./BuildHistoryDisplay.js";
 import GitHubStatusDisplay from "./GitHubStatusDisplay.js";
 import PerfHistoryDisplay from "./PerfHistoryDisplay.js";
+import PrDisplay from "./PrDisplay.js";
 import JobCorrelationHeatmap from "./JobCorrelationHeatmap.js";
 import GitHubActionsDisplay from "./GitHubActionsDisplay.js";
+import AuthorizeGitHub from "./AuthorizeGitHub.js";
 import {
   BrowserRouter as Router,
   Route,
@@ -96,8 +98,11 @@ const App = () => (
       <Switch>
         <Route path="/build" component={BuildRoute} />
         <Route path="/build1" component={Build1Route} />
+        <Route path="/pr" component={PrRoute} />
         <Route path="/build2" component={Build2Route} />
         <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
+        <Route path="/github_logout" component={LogoutGitHub} />
+        <Route path="/authorize_github" component={AuthorizeGithubRoute} />
         <Route path="/status" component={Status} />
         <Route exact path="/">
           <Redirect to="/build2/pytorch-master" />
@@ -132,6 +137,16 @@ const Status = () => (
     <ComputerDisplay interval={1000} />
   </div>
 );
+
+const AuthorizeGithubRoute = () => {
+  return <AuthorizeGitHub />;
+};
+
+const LogoutGitHub = () => {
+  localStorage.removeItem("gh_pat");
+  console.log("logged out");
+  return <Redirect to="/"></Redirect>;
+};
 
 const Build = ({ match }) => {
   // Uhhh, am I really supposed to rob window.location here?
@@ -168,6 +183,17 @@ const Build2 = ({ match }) => {
     />
   );
 };
+
+const PrPage = ({ match }) => {
+  return <PrDisplay pr_number={parseInt(match.url.replace(/^\/pr\//, ""))} />;
+};
+
+const PrRoute = ({ match }) => (
+  <Fragment>
+    <Route exact path={match.url} component={PrPage} />
+    <Route path={`${match.url}/:segment`} component={PrRoute} />
+  </Fragment>
+);
 
 const BuildRoute = ({ match }) => (
   <Fragment>
