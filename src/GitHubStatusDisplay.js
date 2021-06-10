@@ -342,13 +342,14 @@ export default class BuildHistoryDisplay extends Component {
             </a>
           );
         }
+
         return (
           <Tooltip
             key={jobName}
             overlay={jobName}
             mouseLeaveDelay={0}
             placement="rightTop"
-            destroyTooltipOnHide={true}
+            destroyTooltipOnHide={{ keepParent: false }}
           >
             <td
               key={jobName}
