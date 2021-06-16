@@ -245,9 +245,24 @@ export default class BuildHistoryDisplay extends Component {
     this.setState(data);
   }
 
+  nameMatches(name, filter) {
+    if (name.includes(filter)) {
+      return true;
+    }
+
+    // try-catch this since filter is user supplied and RegExp errors on invalid
+    // regexes
+    try {
+      const regex = new RegExp(filter);
+      return Boolean(name.match(regex));
+    } catch {
+      return false;
+    }
+  }
+
   shouldShowJob(name) {
     const jobNameFilter = this.state.jobNameFilter;
-    if (jobNameFilter.length > 0 && !name.includes(jobNameFilter)) {
+    if (jobNameFilter.length > 0 && !this.nameMatches(name, jobNameFilter)) {
       return false;
     }
     if (this.state.showServiceJobs) {
@@ -496,15 +511,22 @@ export default class BuildHistoryDisplay extends Component {
             </li>
             <br />
             <li>
-              <label htmlFor="job-name-filter">Name filter:&nbsp;</label>
-              <input
-                type="input"
-                name="job-name-filter"
-                value={this.state.jobNameFilter}
-                onChange={(e) =>
-                  this.setState({ jobNameFilter: e.target.value })
-                }
-              />
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  let filter = document.getElementById("job-name-filter");
+                  this.setState({ jobNameFilter: filter.value });
+                }}
+              >
+                <label htmlFor="job-name-filter">Name filter:&nbsp;</label>
+                <input
+                  type="input"
+                  name="job-name-filter"
+                  id="job-name-filter"
+                  value={this.jobNameFilter ? this.jobNameFilter : undefined}
+                />
+                <input style={{ marginLeft: "3px" }} type="submit" value="Go" />
+              </form>
             </li>
           </ul>
         </div>
