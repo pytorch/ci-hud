@@ -5,7 +5,6 @@
 
 import React, { Component } from "react";
 import Card from "react-bootstrap/Card";
-import "bootstrap/dist/css/bootstrap.min.css";
 import AuthorizeGitHub from "./AuthorizeGitHub.js";
 
 import { parseXml, formatBytes, asyncAll, s3, github } from "./utils.js";
