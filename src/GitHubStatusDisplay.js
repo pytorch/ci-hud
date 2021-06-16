@@ -326,15 +326,7 @@ export default class BuildHistoryDisplay extends Component {
       this.shouldShowJob(name)
     );
     const visible_jobs_head = visible_jobs.map((jobName) => (
-      <th className="rotate" key={jobName}>
-        <div
-          className={
-            consecutive_failure_count.has(jobName) ? "failing-header" : ""
-          }
-        >
-          {summarize_job(jobName)}
-        </div>
-      </th>
+      <th key={jobName} />
     ));
 
     const rows = builds.map((build) => {
