@@ -524,7 +524,9 @@ export default class BuildHistoryDisplay extends Component {
             <tr>
               <th className="left-cell">PR#</th>
               <th className="left-cell">Date</th>
-              <th colspan={visible_jobs.length}>Jobs (hover over column to view label)</th>
+              <th colspan={visible_jobs.length}>
+                Jobs (hover over column to view label)
+              </th>
               <th className="right-cell">User</th>
               <th className="right-cell">Description</th>
             </tr>
