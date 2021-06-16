@@ -325,9 +325,6 @@ export default class BuildHistoryDisplay extends Component {
     const visible_jobs = this.state.known_jobs.filter((name) =>
       this.shouldShowJob(name)
     );
-    const visible_jobs_head = visible_jobs.map((jobName) => (
-      <th key={jobName} />
-    ));
 
     const rows = builds.map((build) => {
       let found = false;
@@ -527,7 +524,7 @@ export default class BuildHistoryDisplay extends Component {
             <tr>
               <th className="left-cell">PR#</th>
               <th className="left-cell">Date</th>
-              {visible_jobs_head}
+              <th colspan={visible_jobs.length}>Jobs (hover over column to view label)</th>
               <th className="right-cell">User</th>
               <th className="right-cell">Description</th>
             </tr>
