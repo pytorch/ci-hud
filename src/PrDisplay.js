@@ -6,6 +6,16 @@
 import React, { Component } from "react";
 import Card from "react-bootstrap/Card";
 import AuthorizeGitHub from "./AuthorizeGitHub.js";
+import {
+  BsFillCaretRightFill,
+  BsCaretDownFill,
+  BsFillCaretDownFill,
+  GoPrimitiveDot,
+  GoCircleSlash,
+  GoCheck,
+  GoX,
+} from "react-icons/all";
+import { LazyLog } from "react-lazylog";
 
 import { parseXml, formatBytes, asyncAll, s3, github } from "./utils.js";
 
@@ -29,6 +39,7 @@ function getPrQuery(number) {
                       databaseId
                       workflow {
                         name
+                        databaseId
                       }
                       url
                     }
@@ -36,7 +47,10 @@ function getPrQuery(number) {
                       nodes {
                         name
                         title
+                        status
+                        conclusion
                         text
+                        databaseId
                         detailsUrl
                         summary
                       }
@@ -76,6 +90,24 @@ export default class PrDisplay extends Component {
     return [result[key]];
   }
 
+  async componentDidUpdate(prevProps, prevState) {
+    for (const run of this.state.runs) {
+      for (const check of run.checkRuns.nodes) {
+        if (!check.log.shown || check.log.text !== null) {
+          continue;
+        }
+
+        github
+          .raw(`repos/pytorch/pytorch/actions/jobs/${check.databaseId}/logs`)
+          .then((log) => log.text())
+          .then((log) => {
+            check.log.text = log;
+            this.setState(this.state);
+          });
+      }
+    }
+  }
+
   async update() {
     // Set some global persistent state to redirect back to this window for log
     // ins
@@ -94,6 +126,14 @@ export default class PrDisplay extends Component {
     // the v3 JSON API
     let workflow_runs = this.state.pr.commits.nodes[0].commit.checkSuites.nodes;
     workflow_runs = workflow_runs.filter((x) => x.workflowRun);
+    workflow_runs.forEach((run) => {
+      run.checkRuns.nodes.forEach((check) => {
+        check.log = {
+          text: null,
+          shown: false,
+        };
+      });
+    });
     await asyncAll(
       workflow_runs.map((run) => {
         return async () => {
@@ -105,6 +145,12 @@ export default class PrDisplay extends Component {
       })
     );
 
+    workflow_runs = workflow_runs.sort((a, b) =>
+      a.workflowRun.workflow.name.toUpperCase() >
+      b.workflowRun.workflow.name.toUpperCase()
+        ? 1
+        : -1
+    );
     this.state.runs = workflow_runs;
     this.setState(this.state);
 
@@ -152,9 +198,50 @@ export default class PrDisplay extends Component {
       for (const [run_index, run] of this.state.runs.entries()) {
         const checks = [];
         for (const [index, check] of run.checkRuns.nodes.entries()) {
+          const toggle = () => {
+            check.log.shown = !check.log.shown;
+            this.setState(this.state);
+          };
+          const iconStyle = { cursor: "pointer" };
+          let icon = (
+            <BsFillCaretRightFill style={iconStyle} onClick={toggle} />
+          );
+
+          let log = <div></div>;
+          if (check.log.shown) {
+            icon = <BsFillCaretDownFill style={iconStyle} onClick={toggle} />;
+            if (check.log.text) {
+              const totalLines = (check.log.text.match(/\n/g) || "").length + 1;
+
+              log = (
+                <div style={{ height: `${Math.min(totalLines + 4, 30)}em` }}>
+                  <LazyLog
+                    extraLines={1}
+                    enableSearch
+                    caseInsensitive
+                    selectableLines
+                    scrollToLine={totalLines}
+                    text={check.log.text}
+                  />
+                </div>
+              );
+            } else {
+              log = <p>fetching logs...</p>;
+            }
+          }
+          const statuses = {
+            SUCCESS: <GoCheck style={{ color: "#22863a" }} />,
+            FAILURE: <GoX style={{ color: "#cb2431" }} />,
+            NEUTRAL: <GoCircleSlash style={{ color: "#959da5" }} />,
+          };
+          let statusIcon = statuses[check.conclusion] || (
+            <GoPrimitiveDot style={{ color: "#dbab09" }} />
+          );
+
           checks.push(
             <div key={"check-run-" + index}>
-              - <a href={check.detailsUrl}>{check.name}</a>
+              {statusIcon} <a href={check.detailsUrl}>{check.name}</a> {icon}{" "}
+              {log}
             </div>
           );
         }
@@ -232,12 +319,7 @@ export default class PrDisplay extends Component {
 
         let checksElement = <div></div>;
         if (checks.length > 0) {
-          checksElement = (
-            <div style={{ padding: "6px" }}>
-              <h5>Checks</h5>
-              {checks}
-            </div>
-          );
+          checksElement = <div style={{ padding: "6px" }}>{checks}</div>;
         }
 
         // Wrap up everything in a card
