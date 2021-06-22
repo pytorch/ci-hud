@@ -92,9 +92,22 @@ export async function github_json(url) {
   return await result.json();
 }
 
+export async function github_raw(url) {
+  // Query the GitHub JSON API
+  const pat = localStorage.getItem("gh_pat");
+  const result = await fetch("https://api.github.com/" + url, {
+    headers: {
+      Accept: "application/vnd.github.v3+json",
+      Authorization: "token " + pat,
+    },
+  });
+  return result;
+}
+
 export let github = {
   graphql: github_graphql,
   json: github_json,
+  raw: github_raw,
 };
 
 export async function s3(prefix) {

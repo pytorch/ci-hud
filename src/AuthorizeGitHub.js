@@ -59,7 +59,7 @@ export default class AuthorizeGitHub extends Component {
     if (!this.state.code) {
       return (
         <div>
-          <a href="https://github.com/login/oauth/authorize?scope=user:email&client_id=7e8b4df19d85405ac1b2">
+          <a href="https://github.com/login/oauth/authorize?scope=public_repo&client_id=7e8b4df19d85405ac1b2">
             Click here
           </a>{" "}
           to sign in to GitHub
