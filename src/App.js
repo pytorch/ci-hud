@@ -41,8 +41,6 @@ const App = () => (
                 <Link to={`/build2/${e}-${trigger}`}>
                   {e}-{trigger}
                 </Link>
-                &nbsp; (
-                <Link to={`/build2/${e}-${trigger}?mode=nightly`}>binary</Link>)
               </li>
             ))}
           </Fragment>
@@ -175,12 +173,10 @@ const Build1 = ({ match }) => {
 
 const Build2 = ({ match }) => {
   // Uhhh, am I really supposed to rob window.location here?
-  const query = new URLSearchParams(window.location.search);
   return (
     <GitHubStatusDisplay
       interval={60000}
       job={match.url.replace(/^\/build2\//, "")}
-      mode={query.get("mode")}
     />
   );
 };

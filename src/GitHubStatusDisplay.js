@@ -105,10 +105,7 @@ export default class BuildHistoryDisplay extends Component {
         showServiceJobs: this.state.showServiceJobs,
       })
     );
-    if (
-      this.props.job !== prevProps.job ||
-      this.props.mode !== prevProps.mode
-    ) {
+    if (this.props.job !== prevProps.job) {
       this.setState(this.initialState());
       this.update();
     }
@@ -142,23 +139,10 @@ export default class BuildHistoryDisplay extends Component {
     data.updateTime = new Date();
     data.connectedIn = data.updateTime - currentTime;
 
-    const props_mode = this.props.mode;
-
     const known_jobs_set = new Set();
     builds.forEach((build) => {
       build.sb_map.forEach((sb, job_name) => {
-        const nightly_candidates =
-          job_name.includes("binary_") ||
-          job_name.includes("smoke_") ||
-          job_name.includes("nightly_") ||
-          job_name.includes("nigthly_");
-        const is_nightly = nightly_candidates && !nightly_run_on_pr(job_name);
-        if (
-          (props_mode !== "nightly" && !is_nightly) ||
-          (props_mode === "nightly" && is_nightly)
-        ) {
-          known_jobs_set.add(job_name);
-        }
+        known_jobs_set.add(job_name);
       });
     });
 
