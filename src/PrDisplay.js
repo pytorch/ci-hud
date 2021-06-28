@@ -19,6 +19,8 @@ import { LazyLog } from "react-lazylog";
 
 import { parseXml, formatBytes, asyncAll, s3, github } from "./utils.js";
 
+const PREVIEW_BASE_URL = "https://docs-preview.pytorch.org";
+
 function getPrQuery(number) {
   return `
     {
@@ -342,6 +344,34 @@ export default class PrDisplay extends Component {
       }
     }
 
+    // Search through all the checks for a docs build, if it's completed then
+    // assume it's also been uploaded to S3 (which should happen as part of the
+    // docs build on PRs)
+    let docPreview = <span></span>;
+    if (this.state.runs) {
+      for (const [run_index, run] of this.state.runs.entries()) {
+        for (const [index, check] of run.checkRuns.nodes.entries()) {
+          if (
+            check.name === "pytorch_python_doc_build" &&
+            check.status === "COMPLETED" &&
+            check.conclusion === "SUCCESS"
+          ) {
+            docPreview = (
+              <div>
+                <a
+                  href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/`}
+                  target="_blank"
+                  class="btn btn-primary"
+                >
+                  Documentation Preview
+                </a>
+              </div>
+            );
+          }
+        }
+      }
+    }
+
     return (
       <div>
         <AuthorizeGitHub />
@@ -360,6 +390,7 @@ export default class PrDisplay extends Component {
             ? this.state.pr.title
             : "loading (make sure you are signed in)..."}
         </p>
+        {docPreview}
         <div>{runs}</div>
       </div>
     );
