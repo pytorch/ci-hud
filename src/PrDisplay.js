@@ -6,6 +6,7 @@
 import React, { Component } from "react";
 import Card from "react-bootstrap/Card";
 import AuthorizeGitHub from "./AuthorizeGitHub.js";
+import TestReportRenderer from "./pr/TestReportRenderer.js";
 import {
   BsFillCaretRightFill,
   BsCaretDownFill,
@@ -266,26 +267,37 @@ export default class PrDisplay extends Component {
                   [{args.kind}] {args.name}
                 </a>{" "}
                 <span>({formatBytes(args.size_in_bytes)})</span>
+                {args.extra}
               </div>
             );
           }
         }
 
         // List out artifacts hosted on GitHub
+        let showReports = <div></div>;
         if (run.artifacts) {
-          for (const [index, artifact] of run.artifacts.artifacts.entries()) {
-            // The URL in the response is for the API, not browsers, so make it
-            // manually
-            let url = `https://github.com/pytorch/pytorch/suites/${run.databaseId}/artifacts/${artifact.id}`;
+          if (run.artifacts.artifacts !== undefined) {
+            let reportUrl = null;
+            for (const [index, artifact] of run.artifacts.artifacts.entries()) {
+              // The URL in the response is for the API, not browsers, so make it
+              // manually
+              let url = `https://github.com/pytorch/pytorch/suites/${run.databaseId}/artifacts/${artifact.id}`;
+              artifacts.push(
+                makeArtifact({
+                  kind: "gha",
+                  index: index,
+                  name: artifact.name,
+                  size_in_bytes: artifact.size_in_bytes,
+                  url: url,
+                  expired: artifact.expired,
+                })
+              );
+            }
+          } else {
             artifacts.push(
-              makeArtifact({
-                kind: "gha",
-                index: index,
-                name: artifact.name,
-                size_in_bytes: artifact.size_in_bytes,
-                url: url,
-                expired: artifact.expired,
-              })
+              <div key={`artifact-${run.databaseId}`}>
+                <span>Can't query artifacts (hit GitHub rate limit)</span>
+              </div>
             );
           }
         }
@@ -294,6 +306,31 @@ export default class PrDisplay extends Component {
         if (run.s3_artifacts) {
           for (const [index, artifact] of run.s3_artifacts.entries()) {
             let prefix = artifact.Key["#text"];
+            let name = prefix.split("/").slice(-1)[0];
+            let url = `https://gha-artifacts.s3.amazonaws.com/${prefix}`;
+
+            let extra = null;
+            if (name.startsWith("test-reports-") && name.endsWith(".zip")) {
+              extra = (
+                <button
+                  style={{ marginLeft: "5px", fontSize: "0.7em" }}
+                  className="btn btn-info"
+                  onClick={async () => {
+                    // showReport might be undefined the first time so explicitly
+                    // spell it out here to avoid any falsiness
+                    if (artifact.showReport) {
+                      artifact.showReport = false;
+                    } else {
+                      artifact.showReport = true;
+                    }
+                    this.setState(this.state);
+                    this.render();
+                  }}
+                >
+                  {artifact.showReport ? "Hide Results" : "Render Results"}
+                </button>
+              );
+            }
 
             artifacts.push(
               makeArtifact({
@@ -301,10 +338,18 @@ export default class PrDisplay extends Component {
                 index: index,
                 name: prefix.split("/").slice(-1),
                 size_in_bytes: parseInt(artifact.Size["#text"]),
-                url: `https://gha-artifacts.s3.amazonaws.com/${prefix}`,
+                url: url,
                 expired: false,
+                extra: extra,
               })
             );
+
+            if (artifact.showReport) {
+              let key = `s3-${index}-reports`;
+              artifacts.push(
+                <TestReportRenderer testReportZip={url} key={key} />
+              );
+            }
           }
         }
 
@@ -336,6 +381,7 @@ export default class PrDisplay extends Component {
               <div>
                 {checksElement}
                 {artifactsElement}
+                {showReports}
               </div>
             </Card.Body>
           </Card>
@@ -361,7 +407,7 @@ export default class PrDisplay extends Component {
                 <a
                   href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/`}
                   target="_blank"
-                  class="btn btn-primary"
+                  className="btn btn-primary"
                 >
                   Documentation Preview
                 </a>

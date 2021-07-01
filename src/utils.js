@@ -48,9 +48,13 @@ export function parseXml(xml, arrayTags) {
       else result[xmlNode.nodeName] = jsonNode;
     }
 
-    if (xmlNode.attributes)
-      for (let attribute of xmlNode.attributes)
+    if (xmlNode.attributes) {
+      for (let attribute of xmlNode.attributes) {
         jsonNode[attribute.nodeName] = attribute.nodeValue;
+      }
+    }
+
+    jsonNode.textContent = xmlNode.textContent;
 
     for (let node of xmlNode.childNodes) parseNode(node, jsonNode);
   }
