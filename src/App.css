@@ -39,14 +39,21 @@ td {
 
 .buildHistoryTable td {
   border: 0;
+  padding-right: 0.15em;
 }
 
 .buildHistoryTable th {
   border: 0;
 }
 
-.buildHistoryTable tr:hover {
+.buildHistoryTable tbody tr:hover {
   background: #ccc;
+}
+
+.icon-cell {
+  text-align: right;
+  font-family: sans-serif;
+  padding: 0;
 }
 
 .icon-cell:hover {
@@ -99,6 +106,10 @@ th.rotate > div.failing-header {
   color: #c00;
   font-weight: bold;
 }
+.failing-text {
+  color: #c00;
+  font-weight: bold;
+}
 th.rotate > div.master-only-header {
   color: #909;
 }
@@ -120,6 +131,16 @@ code a {
 .menu li {
   display: inline;
   margin-right: 1em;
+}
+
+.menu li > input {
+  margin-right: 5px;
+}
+
+.display-cell {
+  cursor: pointer;
+  text-align: center;
+  width: 1em;
 }
 
 .deprecated-menu li {
