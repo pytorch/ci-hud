@@ -423,7 +423,9 @@ export default class BuildHistoryDisplay extends Component {
 
       const desc = (
         <div key={build.id}>
-          {drop_pr_number(build.message).split("\n")[0]}{" "}
+          <a style={{ color: "#003d7f" }} href={`/commit/${build.id}`}>
+            {drop_pr_number(build.message).split("\n")[0]}{" "}
+          </a>
           <code>
             <a
               href={"https://github.com/pytorch/pytorch/commit/" + build.id}

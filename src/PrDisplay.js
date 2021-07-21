@@ -69,15 +69,70 @@ function getPrQuery(number) {
   `;
 }
 
+function getCommitQuery(hash) {
+  return `
+    {
+      repository(name: "pytorch", owner: "pytorch") {
+        object(expression: "master") {
+          ... on Commit {
+            history(first: 1, before: "${hash}") {
+              nodes {
+                oid
+                commitUrl
+                messageHeadline
+                messageBody
+                checkSuites(last: 100) {
+                  nodes {
+                    databaseId
+                    workflowRun {
+                      runNumber
+                      id
+                      databaseId
+                      workflow {
+                        name
+                        databaseId
+                      }
+                      url
+                    }
+                    checkRuns(last: 100) {
+                      nodes {
+                        name
+                        title
+                        status
+                        conclusion
+                        text
+                        databaseId
+                        detailsUrl
+                        summary
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+}
+
 export default class PrDisplay extends Component {
   constructor(props) {
     super(props);
     this.state = {
       pr_number: this.props.pr_number,
+      commit_hash: this.props.commit_hash,
+      showGroups: [],
     };
   }
+
   componentDidMount() {
     this.update();
+  }
+
+  isPr() {
+    return this.state.pr_number !== undefined;
   }
 
   extractItem(result, key) {
@@ -117,17 +172,23 @@ export default class PrDisplay extends Component {
     localStorage.setItem("last_redirect", window.location.href);
 
     // Fetch the PR's info from GitHub's GraphQL API
-    localStorage.getItem("gh_pat");
     if (!localStorage.getItem("gh_pat")) {
       return;
     }
-    let pr_result = await github.graphql(getPrQuery(this.state.pr_number));
-    this.state.pr = pr_result.repository.pullRequest;
+
+    if (this.isPr()) {
+      let pr_result = await github.graphql(getPrQuery(this.state.pr_number));
+      this.state.pr = pr_result.repository.pullRequest;
+      this.state.commit = this.state.pr.commits.nodes[0].commit;
+    } else {
+      let commit = await github.graphql(getCommitQuery(this.state.commit_hash));
+      this.state.commit = commit.repository.object.history.nodes[0];
+    }
 
     // The GraphQL API doesn't have any types for artifacts (at least as far as
     // I can tell), so we have to fall back to iterating through them all via
     // the v3 JSON API
-    let workflow_runs = this.state.pr.commits.nodes[0].commit.checkSuites.nodes;
+    let workflow_runs = this.state.commit.checkSuites.nodes;
     workflow_runs = workflow_runs.filter((x) => x.workflowRun);
     workflow_runs.forEach((run) => {
       run.checkRuns.nodes.forEach((check) => {
@@ -194,6 +255,14 @@ export default class PrDisplay extends Component {
 
   render() {
     let runs = undefined;
+    let groups = {
+      "Add annotations": [],
+      "Close stale pull requests": [],
+      "Label PRs & Issues": [],
+      Triage: [],
+      "Update S3 HTML indices for download.pytorch.org": [],
+    };
+
     if (this.state.runs) {
       runs = [];
 
@@ -370,13 +439,12 @@ export default class PrDisplay extends Component {
         }
 
         // Wrap up everything in a card
+        const title = run.workflowRun.workflow.name;
         const card = (
           <Card key={"card-" + run_index}>
             <Card.Body>
               <Card.Title>
-                <a href={run.workflowRun.url}>
-                  {run.workflowRun.workflow.name}
-                </a>
+                <a href={run.workflowRun.url}>{title}</a>
               </Card.Title>
               <div>
                 {checksElement}
@@ -386,7 +454,58 @@ export default class PrDisplay extends Component {
             </Card.Body>
           </Card>
         );
-        runs.push(card);
+
+        function groupCard(icon) {
+          groups[title].push(card);
+          if (groups[title].length === 1) {
+            const groupCard = (
+              <Card key={"group-card-" + run_index}>
+                <Card.Body>
+                  <Card.Title>
+                    {title} {icon}
+                  </Card.Title>
+                </Card.Body>
+              </Card>
+            );
+            runs.push(groupCard);
+          }
+        }
+
+        // Some jobs are uninteresting and there are a bunch of them, so group
+        // them all together here
+        if (title in groups) {
+          if (this.state.showGroups.includes(title)) {
+            // Group would normally be hidden, but this one has been toggled on
+            // so show it
+            const toggleGroup = () => {
+              this.state.showGroups.pop(this.state.showGroups.indexOf(title));
+              this.setState(this.state);
+            };
+            let icon = (
+              <BsFillCaretDownFill
+                style={{ cursor: "pointer" }}
+                onClick={toggleGroup}
+              />
+            );
+            groupCard(icon, toggleGroup);
+            runs.push(card);
+          } else {
+            // Hide group
+            const toggleGroup = () => {
+              this.state.showGroups.push(title);
+              this.setState(this.state);
+            };
+            let icon = (
+              <BsFillCaretRightFill
+                style={{ cursor: "pointer" }}
+                onClick={toggleGroup}
+              />
+            );
+            groupCard(icon, toggleGroup);
+          }
+        } else {
+          runs.push(card);
+        }
       }
     }
 
@@ -403,7 +522,7 @@ export default class PrDisplay extends Component {
             check.conclusion === "SUCCESS"
           ) {
             docPreview = (
-              <div>
+              <div style={{ paddingBottom: "5px" }}>
                 <a
                   href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/`}
                   target="_blank"
@@ -418,24 +537,64 @@ export default class PrDisplay extends Component {
       }
     }
 
+    let title = null;
+    if (this.state.commit) {
+      if (this.isPr()) {
+        title = (
+          <h2>
+            <a
+              href={
+                "https://github.com/pytorch/pytorch/pull/" +
+                this.state.pr_number
+              }
+            >
+              PR #{this.state.pr_number}
+            </a>
+          </h2>
+        );
+      } else {
+        let subject = this.state.commit.messageHeadline;
+        let headline = <p>{subject}</p>;
+        let match = subject.match(/\(#([\d]+)\)$/);
+        let pr_number = match[1];
+        if (pr_number) {
+          subject = subject.replace(match[0], "");
+          headline = (
+            <p>
+              {subject}{" "}
+              <a href={`https://github.com/pytorch/pytorch/pull/${pr_number}`}>
+                (#{pr_number})
+              </a>
+            </p>
+          );
+        }
+
+        title = (
+          <div>
+            <h2>
+              Commit{" "}
+              <a href={this.state.commit.commitUrl}>
+                {this.state.commit.oid.slice(0, 7)}
+              </a>
+            </h2>
+            {headline}
+          </div>
+        );
+      }
+    }
+
+    let loading = null;
+    if (!this.state.commit) {
+      loading = <p>Loading... (make sure you are signed in)</p>;
+    }
+
     return (
       <div>
         <AuthorizeGitHub />
 
-        <h2>
-          <a
-            href={
-              "https://github.com/pytorch/pytorch/pull/" + this.state.pr_number
-            }
-          >
-            PR #{this.state.pr_number}
-          </a>
-        </h2>
-        <p>
-          {this.state.pr
-            ? this.state.pr.title
-            : "loading (make sure you are signed in)..."}
-        </p>
+        {title}
+        {loading}
+
         {docPreview}
         <div>{runs}</div>
       </div>

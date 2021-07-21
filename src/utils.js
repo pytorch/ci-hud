@@ -81,6 +81,9 @@ async function github_graphql(query) {
     },
     body: JSON.stringify({ query: query }),
   });
+  if (result.status !== 200) {
+    throw `Error fetching data from GitHub: ${await result.text()}`;
+  }
   return (await result.json()).data;
 }
 

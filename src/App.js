@@ -100,6 +100,7 @@ const App = () => (
         <Route path="/build" component={BuildRoute} />
         <Route path="/build1" component={Build1Route} />
         <Route path="/pr" component={PrRoute} />
+        <Route path="/commit/:segment" component={CommitPage} />
         <Route path="/build2" component={Build2Route} />
         <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
         <Route path="/github_logout" component={LogoutGitHub} />
@@ -108,6 +109,7 @@ const App = () => (
         <Route exact path="/">
           <Redirect to="/build2/pytorch-master" />
         </Route>
+        <Route path="*" exact={true} component={RouteNotFound} />
       </Switch>
     </div>
   </Router>
@@ -193,6 +195,21 @@ const PrRoute = ({ match }) => (
   <Fragment>
     <Route exact path={match.url} component={PrPage} />
     <Route path={`${match.url}/:segment`} component={PrRoute} />
+  </Fragment>
+);
+
+const CommitPage = ({ match }) => {
+  return <PrDisplay commit_hash={match.url.replace(/^\/commit\//, "")} />;
+};
+
+const RouteNotFound = ({ match }) => {
+  return <p>Route not found: {match.url}</p>;
+};
+
+const CommitRoute = ({ match }) => (
+  <Fragment>
+    <Route exact path={match.url} component={CommitPage} />
+    <Route path={`${match.url}/:segment`} component={CommitRoute} />
   </Fragment>
 );
 
