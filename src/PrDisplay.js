@@ -556,8 +556,8 @@ export default class PrDisplay extends Component {
         let subject = this.state.commit.messageHeadline;
         let headline = <p>{subject}</p>;
         let match = subject.match(/\(#([\d]+)\)$/);
-        let pr_number = match[1];
-        if (pr_number) {
+        if (match && match[1]) {
+          let pr_number = match[1];
           subject = subject.replace(match[0], "");
           headline = (
             <p>
