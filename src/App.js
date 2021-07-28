@@ -28,12 +28,11 @@ const App = () => (
     <div className="App">
       <header className="App-header">
         <h1 className="App-title">
-          <Link to="/">hud.pytorch.org</Link> (
-          <a href="https://github.com/pytorch/pytorch-ci-hud">GitHub</a>)
+          <Link to="/">hud.pytorch.org</Link>
         </h1>
       </header>
       <ul className="menu">
-        <li>New-style (warning, does NOT show Jenkins builds):</li>
+        <li>New-style (Does not show Jenkins builds):</li>
         {["pytorch"].map((e) => (
           <Fragment key={e}>
             {["master", "nightly", "release/1.9"].map((trigger) => (
