@@ -10,26 +10,6 @@ import Tooltip from "rc-tooltip";
 import axios from "axios";
 import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/all";
 
-const binary_and_smoke_tests_on_pr = [
-  "binary_linux_manywheel_2_7mu_cpu_devtoolset7_build",
-  "binary_linux_manywheel_3_7m_cu100_devtoolset7_build",
-  "binary_linux_conda_2_7_cpu_devtoolset7_build",
-  "binary_macos_wheel_3_6_cpu_build",
-  "binary_macos_conda_2_7_cpu_build",
-  "binary_macos_libtorch_2_7_cpu_build",
-  "binary_linux_manywheel_2_7mu_cpu_devtoolset7_test",
-  "binary_linux_manywheel_3_7m_cu100_devtoolset7_test",
-  "binary_linux_conda_2_7_cpu_devtoolset7_test",
-  "binary_linux_libtorch_2_7m_cpu_devtoolset7_shared-with-deps_build",
-  "binary_linux_libtorch_2_7m_cpu_devtoolset7_shared-with-deps_test",
-  "binary_linux_libtorch_2_7m_cpu_gcc5_4_cxx11-abi_shared-with-deps",
-  "pytorch_linux_xenial_pynightly",
-];
-
-function nightly_run_on_pr(job_name) {
-  return binary_and_smoke_tests_on_pr.some((n) => job_name.includes(n));
-}
-
 function isMobile() {
   return /Android|webOS|iPhone|iPad|Mac|Macintosh|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
@@ -103,7 +83,6 @@ export default class BuildHistoryDisplay extends Component {
     }
     if (!("showNotifications" in prefs))
       prefs["showNotifications"] = !isMobile();
-    if (!("showServiceJobs" in prefs)) prefs["showServiceJobs"] = true;
     if (!("groupJobs" in prefs)) prefs["groupJobs"] = true;
     return {
       builds: [],
@@ -112,7 +91,6 @@ export default class BuildHistoryDisplay extends Component {
       currentTime: new Date(),
       updateTime: new Date(0),
       showNotifications: prefs.showNotifications,
-      showServiceJobs: prefs.showServiceJobs,
       groupJobs: prefs.groupJobs,
       jobNameFilter: "",
     };
@@ -133,14 +111,10 @@ export default class BuildHistoryDisplay extends Component {
       "prefs2",
       JSON.stringify({
         showNotifications: this.state.showNotifications,
-        showServiceJobs: this.state.showServiceJobs,
         groupJobs: this.state.groupJobs,
       })
     );
-    if (
-      this.props.job !== prevProps.job ||
-      this.props.mode !== prevProps.mode
-    ) {
+    if (this.props.job !== prevProps.job) {
       this.setState(this.initialState());
       this.update();
     }
@@ -174,23 +148,10 @@ export default class BuildHistoryDisplay extends Component {
     data.updateTime = new Date();
     data.connectedIn = data.updateTime - currentTime;
 
-    const props_mode = this.props.mode;
-
     const known_jobs_set = new Set();
     builds.forEach((build) => {
       build.sb_map.forEach((sb, job_name) => {
-        const nightly_candidates =
-          job_name.includes("binary_") ||
-          job_name.includes("smoke_") ||
-          job_name.includes("nightly_") ||
-          job_name.includes("nigthly_");
-        const is_nightly = nightly_candidates && !nightly_run_on_pr(job_name);
-        if (
-          (props_mode !== "nightly" && !is_nightly) ||
-          (props_mode === "nightly" && is_nightly)
-        ) {
-          known_jobs_set.add(job_name);
-        }
+        known_jobs_set.add(job_name);
       });
     });
 
@@ -299,9 +260,6 @@ export default class BuildHistoryDisplay extends Component {
     if (jobNameFilter.length > 0 && !this.nameMatches(name, jobNameFilter)) {
       return false;
     }
-    if (this.state.showServiceJobs) {
-      return true;
-    }
     const isDockerJob = name.startsWith("ci/circleci: docker");
     const isGCJob = name.startsWith("ci/circleci: ecr_gc");
     return !(isDockerJob || name === "welcome" || isGCJob);
@@ -323,7 +281,7 @@ export default class BuildHistoryDisplay extends Component {
       },
       {
         regex:
-          /(Add annotations )|(Close stale pull requests)|(Label PRs & Issues)|(Triage )|(Update S3 HTML indices)|(codecov\/project)/,
+          /(Add annotations )|(Close stale pull requests)|(Label PRs & Issues)|(Triage )|(Update S3 HTML indices)|(codecov\/project)|(Facebook CLA Check)|(auto-label-rocm)/,
         name: "Annotations and labeling",
       },
       {
@@ -397,6 +355,18 @@ export default class BuildHistoryDisplay extends Component {
       {
         regex: /ci\/circleci: pytorch_linux_xenial_py3_6_gcc5_4_/,
         name: "ci/circleci: pytorch_linux_xenial_py3_6_gcc5_4",
+      },
+      {
+        regex: /ci\/circleci: binary_linux_/,
+        name: "ci/circleci: binary_linux",
+      },
+      {
+        regex: /ci\/circleci: binary_macos_/,
+        name: "ci/circleci: binary_macos",
+      },
+      {
+        regex: /ci\/circleci: binary_windows_/,
+        name: "ci/circleci: binary_windows",
       },
     ];
 
@@ -854,18 +824,6 @@ export default class BuildHistoryDisplay extends Component {
               </li>
             )}
             {isMobile() ? null : <br />}
-            <li>
-              <input
-                type="checkbox"
-                name="show-service-jobs"
-                checked={this.state.showServiceJobs}
-                onChange={(e) =>
-                  this.setState({ showServiceJobs: e.target.checked })
-                }
-              />
-              <label htmlFor="show-service-jobs">Show service jobs</label>
-            </li>
-            <br />
             <li>
               <input
                 type="checkbox"
