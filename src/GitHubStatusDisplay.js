@@ -30,6 +30,12 @@ function nightly_run_on_pr(job_name) {
   return binary_and_smoke_tests_on_pr.some((n) => job_name.includes(n));
 }
 
+function isMobile() {
+  return /Android|webOS|iPhone|iPad|Mac|Macintosh|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent
+  );
+}
+
 function array_move(arr, old_index, new_index) {
   while (old_index < 0) {
     old_index += arr.length;
@@ -95,7 +101,8 @@ export default class BuildHistoryDisplay extends Component {
     if (prefs_str) {
       prefs = JSON.parse(prefs_str);
     }
-    if (!("showNotifications" in prefs)) prefs["showNotifications"] = true;
+    if (!("showNotifications" in prefs))
+      prefs["showNotifications"] = !isMobile();
     if (!("showServiceJobs" in prefs)) prefs["showServiceJobs"] = true;
     if (!("groupJobs" in prefs)) prefs["groupJobs"] = true;
     return {
@@ -113,7 +120,11 @@ export default class BuildHistoryDisplay extends Component {
   componentDidMount() {
     this.update();
     this.interval = setInterval(this.update.bind(this), this.props.interval);
-    if (this.state.showNotifications && Notification.permission !== "granted") {
+    if (
+      !isMobile() &&
+      this.state.showNotifications &&
+      Notification.permission !== "granted"
+    ) {
       Notification.requestPermission();
     }
   }
@@ -239,28 +250,30 @@ export default class BuildHistoryDisplay extends Component {
       // Compute what notifications to show
       // We'll take a diff and then give notifications for keys that
       // changed
-      if (this.state.consecutive_failure_count) {
-        this.state.consecutive_failure_count.forEach((v, key) => {
-          if (!consecutive_failure_count.has(key)) {
-            // It's fixed!
-            new Notification("✅ " + this.props.job, {
+      if (!isMobile()) {
+        if (this.state.consecutive_failure_count) {
+          this.state.consecutive_failure_count.forEach((v, key) => {
+            if (!consecutive_failure_count.has(key)) {
+              // It's fixed!
+              new Notification("✅ " + this.props.job, {
+                body: summarize_job(key),
+              });
+            }
+          });
+        }
+        consecutive_failure_count.forEach((v, key) => {
+          // Don't produce notifications for initial failure!
+          if (
+            this.state.consecutive_failure_count &&
+            !this.state.consecutive_failure_count.has(key)
+          ) {
+            // It's failed!
+            new Notification("❌ " + this.props.job, {
               body: summarize_job(key),
             });
           }
         });
       }
-      consecutive_failure_count.forEach((v, key) => {
-        // Don't produce notifications for initial failure!
-        if (
-          this.state.consecutive_failure_count &&
-          !this.state.consecutive_failure_count.has(key)
-        ) {
-          // It's failed!
-          new Notification("❌ " + this.props.job, {
-            body: summarize_job(key),
-          });
-        }
-      });
     }
 
     this.setState(data);
@@ -810,42 +823,37 @@ export default class BuildHistoryDisplay extends Component {
 
     return (
       <div>
-        <h2>
-          {this.props.job} history{" "}
-          <AsOf
-            interval={this.props.interval}
-            connectedIn={this.state.connectedIn}
-            currentTime={this.state.currentTime}
-            updateTime={this.state.updateTime}
-          />
-        </h2>
+        <h2>{this.props.job} history </h2>
         <div>
           <ul className="menu">
-            <li>
-              <input
-                type="checkbox"
-                name="show-notifications"
-                checked={this.state.showNotifications}
-                onChange={(e) =>
-                  this.setState({ showNotifications: e.target.checked })
-                }
-              />
-              <label htmlFor="show-notifications">
-                Show notifications on master failure
-                {this.state.showNotifications &&
-                Notification.permission === "denied" ? (
-                  <Fragment>
-                    {" "}
-                    <strong>
-                      (WARNING: notifications are currently denied)
-                    </strong>
-                  </Fragment>
-                ) : (
-                  ""
-                )}
-              </label>
-            </li>
-            <br />
+            {isMobile() ? null : (
+              <li>
+                <input
+                  type="checkbox"
+                  name="show-notifications"
+                  checked={this.state.showNotifications}
+                  onChange={(e) =>
+                    this.setState({ showNotifications: e.target.checked })
+                  }
+                />
+                <label htmlFor="show-notifications">
+                  Show notifications on master failure
+                  {this.state.showNotifications &&
+                  Notification &&
+                  Notification.permission === "denied" ? (
+                    <Fragment>
+                      {" "}
+                      <strong>
+                        (WARNING: notifications are currently denied)
+                      </strong>
+                    </Fragment>
+                  ) : (
+                    ""
+                  )}
+                </label>
+              </li>
+            )}
+            {isMobile() ? null : <br />}
             <li>
               <input
                 type="checkbox"
