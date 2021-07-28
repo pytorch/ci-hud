@@ -8,6 +8,7 @@ import AsOf from "./AsOf.js";
 import { summarize_job, summarize_date } from "./Summarize.js";
 import Tooltip from "rc-tooltip";
 import axios from "axios";
+import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/all";
 
 const binary_and_smoke_tests_on_pr = [
   "binary_linux_manywheel_2_7mu_cpu_devtoolset7_build",
@@ -27,6 +28,22 @@ const binary_and_smoke_tests_on_pr = [
 
 function nightly_run_on_pr(job_name) {
   return binary_and_smoke_tests_on_pr.some((n) => job_name.includes(n));
+}
+
+function array_move(arr, old_index, new_index) {
+  while (old_index < 0) {
+    old_index += arr.length;
+  }
+  while (new_index < 0) {
+    new_index += arr.length;
+  }
+  if (new_index >= arr.length) {
+    var k = new_index - arr.length + 1;
+    while (k--) {
+      arr.push(undefined);
+    }
+  }
+  arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
 }
 
 function is_success(result) {
@@ -80,13 +97,16 @@ export default class BuildHistoryDisplay extends Component {
     }
     if (!("showNotifications" in prefs)) prefs["showNotifications"] = true;
     if (!("showServiceJobs" in prefs)) prefs["showServiceJobs"] = true;
+    if (!("groupJobs" in prefs)) prefs["groupJobs"] = true;
     return {
       builds: [],
       known_jobs: [],
+      showGroups: [],
       currentTime: new Date(),
       updateTime: new Date(0),
       showNotifications: prefs.showNotifications,
       showServiceJobs: prefs.showServiceJobs,
+      groupJobs: prefs.groupJobs,
       jobNameFilter: "",
     };
   }
@@ -103,6 +123,7 @@ export default class BuildHistoryDisplay extends Component {
       JSON.stringify({
         showNotifications: this.state.showNotifications,
         showServiceJobs: this.state.showServiceJobs,
+        groupJobs: this.state.groupJobs,
       })
     );
     if (
@@ -274,6 +295,135 @@ export default class BuildHistoryDisplay extends Component {
   }
 
   render() {
+    let groups = [
+      {
+        regex: /Lint/,
+        name: "Lint Jobs",
+      },
+      {
+        regex: /(\(periodic-pytorch)|(ci\/circleci: periodic_pytorch)/,
+        name: "Periodic Jobs",
+      },
+      {
+        regex: /Linux CI \(pytorch-linux-/,
+        name: "Linux GitHub Actions",
+      },
+      {
+        regex:
+          /(Add annotations )|(Close stale pull requests)|(Label PRs & Issues)|(Triage )|(Update S3 HTML indices)|(codecov\/project)/,
+        name: "Annotations and labeling",
+      },
+      {
+        regex:
+          /(ci\/circleci: docker-pytorch-)|(ci\/circleci: ecr_gc_job_)|(ci\/circleci: docker_for_ecr_gc_build_job)|(Garbage Collect ECR Images)/,
+        name: "Docker",
+      },
+      {
+        regex: /Windows CI \(pytorch-/,
+        name: "GitHub Actions Windows",
+      },
+      {
+        regex: / \/ calculate-docker-image/,
+        name: "GitHub calculate-docker-image",
+      },
+      {
+        regex: /ci\/circleci: pytorch_ios_/,
+        name: "ci/circleci: pytorch_ios",
+      },
+      {
+        regex:
+          /(ci\/circleci: pytorch_parallelnative_)|(ci\/circleci: pytorch_paralleltbb_)/,
+        name: "Parallel",
+      },
+      {
+        regex:
+          /(ci\/circleci: pytorch_cpp_doc_build)|(ci\/circleci: pytorch_cpp_doc_test)|(pytorch_python_doc_build)|(pytorch_doc_test)/,
+        name: "Docs",
+      },
+      {
+        regex: /ci\/circleci: pytorch_linux_bionic_cuda10_2_cudnn7_py3_9_gcc7_/,
+        name: "ci/circleci: pytorch_linux_bionic_cuda10_2_cudnn7_py3_9_gcc7",
+      },
+      {
+        regex: /ci\/circleci: pytorch_linux_xenial_cuda10_2_cudnn7_py3_/,
+        name: "ci/circleci: pytorch_linux_xenial_cuda10_2_cudnn7_py3",
+      },
+      {
+        regex: /ci\/circleci: pytorch_linux_xenial_cuda11_1_cudnn8_py3_gcc7_/,
+        name: "ci/circleci: pytorch_linux_xenial_cuda11_1_cudnn8_py3_gcc7",
+      },
+      {
+        regex:
+          /(ci\/circleci: pytorch_linux_xenial_py3_clang5_android_ndk_r19c_)|(ci\/circleci: pytorch-linux-xenial-py3-clang5-android-ndk-r19c-)/,
+        name: "ci/circleci: pytorch_linux_xenial_py3_clang5_android_ndk",
+      },
+      {
+        regex: /ci\/circleci: pytorch_linux_xenial_py3_6_gcc7_build/,
+        name: "ci/circleci: pytorch_linux_xenial_py3_clang5_asan_build",
+      },
+      {
+        regex: /ci\/circleci: pytorch_linux_xenial_py3_clang5_mobile_/,
+        name: "ci/circleci: pytorch_linux_xenial_py3_clang5_mobile",
+      },
+      {
+        regex: /ci\/circleci: pytorch_linux_xenial_py3_clang7_onnx_/,
+        name: "ci/circleci: pytorch_linux_xenial_py3_clang7_onnx",
+      },
+      {
+        regex: /ci\/circleci: pytorch_linux_xenial_py3_clang5_asan_/,
+        name: "ci/circleci: pytorch_linux_xenial_py3_clang5_asan",
+      },
+      {
+        regex: /ci\/circleci: pytorch_linux_xenial_py3_6_gcc7_/,
+        name: "ci/circleci: pytorch_linux_xenial_py3_6_gcc7",
+      },
+      {
+        regex: /ci\/circleci: pytorch_macos_10_13_py3_/,
+        name: "ci/circleci: pytorch_macos_10_13_py3",
+      },
+      {
+        regex: /ci\/circleci: pytorch_linux_xenial_py3_6_gcc5_4_/,
+        name: "ci/circleci: pytorch_linux_xenial_py3_6_gcc5_4",
+      },
+    ];
+
+    // Initialize the groups
+    for (const group of groups) {
+      group.jobNames = [];
+    }
+
+    if (!this.state.groupJobs) {
+      groups = [];
+    }
+
+    const findGroup = (jobName) => {
+      for (const group of groups) {
+        if (jobName.match(group.regex)) {
+          return group;
+        }
+      }
+      return null;
+    };
+
+    const groupIsExpanded = (group) => {
+      for (const stateGroup of this.state.showGroups) {
+        if (stateGroup.name === group.name) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+    const groupIsFailing = (group) => {
+      for (const jobName of group.jobNames) {
+        if (this.state.consecutive_failure_count.has(jobName)) {
+          return true;
+        }
+      }
+
+      return false;
+    };
+
     function result_icon(result) {
       if (is_success(result))
         return (
@@ -322,40 +472,240 @@ export default class BuildHistoryDisplay extends Component {
     let builds = this.state.builds;
     let consecutive_failure_count = this.state.consecutive_failure_count;
 
-    const visible_jobs = this.state.known_jobs.filter((name) =>
+    const visibleJobs = this.state.known_jobs.filter((name) =>
       this.shouldShowJob(name)
     );
-    const visible_jobs_head = visible_jobs.map((jobName) => (
-      <th className="rotate" key={jobName}>
-        <div
-          className={
-            consecutive_failure_count.has(jobName) ? "failing-header" : ""
-          }
-        >
-          {summarize_job(jobName)}
-        </div>
-      </th>
-    ));
+    let s = "";
+    for (const j of visibleJobs) {
+      s += j + "\n";
+    }
+
+    // Collapse down groups of jobs based on a regex match to the name
+    const groupedVisibleJobsMap = {};
+    for (const jobName of visibleJobs) {
+      let group = findGroup(jobName);
+
+      if (!group || groupIsExpanded(group)) {
+        // Fake a group of size one
+        group = {
+          name: jobName,
+          jobNames: [jobName],
+        };
+      } else {
+        group.jobNames.push(jobName);
+      }
+      groupedVisibleJobsMap[group.name] = group;
+    }
+
+    // Go from the map of name -> group to a sorted list
+    let groupedVisibleJobs = [];
+    for (const groupName in groupedVisibleJobsMap) {
+      groupedVisibleJobs.push({
+        name: groupName,
+        group: groupedVisibleJobsMap[groupName],
+      });
+    }
+
+    for (const group of this.state.showGroups) {
+      // Keep in headers for expanded groups
+      groupedVisibleJobs.push({
+        name: group.name,
+        group: group,
+      });
+    }
+
+    // Sort by group name
+    groupedVisibleJobs.sort((a, b) => {
+      if (a.name < b.name) {
+        return -1;
+      }
+      if (a.name > b.name) {
+        return 1;
+      }
+      return 0;
+    });
+
+    // Now that jobs have been globally sorted, shuffle around the expanded groups
+    // so they show up next to their group header
+    for (const group of this.state.showGroups) {
+      let groupBaseIndex = groupedVisibleJobs.findIndex(
+        (job) => job.name == group.name
+      );
+      if (groupBaseIndex === null) {
+        console.error(`Unable to find group ${group.name}`);
+        continue;
+      }
+
+      console.log(`${group.name} is at ${groupBaseIndex}`);
+      for (const jobName of group.jobNames) {
+        let jobIndex = groupedVisibleJobs.findIndex(
+          (job) => job.name == jobName
+        );
+        if (jobIndex === null) {
+          console.error(`Unable to job ${jobName} in group ${group.name}`);
+          continue;
+        }
+        if (jobIndex < groupBaseIndex) {
+          array_move(groupedVisibleJobs, jobIndex, groupBaseIndex);
+        } else {
+          array_move(groupedVisibleJobs, jobIndex, groupBaseIndex + 1);
+        }
+      }
+    }
+
+    const toggleGroup = (group) => {
+      let showGroups = this.state.showGroups;
+
+      if (groupIsExpanded(group)) {
+        // Remove the group
+        showGroups.pop(
+          showGroups.findIndex((shownGroup) => shownGroup.name === group.name)
+        );
+      } else {
+        showGroups.push(group);
+      }
+      this.setState({ showGroups: showGroups });
+    };
+
+    const visibleJobsHeaders = [];
+    for (const data of groupedVisibleJobs) {
+      const jobName = data.name;
+      let header = (
+        <th className="rotate" key={jobName}>
+          <div
+            className={
+              consecutive_failure_count.has(jobName) ? "failing-header" : ""
+            }
+          >
+            {summarize_job(jobName)}
+          </div>
+        </th>
+      );
+
+      if (data.group.jobNames.length > 1) {
+        const group = data.group;
+        let icon = <BsFillCaretRightFill />;
+
+        if (groupIsExpanded(group)) {
+          icon = <BsFillCaretDownFill />;
+        }
+
+        let headerClass = "";
+        if (groupIsFailing(group)) {
+          headerClass = "failing-text";
+        }
+
+        header = (
+          <th className="rotate" key={jobName}>
+            <div
+              onClick={() => {
+                toggleGroup(group);
+              }}
+              style={{ cursor: "pointer" }}
+            >
+              <span style={{ color: "#d0d0d0" }}>Group </span>
+              <span className={headerClass}>{group.name}</span> {icon}
+            </div>
+          </th>
+        );
+      }
+      visibleJobsHeaders.push(header);
+    }
+
+    function aggregateStatus(jobs) {
+      // The logic here follows these rules (in order):
+      // 1. If there are no jobs, return no status
+      // 2. Failed if any job is failed
+      // 3. Pending if any job is pending
+      // 4. Success if all jobs are success, skipped, or aborted
+      // 5. Otherwise pending
+
+      jobs = jobs.filter((x) => x !== undefined);
+      if (jobs.length == 0) {
+        // No jobs in the group so don't show anything
+        return null;
+      }
+
+      for (const job of jobs) {
+        if (is_failure(job.status) || is_infra_failure(job.status)) {
+          return "failure";
+        }
+      }
+
+      for (const job of jobs) {
+        if (is_pending(job.status)) {
+          return "pending";
+        }
+      }
+
+      let allOk = true;
+      for (const job of jobs) {
+        if (
+          !(
+            is_success(job.status) ||
+            is_skipped(job.status) ||
+            is_aborted(job.status)
+          )
+        ) {
+          allOk = false;
+        }
+      }
+      if (allOk) {
+        return "success";
+      }
+
+      return "pending";
+    }
 
     const rows = builds.map((build) => {
       let found = false;
       const sb_map = build.sb_map;
 
-      const status_cols = visible_jobs.map((jobName) => {
-        const sb = sb_map.get(jobName);
+      const status_cols = groupedVisibleJobs.map((data) => {
         let cell = <Fragment />;
-        if (sb !== undefined) {
-          found = true;
-          cell = (
-            <a
-              href={sb.build_url}
-              className="icon"
-              target="_blank"
-              alt={jobName}
-            >
-              {result_icon(sb.status)}
-            </a>
+        let jobName = data.name;
+
+        if (data.group.jobNames.length > 1) {
+          // For groups, get the status of all the jobs in the group
+          jobName = `Group: ${data.group.name}`;
+          const jobs = data.group.jobNames.map((jobName) =>
+            sb_map.get(jobName)
           );
+          const status = aggregateStatus(jobs);
+          if (status) {
+            cell = (
+              <div
+                className="display-cell"
+                style={{
+                  fontWeight: "bold",
+                }}
+                onClick={() => {
+                  toggleGroup(data.group);
+                }}
+              >
+                {result_icon(status)}
+              </div>
+            );
+            found = true;
+          }
+        } else {
+          // Ungrouped job, show it directly
+          const sb = sb_map.get(jobName);
+          if (sb !== undefined) {
+            found = true;
+            cell = (
+              <div className="display-cell">
+                <a
+                  href={sb.build_url}
+                  className="icon"
+                  target="_blank"
+                  alt={jobName}
+                >
+                  {result_icon(sb.status)}
+                </a>
+              </div>
+            );
+          }
         }
 
         return (
@@ -366,15 +716,7 @@ export default class BuildHistoryDisplay extends Component {
             placement="rightTop"
             destroyTooltipOnHide={{ keepParent: false }}
           >
-            <td
-              key={jobName}
-              className="icon-cell"
-              style={{
-                textAlign: "right",
-                fontFamily: "sans-serif",
-                padding: 0,
-              }}
-            >
+            <td key={jobName} className="icon-cell">
               {cell}
             </td>
           </Tooltip>
@@ -421,6 +763,11 @@ export default class BuildHistoryDisplay extends Component {
         ? build.author.username
         : build.author.name;
 
+      // Cut off author at arbitrary length
+      if (author.length > 10) {
+        author = `${author.slice(0, 10)}...`;
+      }
+
       const desc = (
         <div key={build.id}>
           <a style={{ color: "#003d7f" }} href={`/commit/${build.id}`}>
@@ -458,7 +805,7 @@ export default class BuildHistoryDisplay extends Component {
           </td>
           {status_cols}
           <td className="right-cell">{author}</td>
-          <td className="right-cell">{desc}</td>
+          <td>{desc}</td>
         </tr>
       );
     });
@@ -487,7 +834,8 @@ export default class BuildHistoryDisplay extends Component {
               />
               <label htmlFor="show-notifications">
                 Show notifications on master failure
-                {Notification.permission === "denied" ? (
+                {this.state.showNotifications &&
+                Notification.permission === "denied" ? (
                   <Fragment>
                     {" "}
                     <strong>
@@ -513,6 +861,15 @@ export default class BuildHistoryDisplay extends Component {
             </li>
             <br />
             <li>
+              <input
+                type="checkbox"
+                name="group-jobs"
+                checked={this.state.groupJobs}
+                onChange={(e) => this.setState({ groupJobs: e.target.checked })}
+              />
+              <label htmlFor="group-jobs">Group related jobs</label>
+            </li>
+            <li>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -537,7 +894,7 @@ export default class BuildHistoryDisplay extends Component {
             <tr>
               <th className="left-cell">PR#</th>
               <th className="left-cell">Date</th>
-              {visible_jobs_head}
+              {visibleJobsHeaders}
               <th className="right-cell">User</th>
               <th className="right-cell">Description</th>
             </tr>
