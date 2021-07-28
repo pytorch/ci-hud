@@ -40,8 +40,6 @@ const App = () => (
                 <Link to={`/build2/${e}-${trigger}`}>
                   {e}-{trigger}
                 </Link>
-                &nbsp; (
-                <Link to={`/build2/${e}-${trigger}?mode=nightly`}>binary</Link>)
               </li>
             ))}
           </Fragment>
