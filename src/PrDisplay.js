@@ -55,6 +55,14 @@ function getPrQuery(user, repo, number) {
           commits(last: 1) {
             nodes {
               commit {
+                status {
+                  contexts {
+                    description
+                    context
+                    targetUrl
+                    state
+                  }
+                }
                 checkSuites(last: 100) {
                   nodes {
                     databaseId
@@ -103,6 +111,14 @@ function getCommitQuery(user, repo, hash) {
                 commitUrl
                 messageHeadline
                 messageBody
+                status {
+                  contexts {
+                    description
+                    context
+                    targetUrl
+                    state
+                  }
+                }
                 checkSuites(last: 100) {
                   nodes {
                     databaseId
@@ -137,6 +153,139 @@ function getCommitQuery(user, repo, hash) {
       }
     }
   `;
+}
+
+class CircleCICard extends Component {
+  constructor(props) {
+    super(props);
+    let buildMatch = props.context.targetUrl.match(/pytorch\/pytorch\/(\d+)/);
+    this.state = {
+      showSteps: {},
+    };
+
+    if (buildMatch) {
+      let buildId = buildMatch[1];
+      this.state.url = `https://circleci.com/api/v1.1/project/gh/pytorch/pytorch/${buildId}`;
+    }
+  }
+
+  componentDidMount() {
+    this.update();
+  }
+
+  async componentDidUpdate(prevProps, prevState) {
+    if (!this.state.data) {
+      return;
+    }
+    for (const [index, step] of this.state.data.steps.entries()) {
+      if (this.state.showSteps[index] && !step.actions[0].log) {
+        let log = await fetch(step.actions[0].output_url);
+        log = await log.json();
+        let log2 = "dog";
+        step.actions[0].log = "ok";
+        step.actions[0].log = log[0].message;
+        this.setState(this.state);
+      }
+    }
+  }
+
+  async update() {
+    // console.log(this.state.url);
+    let response = await fetch(this.state.url);
+
+    let data = await response.json();
+    delete data.circle_yml;
+
+    this.state.data = data;
+
+    this.setState(this.state);
+  }
+
+  render() {
+    const build = this.state.data;
+    console.log(this.state);
+    return <p>{JSON.stringify(build)}</p>;
+
+    if (!build) {
+      return <p>loading</p>;
+    }
+    let artifactsElement = null;
+
+    let checks = [];
+    const statuses = {
+      success: <GoCheck style={{ color: "#22863a" }} />,
+      FAILURE: <GoX style={{ color: "#cb2431" }} />,
+      NEUTRAL: <GoCircleSlash style={{ color: "#959da5" }} />,
+      CANCELLED: <GoCircleSlash style={{ color: "rgb(255 86 86)" }} />,
+    };
+
+    for (const [index, stepItem] of build.steps.entries()) {
+      const step = stepItem.actions[0];
+      let statusIcon = statuses[step.status] || (
+        <GoPrimitiveDot style={{ color: "#dbab09" }} />
+      );
+      const iconStyle = { cursor: "pointer" };
+      const toggle = () => {
+        if (this.state.showSteps[index]) {
+          this.state.showSteps[index] = false;
+        } else {
+          this.state.showSteps[index] = true;
+        }
+        this.setState(this.state);
+      };
+      let icon = <BsFillCaretRightFill style={iconStyle} onClick={toggle} />;
+      if (!step.output_url) {
+        icon = null;
+      }
+
+      const [log, isShowing] = this.renderLogViewer({
+        log: {
+          shown: false,
+          text: step.log,
+        },
+      });
+      if (isShowing) {
+        icon = <BsFillCaretDownFill style={iconStyle} onClick={toggle} />;
+      }
+      // if (this.state.showSteps[index]) {
+      //   icon = <BsFillCaretDownFill style={iconStyle} onClick={toggle} />;
+      //   let text = step.log;
+      //   if (text) {
+      //     const totalLines = (text.match(/\n/g) || "").length + 1;
+      //     console.log("total", totalLines);
+      //   } else {
+      //     log = <p>fetching logs...</p>;
+      //   }
+      // }
+
+      checks.push(
+        <div key={"check-run-" + index}>
+          {statusIcon} <a href={build.build_url}>{step.name}</a> {icon} {log}
+        </div>
+      );
+    }
+
+    let checksElement = <div></div>;
+    if (checks.length > 0) {
+      checksElement = <div style={{ padding: "6px" }}>{checks}</div>;
+    }
+
+    return (
+      <Card key={"card-" + this.props.key}>
+        <Card.Body>
+          <Card.Title>
+            <a href={build.build_url}>
+              ci/circleci: {build.workflows.job_name}
+            </a>
+          </Card.Title>
+          <div>
+            {checksElement}
+            {artifactsElement}
+          </div>
+        </Card.Body>
+      </Card>
+    );
+  }
 }
 
 export default class PrDisplay extends Component {
@@ -241,6 +390,26 @@ export default class PrDisplay extends Component {
       }
       this.state.commit = commit.repository.object.history.nodes[0];
     }
+
+    // let urls = [];
+    // for (const context of this.state.commit.status.contexts) {
+    //   let buildMatch = context.targetUrl.match(/pytorch\/pytorch\/(\d+)/);
+    //   if (!buildMatch) {
+    //     continue;
+    //   }
+    //   let buildId = buildMatch[1];
+    //   let url = `https://circleci.com/api/v1.1/project/gh/pytorch/pytorch/${buildId}`;
+    //   urls.push(url);
+    //   break;
+    // }
+
+    // await asyncAll(
+    //   urls.map((url) => {
+    //     return async () => {
+    //       let r = await fetch(url);
+    //     };
+    //   })
+    // );
 
     // The GraphQL API doesn't have any types for artifacts (at least as far as
     // I can tell), so we have to fall back to iterating through them all via
@@ -1078,38 +1247,50 @@ export default class PrDisplay extends Component {
       }
     }
 
-    // Groups are all stored in the 'groups' map, so add them to the list of runs
-    // as cards
-    runs = runs.concat(this.renderGroups(groups));
-
     let loading = null;
     if (this.state.error_message) {
       loading = <p style={{ color: "red" }}> {this.state.error_message}</p>;
     } else if (!this.state.commit) {
       loading = <p>Loading... (make sure you are signed in)</p>;
     }
-
-    let displayRuns = [];
-    function add(type) {
-      for (const run of runs) {
-        if (run.data.status === type) {
-          displayRuns.push(
-            <div key={run.data.databaseId} style={{ marginBottom: "4px" }}>
-              {run.element}
-            </div>
-          );
+    runs = [];
+    if (this.state.commit && this.state.commit.status) {
+      for (const [i, context] of this.state.commit.status.contexts.entries()) {
+        if (!context.targetUrl.includes("circleci")) {
+          // Jenkins builds also show up as 'status'es
+          continue;
         }
+        runs.push(<CircleCICard context={context} key={i} />);
+        break;
       }
     }
-    add("FAILURE");
-    add("PENDING");
-    add("SUCCESS");
-    add("GROUP");
-    add("SKIPPED");
 
-    if (this.state.runs && displayRuns.length == 0) {
-      displayRuns = <p style={{ fontWeight: "bold" }}>No jobs found</p>;
-    }
+    // Groups are all stored in the 'groups' map, so add them to the list of runs
+    // as cards
+    runs = runs.concat(this.renderGroups(groups).map((x) => x.element));
+
+    // let displayRuns = [];
+    // function add(type) {
+    //   for (const run of runs) {
+    //     console.log(run);
+    //     if (run.data.status === type) {
+    //       displayRuns.push(
+    //         <div key={run.data.databaseId} style={{ marginBottom: "4px" }}>
+    //           {run.element}
+    //         </div>
+    //       );
+    //     }
+    //   }
+    // }
+    // add("FAILURE");
+    // add("PENDING");
+    // add("SUCCESS");
+    // add("GROUP");
+    // add("SKIPPED");
+
+    // if (this.state.runs && displayRuns.length == 0) {
+    //   displayRuns = <p style={{ fontWeight: "bold" }}>No jobs found</p>;
+    // }
 
     return (
       <div>
@@ -1119,7 +1300,7 @@ export default class PrDisplay extends Component {
         {loading}
 
         {this.renderDocPreviewButton()}
-        <div>{displayRuns}</div>
+        <div>{runs}</div>
       </div>
     );
   }
