@@ -8,7 +8,11 @@ import AsOf from "./AsOf.js";
 import { summarize_job, summarize_date } from "./Summarize.js";
 import Tooltip from "rc-tooltip";
 import axios from "axios";
-import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/all";
+import {
+  BsFillCaretRightFill,
+  BsFillCaretDownFill,
+  ImSpinner2,
+} from "react-icons/all";
 
 function isMobile() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -865,6 +869,7 @@ export default class BuildHistoryDisplay extends Component {
             </tr>
           </thead>
           <tbody>{rows}</tbody>
+          {rows.length > 0 ? null : <ImSpinner2 className="icon-spin" />}
         </table>
       </div>
     );

@@ -248,3 +248,21 @@ code a {
 body {
   padding: 20px;
 }
+
+.icon-spin {
+  animation-name: spin-animation;
+  animation-duration: 750ms;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+
+  font-size: 2em;
+}
+
+@keyframes spin-animation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
