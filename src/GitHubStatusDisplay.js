@@ -11,7 +11,7 @@ import axios from "axios";
 import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/all";
 
 function isMobile() {
-  return /Android|webOS|iPhone|iPad|Mac|Macintosh|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent
   );
 }
@@ -519,7 +519,6 @@ export default class BuildHistoryDisplay extends Component {
         continue;
       }
 
-      console.log(`${group.name} is at ${groupBaseIndex}`);
       for (const jobName of group.jobNames) {
         let jobIndex = groupedVisibleJobs.findIndex(
           (job) => job.name == jobName
