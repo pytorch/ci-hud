@@ -73,9 +73,9 @@ function getCommitQuery(hash) {
   return `
     {
       repository(name: "pytorch", owner: "pytorch") {
-        object(expression: "master") {
+        object(oid:"${hash}") {
           ... on Commit {
-            history(first: 1, before: "${hash}") {
+            history(first: 1) {
               nodes {
                 oid
                 commitUrl
