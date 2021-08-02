@@ -280,7 +280,7 @@ export default class BuildHistoryDisplay extends Component {
         name: "Periodic Jobs",
       },
       {
-        regex: /Linux CI \(pytorch-linux-/,
+        regex: /(Linux CI \(pytorch-linux-)|(linux-)/,
         name: "Linux GitHub Actions",
       },
       {
@@ -294,7 +294,7 @@ export default class BuildHistoryDisplay extends Component {
         name: "Docker",
       },
       {
-        regex: /Windows CI \(pytorch-/,
+        regex: /(Windows CI \(pytorch-)|(win-)/,
         name: "GitHub Actions Windows",
       },
       {
