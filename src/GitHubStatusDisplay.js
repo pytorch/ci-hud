@@ -5,6 +5,7 @@
 
 import React, { Component, Fragment } from "react";
 import AsOf from "./AsOf.js";
+// wow
 import { summarize_job, summarize_date } from "./Summarize.js";
 import Tooltip from "rc-tooltip";
 import axios from "axios";
