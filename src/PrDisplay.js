@@ -253,6 +253,243 @@ export default class PrDisplay extends Component {
     this.setState(this.state);
   }
 
+  getDocPreviewButton() {
+    // Search through all the checks for a docs build, if it's completed then
+    // assume it's also been uploaded to S3 (which should happen as part of the
+    // docs build on PRs)
+    let docPreview = <span></span>;
+    if (this.state.runs) {
+      for (const [run_index, run] of this.state.runs.entries()) {
+        for (const [index, check] of run.checkRuns.nodes.entries()) {
+          if (
+            check.name === "pytorch_python_doc_build" &&
+            check.status === "COMPLETED" &&
+            check.conclusion === "SUCCESS"
+          ) {
+            docPreview = (
+              <div style={{ paddingBottom: "5px" }}>
+                <a
+                  href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/`}
+                  target="_blank"
+                  className="btn btn-primary"
+                >
+                  Documentation Preview
+                </a>
+              </div>
+            );
+          }
+        }
+      }
+    }
+    return docPreview;
+  }
+
+  getTitle() {
+    let title = null;
+    if (this.state.commit) {
+      if (this.isPr()) {
+        title = (
+          <h2>
+            <a
+              href={
+                "https://github.com/pytorch/pytorch/pull/" +
+                this.state.pr_number
+              }
+            >
+              PR #{this.state.pr_number}
+            </a>
+          </h2>
+        );
+      } else {
+        let subject = this.state.commit.messageHeadline;
+        let headline = <p>{subject}</p>;
+        let match = subject.match(/\(#([\d]+)\)$/);
+        if (match && match[1]) {
+          let pr_number = match[1];
+          subject = subject.replace(match[0], "");
+          headline = (
+            <p>
+              {subject}{" "}
+              <a href={`https://github.com/pytorch/pytorch/pull/${pr_number}`}>
+                (#{pr_number})
+              </a>
+            </p>
+          );
+        }
+
+        title = (
+          <div>
+            <h2>
+              Commit{" "}
+              <a href={this.state.commit.commitUrl}>
+                {this.state.commit.oid.slice(0, 7)}
+              </a>
+            </h2>
+            {headline}
+          </div>
+        );
+      }
+    }
+    return title;
+  }
+
+  getLogViewer(check) {
+    let log = <div></div>;
+    let isShowing = false;
+    if (check.log.shown) {
+      isShowing = true;
+      if (check.log.text) {
+        const totalLines = (check.log.text.match(/\n/g) || "").length + 1;
+
+        log = (
+          <div style={{ height: `${Math.min(totalLines + 4, 30)}em` }}>
+            <LazyLog
+              extraLines={1}
+              enableSearch
+              caseInsensitive
+              selectableLines
+              scrollToLine={totalLines}
+              text={check.log.text}
+            />
+          </div>
+        );
+      } else {
+        log = <p>Fetching logs...</p>;
+      }
+    }
+    return [log, isShowing];
+  }
+
+  getChecks(checkRuns) {
+    const checks = [];
+    for (const [index, check] of checkRuns.entries()) {
+      // Show the log viewer + toggle chevron
+      const toggle = () => {
+        check.log.shown = !check.log.shown;
+        this.setState(this.state);
+      };
+      const [log, isShowing] = this.getLogViewer(check);
+      const iconStyle = { cursor: "pointer" };
+      let icon = <BsFillCaretRightFill style={iconStyle} onClick={toggle} />;
+      if (isShowing) {
+        icon = <BsFillCaretDownFill style={iconStyle} onClick={toggle} />;
+      }
+
+      // Determine the check's status and turn that into an icon
+      const statuses = {
+        SUCCESS: <GoCheck style={{ color: "#22863a" }} />,
+        FAILURE: <GoX style={{ color: "#cb2431" }} />,
+        NEUTRAL: <GoCircleSlash style={{ color: "#959da5" }} />,
+      };
+      let statusIcon = statuses[check.conclusion] || (
+        <GoPrimitiveDot style={{ color: "#dbab09" }} />
+      );
+
+      checks.push(
+        <div key={"check-run-" + index}>
+          {statusIcon} <a href={check.detailsUrl}>{check.name}</a> {icon} {log}
+        </div>
+      );
+    }
+    return checks;
+  }
+
+  makeArtifact(args) {
+    if (args.expired) {
+      return (
+        <div key={`${args.kind}-${args.index}`}>
+          <span>
+            [{args.kind}] {args.name}
+          </span>{" "}
+          <span>({formatBytes(args.size_in_bytes)}) (expired)</span>
+        </div>
+      );
+    } else {
+      return (
+        <div key={`${args.kind}-${args.index}`}>
+          <a href={args.url}>
+            [{args.kind}] {args.name}
+          </a>{" "}
+          <span>({formatBytes(args.size_in_bytes)})</span>
+          {args.extra}
+        </div>
+      );
+    }
+  }
+
+  getGitHubArtifacts(run) {
+    let reportUrl = null;
+    let artifacts = [];
+    for (const [index, artifact] of run.artifacts.artifacts.entries()) {
+      // The URL in the response is for the API, not browsers, so make it
+      // manually
+      let url = `https://github.com/pytorch/pytorch/suites/${run.databaseId}/artifacts/${artifact.id}`;
+      artifacts.push(
+        this.makeArtifact({
+          kind: "gha",
+          index: index,
+          name: artifact.name,
+          size_in_bytes: artifact.size_in_bytes,
+          url: url,
+          expired: artifact.expired,
+        })
+      );
+    }
+    return artifacts;
+  }
+
+  getS3Artifacts(run) {
+    let artifacts = [];
+    if (run.s3_artifacts) {
+      for (const [index, artifact] of run.s3_artifacts.entries()) {
+        let prefix = artifact.Key["#text"];
+        let name = prefix.split("/").slice(-1)[0];
+        let url = `https://gha-artifacts.s3.amazonaws.com/${prefix}`;
+
+        let extra = null;
+        if (name.startsWith("test-reports-") && name.endsWith(".zip")) {
+          extra = (
+            <button
+              style={{ marginLeft: "5px", fontSize: "0.7em" }}
+              className="btn btn-info"
+              onClick={async () => {
+                // showReport might be undefined the first time so explicitly
+                // spell it out here to avoid any falsiness
+                if (artifact.showReport) {
+                  artifact.showReport = false;
+                } else {
+                  artifact.showReport = true;
+                }
+                this.setState(this.state);
+                this.render();
+              }}
+            >
+              {artifact.showReport ? "Hide Results" : "Render Results"}
+            </button>
+          );
+        }
+
+        artifacts.push(
+          this.makeArtifact({
+            kind: "s3",
+            index: index,
+            name: prefix.split("/").slice(-1),
+            size_in_bytes: parseInt(artifact.Size["#text"]),
+            url: url,
+            expired: false,
+            extra: extra,
+          })
+        );
+
+        if (artifact.showReport) {
+          let key = `s3-${index}-reports`;
+          artifacts.push(<TestReportRenderer testReportZip={url} key={key} />);
+        }
+      }
+    }
+    return artifacts;
+  }
+
   render() {
     let runs = undefined;
     let groups = {
@@ -268,100 +505,14 @@ export default class PrDisplay extends Component {
 
       // Render all of the check runs as a list
       for (const [run_index, run] of this.state.runs.entries()) {
-        const checks = [];
-        for (const [index, check] of run.checkRuns.nodes.entries()) {
-          const toggle = () => {
-            check.log.shown = !check.log.shown;
-            this.setState(this.state);
-          };
-          const iconStyle = { cursor: "pointer" };
-          let icon = (
-            <BsFillCaretRightFill style={iconStyle} onClick={toggle} />
-          );
-
-          let log = <div></div>;
-          if (check.log.shown) {
-            icon = <BsFillCaretDownFill style={iconStyle} onClick={toggle} />;
-            if (check.log.text) {
-              const totalLines = (check.log.text.match(/\n/g) || "").length + 1;
-
-              log = (
-                <div style={{ height: `${Math.min(totalLines + 4, 30)}em` }}>
-                  <LazyLog
-                    extraLines={1}
-                    enableSearch
-                    caseInsensitive
-                    selectableLines
-                    scrollToLine={totalLines}
-                    text={check.log.text}
-                  />
-                </div>
-              );
-            } else {
-              log = <p>fetching logs...</p>;
-            }
-          }
-          const statuses = {
-            SUCCESS: <GoCheck style={{ color: "#22863a" }} />,
-            FAILURE: <GoX style={{ color: "#cb2431" }} />,
-            NEUTRAL: <GoCircleSlash style={{ color: "#959da5" }} />,
-          };
-          let statusIcon = statuses[check.conclusion] || (
-            <GoPrimitiveDot style={{ color: "#dbab09" }} />
-          );
-
-          checks.push(
-            <div key={"check-run-" + index}>
-              {statusIcon} <a href={check.detailsUrl}>{check.name}</a> {icon}{" "}
-              {log}
-            </div>
-          );
-        }
+        const checks = this.getChecks(run.checkRuns.nodes);
 
         let artifacts = [];
-        function makeArtifact(args) {
-          if (args.expired) {
-            return (
-              <div key={`${args.kind}-${args.index}`}>
-                <span>
-                  [{args.kind}] {args.name}
-                </span>{" "}
-                <span>({formatBytes(args.size_in_bytes)}) (expired)</span>
-              </div>
-            );
-          } else {
-            return (
-              <div key={`${args.kind}-${args.index}`}>
-                <a href={args.url}>
-                  [{args.kind}] {args.name}
-                </a>{" "}
-                <span>({formatBytes(args.size_in_bytes)})</span>
-                {args.extra}
-              </div>
-            );
-          }
-        }
 
         // List out artifacts hosted on GitHub
-        let showReports = <div></div>;
         if (run.artifacts) {
           if (run.artifacts.artifacts !== undefined) {
-            let reportUrl = null;
-            for (const [index, artifact] of run.artifacts.artifacts.entries()) {
-              // The URL in the response is for the API, not browsers, so make it
-              // manually
-              let url = `https://github.com/pytorch/pytorch/suites/${run.databaseId}/artifacts/${artifact.id}`;
-              artifacts.push(
-                makeArtifact({
-                  kind: "gha",
-                  index: index,
-                  name: artifact.name,
-                  size_in_bytes: artifact.size_in_bytes,
-                  url: url,
-                  expired: artifact.expired,
-                })
-              );
-            }
+            artifacts = artifacts.concat(this.getGitHubArtifacts(run));
           } else {
             artifacts.push(
               <div key={`artifact-${run.databaseId}`}>
@@ -372,55 +523,7 @@ export default class PrDisplay extends Component {
         }
 
         // List out artifacts from s3
-        if (run.s3_artifacts) {
-          for (const [index, artifact] of run.s3_artifacts.entries()) {
-            let prefix = artifact.Key["#text"];
-            let name = prefix.split("/").slice(-1)[0];
-            let url = `https://gha-artifacts.s3.amazonaws.com/${prefix}`;
-
-            let extra = null;
-            if (name.startsWith("test-reports-") && name.endsWith(".zip")) {
-              extra = (
-                <button
-                  style={{ marginLeft: "5px", fontSize: "0.7em" }}
-                  className="btn btn-info"
-                  onClick={async () => {
-                    // showReport might be undefined the first time so explicitly
-                    // spell it out here to avoid any falsiness
-                    if (artifact.showReport) {
-                      artifact.showReport = false;
-                    } else {
-                      artifact.showReport = true;
-                    }
-                    this.setState(this.state);
-                    this.render();
-                  }}
-                >
-                  {artifact.showReport ? "Hide Results" : "Render Results"}
-                </button>
-              );
-            }
-
-            artifacts.push(
-              makeArtifact({
-                kind: "s3",
-                index: index,
-                name: prefix.split("/").slice(-1),
-                size_in_bytes: parseInt(artifact.Size["#text"]),
-                url: url,
-                expired: false,
-                extra: extra,
-              })
-            );
-
-            if (artifact.showReport) {
-              let key = `s3-${index}-reports`;
-              artifacts.push(
-                <TestReportRenderer testReportZip={url} key={key} />
-              );
-            }
-          }
-        }
+        artifacts = artifacts.concat(this.getS3Artifacts(run));
 
         // If there were any artifacts, set up the 'div' to show them
         let artifactsElement = <div></div>;
@@ -449,7 +552,6 @@ export default class PrDisplay extends Component {
               <div>
                 {checksElement}
                 {artifactsElement}
-                {showReports}
               </div>
             </Card.Body>
           </Card>
@@ -509,80 +611,6 @@ export default class PrDisplay extends Component {
       }
     }
 
-    // Search through all the checks for a docs build, if it's completed then
-    // assume it's also been uploaded to S3 (which should happen as part of the
-    // docs build on PRs)
-    let docPreview = <span></span>;
-    if (this.state.runs) {
-      for (const [run_index, run] of this.state.runs.entries()) {
-        for (const [index, check] of run.checkRuns.nodes.entries()) {
-          if (
-            check.name === "pytorch_python_doc_build" &&
-            check.status === "COMPLETED" &&
-            check.conclusion === "SUCCESS"
-          ) {
-            docPreview = (
-              <div style={{ paddingBottom: "5px" }}>
-                <a
-                  href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/`}
-                  target="_blank"
-                  className="btn btn-primary"
-                >
-                  Documentation Preview
-                </a>
-              </div>
-            );
-          }
-        }
-      }
-    }
-
-    let title = null;
-    if (this.state.commit) {
-      if (this.isPr()) {
-        title = (
-          <h2>
-            <a
-              href={
-                "https://github.com/pytorch/pytorch/pull/" +
-                this.state.pr_number
-              }
-            >
-              PR #{this.state.pr_number}
-            </a>
-          </h2>
-        );
-      } else {
-        let subject = this.state.commit.messageHeadline;
-        let headline = <p>{subject}</p>;
-        let match = subject.match(/\(#([\d]+)\)$/);
-        if (match && match[1]) {
-          let pr_number = match[1];
-          subject = subject.replace(match[0], "");
-          headline = (
-            <p>
-              {subject}{" "}
-              <a href={`https://github.com/pytorch/pytorch/pull/${pr_number}`}>
-                (#{pr_number})
-              </a>
-            </p>
-          );
-        }
-
-        title = (
-          <div>
-            <h2>
-              Commit{" "}
-              <a href={this.state.commit.commitUrl}>
-                {this.state.commit.oid.slice(0, 7)}
-              </a>
-            </h2>
-            {headline}
-          </div>
-        );
-      }
-    }
-
     let loading = null;
     if (!this.state.commit) {
       loading = <p>Loading... (make sure you are signed in)</p>;
@@ -592,10 +620,10 @@ export default class PrDisplay extends Component {
       <div>
         <AuthorizeGitHub />
 
-        {title}
+        {this.getTitle()}
         {loading}
 
-        {docPreview}
+        {this.getDocPreviewButton()}
         <div>{runs}</div>
       </div>
     );
