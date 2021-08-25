@@ -630,7 +630,12 @@ export default class PrDisplay extends Component {
         const title = run.workflowRun.workflow.name;
         const card = (
           <Card key={"card-" + run_index}>
-            <Card.Body style={{backgroundColor: run.status === "FAILURE" ? "rgb(255 243 243)" : null}}>
+            <Card.Body
+              style={{
+                backgroundColor:
+                  run.status === "FAILURE" ? "rgb(255 243 243)" : null,
+              }}
+            >
               <Card.Title>
                 <a href={run.workflowRun.url}>{title}</a>
               </Card.Title>
