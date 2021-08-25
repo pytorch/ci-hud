@@ -216,6 +216,11 @@ export default class PrDisplay extends Component {
         : -1
     );
     this.state.runs = workflow_runs;
+    for (const run of this.state.runs) {
+      run.status = this.mergeStatuses(
+        run.checkRuns.nodes.map((check) => check.conclusion)
+      );
+    }
     this.setState(this.state);
 
     // Go through all the runs and check if there is a prefix for the workflow
@@ -385,11 +390,15 @@ export default class PrDisplay extends Component {
         <GoPrimitiveDot style={{ color: "#dbab09" }} />
       );
 
-      checks.push(
-        <div key={"check-run-" + index}>
-          {statusIcon} <a href={check.detailsUrl}>{check.name}</a> {icon} {log}
-        </div>
-      );
+      checks.push({
+        data: check,
+        element: (
+          <div key={"check-run-" + index}>
+            {statusIcon} <a href={check.detailsUrl}>{check.name}</a> {icon}{" "}
+            {log}
+          </div>
+        ),
+      });
     }
     return checks;
   }
@@ -490,22 +499,98 @@ export default class PrDisplay extends Component {
     return artifacts;
   }
 
+  mergeStatuses(statuses) {
+    if (statuses.length == 0) {
+      return "SKIPPED";
+    }
+    const counts = {};
+    for (const status of statuses) {
+      if (counts[status] === undefined) {
+        counts[status] = 0;
+      }
+      counts[status] += 1;
+    }
+    if (counts.FAILURE !== undefined && counts.FAILURE > 0) {
+      return "FAILURE";
+    }
+    if (counts.SUCCESS !== undefined && counts.SUCCESS === statuses.length) {
+      return "SUCCESS";
+    }
+    if (counts.NEUTRAL !== undefined && counts.NEUTRAL === statuses.length) {
+      return "SKIPPED";
+    }
+    return "PENDING";
+  }
+
+  getGroups(groups) {
+    let cards = [];
+    for (const [title, data] of Object.entries(groups)) {
+      if (!data.show) {
+        continue;
+      }
+      let isExpanded = this.state.showGroups.includes(title);
+      const toggleGroup = () => {
+        if (this.state.showGroups.includes(title)) {
+          this.state.showGroups.pop(this.state.showGroups.indexOf(title));
+        } else {
+          this.state.showGroups.push(title);
+        }
+        this.setState(this.state);
+      };
+
+      let icon = (
+        <BsFillCaretRightFill
+          style={{ cursor: "pointer" }}
+          onClick={toggleGroup}
+        />
+      );
+      let items = [];
+      if (isExpanded) {
+        icon = (
+          <BsFillCaretDownFill
+            style={{ cursor: "pointer" }}
+            onClick={toggleGroup}
+          />
+        );
+        items = data.items;
+      }
+      let card = (
+        <Card key={"group-card-" + title}>
+          <Card.Body>
+            <Card.Title>
+              {title} {icon}
+            </Card.Title>
+            {items}
+          </Card.Body>
+        </Card>
+      );
+      cards.push({ data: { status: "GROUP" }, element: card });
+    }
+    return cards;
+  }
+
+  renderRun(run) {}
+
   render() {
-    let runs = undefined;
+    let runs = [];
     let groups = {
-      "Add annotations": [],
-      "Close stale pull requests": [],
-      "Label PRs & Issues": [],
-      Triage: [],
-      "Update S3 HTML indices for download.pytorch.org": [],
+      "Add annotations": {},
+      "Close stale pull requests": {},
+      "Label PRs & Issues": {},
+      Triage: {},
+      "Update S3 HTML indices for download.pytorch.org": {},
     };
+    Object.entries(groups).forEach((x) => {
+      x[1].show = false;
+      x[1].items = [];
+    });
 
     if (this.state.runs) {
-      runs = [];
-
       // Render all of the check runs as a list
+
       for (const [run_index, run] of this.state.runs.entries()) {
-        const checks = this.getChecks(run.checkRuns.nodes);
+        const checksData = this.getChecks(run.checkRuns.nodes);
+        const checks = checksData.map((x) => x.element);
 
         let artifacts = [];
 
@@ -557,9 +642,10 @@ export default class PrDisplay extends Component {
           </Card>
         );
 
-        function groupCard(icon) {
+        function pushGroupCard(icon, itemCard) {
           groups[title].push(card);
           if (groups[title].length === 1) {
+            // If this is the first instance of this group, add the header
             const groupCard = (
               <Card key={"group-card-" + run_index}>
                 <Card.Body>
@@ -569,52 +655,52 @@ export default class PrDisplay extends Component {
                 </Card.Body>
               </Card>
             );
-            runs.push(groupCard);
+            runs.push({
+              data: { status: "GROUP" },
+              element: groupCard,
+            });
+          }
+          if (itemCard) {
           }
         }
 
         // Some jobs are uninteresting and there are a bunch of them, so group
         // them all together here
         if (title in groups) {
+          groups[title].show = true;
           if (this.state.showGroups.includes(title)) {
-            // Group would normally be hidden, but this one has been toggled on
-            // so show it
-            const toggleGroup = () => {
-              this.state.showGroups.pop(this.state.showGroups.indexOf(title));
-              this.setState(this.state);
-            };
-            let icon = (
-              <BsFillCaretDownFill
-                style={{ cursor: "pointer" }}
-                onClick={toggleGroup}
-              />
-            );
-            groupCard(icon, toggleGroup);
-            runs.push(card);
-          } else {
-            // Hide group
-            const toggleGroup = () => {
-              this.state.showGroups.push(title);
-              this.setState(this.state);
-            };
-            let icon = (
-              <BsFillCaretRightFill
-                style={{ cursor: "pointer" }}
-                onClick={toggleGroup}
-              />
-            );
-            groupCard(icon, toggleGroup);
+            groups[title].show = true;
+            groups[title].items.push(card);
           }
         } else {
-          runs.push(card);
+          // A normal job, show it without any extras
+          runs.push({ data: run, element: card });
         }
       }
     }
+
+    // Groups are all stored in the 'groups' map, so add them to the list of runs
+    // as cards
+    runs = runs.concat(this.getGroups(groups));
 
     let loading = null;
     if (!this.state.commit) {
       loading = <p>Loading... (make sure you are signed in)</p>;
     }
+
+    let displayRuns = [];
+    function add(type) {
+      for (const run of runs) {
+        if (run.data.status === type) {
+          displayRuns.push(run.element);
+        }
+      }
+    }
+    add("FAILURE");
+    add("PENDING");
+    add("SUCCESS");
+    add("GROUP");
+    add("SKIPPED");
 
     return (
       <div>
@@ -624,7 +710,7 @@ export default class PrDisplay extends Component {
         {loading}
 
         {this.getDocPreviewButton()}
-        <div>{runs}</div>
+        <div>{displayRuns}</div>
       </div>
     );
   }
