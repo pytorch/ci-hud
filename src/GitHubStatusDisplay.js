@@ -276,11 +276,12 @@ export default class BuildHistoryDisplay extends Component {
         name: "Lint Jobs",
       },
       {
-        regex: /(\(periodic-pytorch)|(ci\/circleci: periodic_pytorch)/,
+        regex:
+          /(\(periodic-pytorch)|(ci\/circleci: periodic_pytorch)|(^periodic-)/,
         name: "Periodic Jobs",
       },
       {
-        regex: /(Linux CI \(pytorch-linux-)|(linux-)/,
+        regex: /(Linux CI \(pytorch-linux-)|(^linux-)/,
         name: "Linux GitHub Actions",
       },
       {
@@ -294,8 +295,8 @@ export default class BuildHistoryDisplay extends Component {
         name: "Docker",
       },
       {
-        regex: /(Windows CI \(pytorch-)|(win-)/,
-        name: "GitHub Actions Windows",
+        regex: /(Windows CI \(pytorch-)|(^win-)/,
+        name: "Windows GitHub Actions",
       },
       {
         regex: / \/ calculate-docker-image/,
