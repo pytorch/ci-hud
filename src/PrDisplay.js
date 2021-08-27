@@ -992,7 +992,13 @@ export default class PrDisplay extends Component {
         {loading}
 
         {this.renderDocPreviewButton()}
-        <div>{displayRuns}</div>
+        <div>
+          {displayRuns.length == 0 ? (
+            <p style={{ fontWeight: "bold" }}>No jobs found</p>
+          ) : (
+            displayRuns
+          )}
+        </div>
       </div>
     );
   }

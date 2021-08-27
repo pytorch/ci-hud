@@ -15,6 +15,7 @@ import PrDisplay from "./PrDisplay.js";
 import JobCorrelationHeatmap from "./JobCorrelationHeatmap.js";
 import GitHubActionsDisplay from "./GitHubActionsDisplay.js";
 import AuthorizeGitHub from "./AuthorizeGitHub.js";
+import SevReporter from "./SevReporter.js";
 import {
   BrowserRouter as Router,
   Route,
@@ -93,6 +94,7 @@ const App = () => (
           </li>
         </Fragment>
       </ul>
+      <SevReporter />
       <Switch>
         <Route path="/build" component={BuildRoute} />
         <Route path="/build1" component={Build1Route} />

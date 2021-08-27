@@ -71,7 +71,7 @@ export async function asyncAll(functions) {
   return await Promise.all(invoked);
 }
 
-async function github_graphql(query) {
+async function github_graphql_raw(query) {
   // Query the GitHub GraphQL API
   const pat = localStorage.getItem("gh_pat");
   const result = await fetch("https://api.github.com/graphql", {
@@ -84,7 +84,11 @@ async function github_graphql(query) {
   if (result.status !== 200) {
     throw `Error fetching data from GitHub: ${await result.text()}`;
   }
-  return (await result.json()).data;
+  return await result.json();
+}
+
+async function github_graphql(query) {
+  return (await github_graphql_raw(query)).data;
 }
 
 export async function github_json(url) {
@@ -113,6 +117,7 @@ export async function github_raw(url) {
 
 export let github = {
   graphql: github_graphql,
+  graphql_raw: github_graphql_raw,
   json: github_json,
   raw: github_raw,
 };
