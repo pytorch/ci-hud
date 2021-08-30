@@ -258,7 +258,7 @@ export default class PrDisplay extends Component {
     this.setState(this.state);
   }
 
-  getDocPreviewButton() {
+  renderDocPreviewButton() {
     // Search through all the checks for a docs build, if it's completed then
     // assume it's also been uploaded to S3 (which should happen as part of the
     // docs build on PRs)
@@ -289,7 +289,7 @@ export default class PrDisplay extends Component {
     return docPreview;
   }
 
-  getTitle() {
+  renderTitle() {
     let title = null;
     if (this.state.commit) {
       if (this.isPr()) {
@@ -338,7 +338,7 @@ export default class PrDisplay extends Component {
     return title;
   }
 
-  getLogViewer(check) {
+  renderLogViewer(check) {
     let log = <div></div>;
     let isShowing = false;
     if (check.log.shown) {
@@ -365,7 +365,7 @@ export default class PrDisplay extends Component {
     return [log, isShowing];
   }
 
-  getChecks(checkRuns) {
+  renderChecks(checkRuns) {
     const checks = [];
     for (const [index, check] of checkRuns.entries()) {
       // Show the log viewer + toggle chevron
@@ -373,7 +373,7 @@ export default class PrDisplay extends Component {
         check.log.shown = !check.log.shown;
         this.setState(this.state);
       };
-      const [log, isShowing] = this.getLogViewer(check);
+      const [log, isShowing] = this.renderLogViewer(check);
       const iconStyle = { cursor: "pointer" };
       let icon = <BsFillCaretRightFill style={iconStyle} onClick={toggle} />;
       if (isShowing) {
@@ -385,6 +385,7 @@ export default class PrDisplay extends Component {
         SUCCESS: <GoCheck style={{ color: "#22863a" }} />,
         FAILURE: <GoX style={{ color: "#cb2431" }} />,
         NEUTRAL: <GoCircleSlash style={{ color: "#959da5" }} />,
+        CANCELLED: <GoCircleSlash style={{ color: "rgb(255 86 86)" }} />,
       };
       let statusIcon = statuses[check.conclusion] || (
         <GoPrimitiveDot style={{ color: "#dbab09" }} />
@@ -403,7 +404,7 @@ export default class PrDisplay extends Component {
     return checks;
   }
 
-  makeArtifact(args) {
+  renderArtifact(args) {
     if (args.expired) {
       return (
         <div key={`${args.kind}-${args.index}`}>
@@ -426,7 +427,7 @@ export default class PrDisplay extends Component {
     }
   }
 
-  getGitHubArtifacts(run) {
+  renderGitHubArtifacts(run) {
     let reportUrl = null;
     let artifacts = [];
     for (const [index, artifact] of run.artifacts.artifacts.entries()) {
@@ -434,7 +435,7 @@ export default class PrDisplay extends Component {
       // manually
       let url = `https://github.com/pytorch/pytorch/suites/${run.databaseId}/artifacts/${artifact.id}`;
       artifacts.push(
-        this.makeArtifact({
+        this.renderArtifact({
           kind: "gha",
           index: index,
           name: artifact.name,
@@ -447,7 +448,7 @@ export default class PrDisplay extends Component {
     return artifacts;
   }
 
-  getS3Artifacts(run) {
+  renderS3Artifacts(run) {
     let artifacts = [];
     if (run.s3_artifacts) {
       for (const [index, artifact] of run.s3_artifacts.entries()) {
@@ -479,7 +480,7 @@ export default class PrDisplay extends Component {
         }
 
         artifacts.push(
-          this.makeArtifact({
+          this.renderArtifact({
             kind: "s3",
             index: index,
             name: prefix.split("/").slice(-1),
@@ -503,26 +504,31 @@ export default class PrDisplay extends Component {
     if (statuses.length == 0) {
       return "SKIPPED";
     }
-    const counts = {};
+    const counts = {
+      FAILURE: 0,
+      NEUTRAL: 0,
+      CANCELLED: 0,
+      SUCCESS: 0,
+    };
     for (const status of statuses) {
-      if (counts[status] === undefined) {
-        counts[status] = 0;
-      }
       counts[status] += 1;
     }
-    if (counts.FAILURE !== undefined && counts.FAILURE > 0) {
+    if (counts.FAILURE > 0) {
       return "FAILURE";
     }
-    if (counts.SUCCESS !== undefined && counts.SUCCESS === statuses.length) {
+    if (counts.NEUTRAL + counts.CANCELLED === statuses.length) {
+      return "SKIPPED";
+    }
+    if (counts.SUCCESS === statuses.length) {
       return "SUCCESS";
     }
-    if (counts.NEUTRAL !== undefined && counts.NEUTRAL === statuses.length) {
+    if (counts.NEUTRAL === statuses.length) {
       return "SKIPPED";
     }
     return "PENDING";
   }
 
-  getGroups(groups) {
+  renderGroups(groups) {
     let cards = [];
     for (const [title, data] of Object.entries(groups)) {
       if (!data.show) {
@@ -569,8 +575,6 @@ export default class PrDisplay extends Component {
     return cards;
   }
 
-  renderRun(run) {}
-
   render() {
     let runs = [];
     let groups = {
@@ -589,7 +593,7 @@ export default class PrDisplay extends Component {
       // Render all of the check runs as a list
 
       for (const [run_index, run] of this.state.runs.entries()) {
-        const checksData = this.getChecks(run.checkRuns.nodes);
+        const checksData = this.renderChecks(run.checkRuns.nodes);
         const checks = checksData.map((x) => x.element);
 
         let artifacts = [];
@@ -597,7 +601,7 @@ export default class PrDisplay extends Component {
         // List out artifacts hosted on GitHub
         if (run.artifacts) {
           if (run.artifacts.artifacts !== undefined) {
-            artifacts = artifacts.concat(this.getGitHubArtifacts(run));
+            artifacts = artifacts.concat(this.renderGitHubArtifacts(run));
           } else {
             artifacts.push(
               <div key={`artifact-${run.databaseId}`}>
@@ -608,7 +612,7 @@ export default class PrDisplay extends Component {
         }
 
         // List out artifacts from s3
-        artifacts = artifacts.concat(this.getS3Artifacts(run));
+        artifacts = artifacts.concat(this.renderS3Artifacts(run));
 
         // If there were any artifacts, set up the 'div' to show them
         let artifactsElement = <div></div>;
@@ -686,7 +690,7 @@ export default class PrDisplay extends Component {
 
     // Groups are all stored in the 'groups' map, so add them to the list of runs
     // as cards
-    runs = runs.concat(this.getGroups(groups));
+    runs = runs.concat(this.renderGroups(groups));
 
     let loading = null;
     if (!this.state.commit) {
@@ -711,10 +715,10 @@ export default class PrDisplay extends Component {
       <div>
         <AuthorizeGitHub />
 
-        {this.getTitle()}
+        {this.renderTitle()}
         {loading}
 
-        {this.getDocPreviewButton()}
+        {this.renderDocPreviewButton()}
         <div>{displayRuns}</div>
       </div>
     );
