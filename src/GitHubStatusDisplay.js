@@ -74,6 +74,45 @@ function objToStrMap(obj) {
   return strMap;
 }
 
+function computeConsecutiveFailureCount(data, failure_window = 10) {
+  const still_unknown_set = new Set();
+  const consecutive_failure_count = new Map();
+  data.known_jobs.forEach((job) => {
+    if (job === "pytorch_doc_push") return;
+    if (job === "__dr.ci") return;
+    if (job.includes("nightlies")) return;
+    still_unknown_set.add(job);
+  });
+  for (let i = 0; i < data.builds.length; i++) {
+    // After some window, don't look anymore; the job may have been
+    // removed
+    if (i > failure_window) break;
+    if (!still_unknown_set.size) break;
+    const build = data.builds[i];
+    const sb_map = build.sb_map;
+    sb_map.forEach((sb, jobName) => {
+      if (!still_unknown_set.has(jobName)) {
+        // do nothing
+      } else if (is_failure(sb.status)) {
+        let count = consecutive_failure_count.get(jobName) || 0;
+        count++;
+        consecutive_failure_count.set(jobName, count);
+      } else if (is_success(sb.status)) {
+        still_unknown_set.delete(jobName);
+      }
+    });
+  }
+
+  // Prune uninteresting alarms
+  consecutive_failure_count.forEach((v, k) => {
+    // Require two consecutive failure to alert
+    if (v <= 1) {
+      consecutive_failure_count.delete(k);
+    }
+  });
+  return consecutive_failure_count;
+}
+
 export default class BuildHistoryDisplay extends Component {
   constructor(props) {
     super(props);
@@ -172,45 +211,8 @@ export default class BuildHistoryDisplay extends Component {
     //  - pytorch_doc_push: don't care about this
     //  - nightlies: these don't run all the time
 
-    const failure_window = 10;
     if (this.props.job.startsWith("pytorch-")) {
-      const still_unknown_set = new Set();
-      const consecutive_failure_count = new Map();
-      data.known_jobs.forEach((job) => {
-        if (job === "pytorch_doc_push") return;
-        if (job === "__dr.ci") return;
-        if (job.includes("nightlies")) return;
-        still_unknown_set.add(job);
-      });
-      for (let i = 0; i < data.builds.length; i++) {
-        // After some window, don't look anymore; the job may have been
-        // removed
-        if (i > failure_window) break;
-        if (!still_unknown_set.size) break;
-        const build = data.builds[i];
-        const sb_map = build.sb_map;
-        sb_map.forEach((sb, jobName) => {
-          if (!still_unknown_set.has(jobName)) {
-            // do nothing
-          } else if (is_failure(sb.status)) {
-            let count = consecutive_failure_count.get(jobName) || 0;
-            count++;
-            consecutive_failure_count.set(jobName, count);
-          } else if (is_success(sb.status)) {
-            still_unknown_set.delete(jobName);
-          }
-        });
-      }
-
-      // Prune uninteresting alarms
-      consecutive_failure_count.forEach((v, k) => {
-        // Require two consecutive failure to alert
-        if (v <= 1) {
-          consecutive_failure_count.delete(k);
-        }
-      });
-
-      data.consecutive_failure_count = consecutive_failure_count;
+      data.consecutive_failure_count = computeConsecutiveFailureCount(data);
 
       // Compute what notifications to show
       // We'll take a diff and then give notifications for keys that
@@ -218,7 +220,7 @@ export default class BuildHistoryDisplay extends Component {
       if (!isMobile()) {
         if (this.state.consecutive_failure_count) {
           this.state.consecutive_failure_count.forEach((v, key) => {
-            if (!consecutive_failure_count.has(key)) {
+            if (!data.consecutive_failure_count.has(key)) {
               // It's fixed!
               new Notification("✅ " + this.props.job, {
                 body: summarize_job(key),
@@ -226,7 +228,7 @@ export default class BuildHistoryDisplay extends Component {
             }
           });
         }
-        consecutive_failure_count.forEach((v, key) => {
+        data.consecutive_failure_count.forEach((v, key) => {
           // Don't produce notifications for initial failure!
           if (
             this.state.consecutive_failure_count &&
