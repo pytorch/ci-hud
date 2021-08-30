@@ -958,8 +958,8 @@ export default class BuildHistoryDisplay extends Component {
             </tr>
           </thead>
           <tbody>{rows}</tbody>
-          {rows.length > 0 ? null : <ImSpinner2 className="icon-spin" />}
         </table>
+        {rows.length > 0 ? null : <ImSpinner2 className="icon-spin" />}
       </div>
     );
   }
