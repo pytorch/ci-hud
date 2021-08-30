@@ -218,7 +218,7 @@ export default class BuildHistoryDisplay extends Component {
         return;
       }
       const buildCommitId = topBuild.changeSet.items[0].commitId;
-      if(!(buildCommitId in commitIdxMap)) {
+      if (!(buildCommitId in commitIdxMap)) {
         return;
       }
       const buildIdx = commitIdxMap[buildCommitId];
@@ -230,10 +230,13 @@ export default class BuildHistoryDisplay extends Component {
         ) {
           subBuild.build.subBuilds.forEach(go);
         } else {
-          builds[buildIdx].sb_map.set(getJenkinsJobName(subBuild), Object.fromEntries([
-            ["status", subBuild.result],
-            ["build_url", jenkins.link(subBuild.url + "/console")],
-          ]));
+          builds[buildIdx].sb_map.set(
+            getJenkinsJobName(subBuild),
+            Object.fromEntries([
+              ["status", subBuild.result],
+              ["build_url", jenkins.link(subBuild.url + "/console")],
+            ])
+          );
         }
       }
       topBuild.subBuilds.forEach(go);
@@ -350,7 +353,12 @@ export default class BuildHistoryDisplay extends Component {
     const isDockerJob = name.startsWith("ci/circleci: docker");
     const isGCJob = name.startsWith("ci/circleci: ecr_gc");
     const isCIFlowShouldRunJob = name.endsWith("ciflow_should_run");
-    return !(isDockerJob || name === "welcome" || isGCJob || isCIFlowShouldRunJob);
+    return !(
+      isDockerJob ||
+      name === "welcome" ||
+      isGCJob ||
+      isCIFlowShouldRunJob
+    );
   }
 
   render() {
