@@ -4,6 +4,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import React, { Component, Fragment } from "react";
+import jenkins from "./Jenkins.js";
 import AsOf from "./AsOf.js";
 import { summarize_job, summarize_date } from "./Summarize.js";
 import Tooltip from "rc-tooltip";
@@ -113,6 +114,15 @@ function computeConsecutiveFailureCount(data, failure_window = 10) {
   return consecutive_failure_count;
 }
 
+function getJenkinsJobName(subBuild) {
+  const baseJobName = subBuild.jobName;
+  if (/caffe2-builds/.test(subBuild.url)) {
+    return "jenkins: caffe2-" + baseJobName;
+  } else {
+    return "jenkins: " + baseJobName;
+  }
+}
+
 export default class BuildHistoryDisplay extends Component {
   constructor(props) {
     super(props);
@@ -162,6 +172,73 @@ export default class BuildHistoryDisplay extends Component {
       this.update();
     }
   }
+  async addJenkinsResults(builds) {
+    // Adds Jenkins results to builds array
+    // Step 1. Fetch info via GraphQL
+    //
+    // STOP.  You want more results?  You may have noticed that on
+    // Google, people suggest using allBuilds with {0,n} to make use
+    // of Jenkins pagination.  However, if you do this, it will *DOS our Jeenkins
+    // instance*; even when pagination is requested, Jenkins will
+    // still load ALL builds into memory before servicing your
+    // request.  I've filed this at https://issues.jenkins-ci.org/browse/JENKINS-49908
+    let jenkins_data = await jenkins.job(this.props.job, {
+      tree: `builds[
+                url,
+                number,
+                duration,
+                timestamp,
+                result,
+                actions[parameters[name,value],
+                causes[shortDescription]],
+                changeSet[items[commitId,comment,msg]],
+                subBuilds[
+                  result,jobName,url,duration,
+                  build[
+                    subBuilds[
+                      result,jobName,url,duration,
+                      build[
+                        subBuilds[result,jobName,url,duration]
+                      ]
+                    ]
+                  ]
+                ]
+             ]`.replace(/\s+/g, ""),
+    });
+
+    // Step 2: Build commit to build idx map
+    const commitIdxMap = new Map();
+    builds.forEach((build, idx) => {
+      commitIdxMap[build.id] = idx;
+    });
+
+    // Step 3: Add jenkins jobs
+    jenkins_data.builds.forEach((topBuild) => {
+      if (topBuild.changeSet.items.length !== 1) {
+        return;
+      }
+      const buildCommitId = topBuild.changeSet.items[0].commitId;
+      if(!(buildCommitId in commitIdxMap)) {
+        return;
+      }
+      const buildIdx = commitIdxMap[buildCommitId];
+      function go(subBuild) {
+        if (
+          subBuild.build &&
+          subBuild.build._class ===
+            "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
+        ) {
+          subBuild.build.subBuilds.forEach(go);
+        } else {
+          builds[buildIdx].sb_map.set(getJenkinsJobName(subBuild), Object.fromEntries([
+            ["status", subBuild.result],
+            ["build_url", jenkins.link(subBuild.url + "/console")],
+          ]));
+        }
+      }
+      topBuild.subBuilds.forEach(go);
+    });
+  }
   async update() {
     const currentTime = new Date();
     const branch = this.props.job.replace(/^pytorch-/, "");
@@ -185,6 +262,10 @@ export default class BuildHistoryDisplay extends Component {
     });
     const builds = await axios.all(requests);
     builds.reverse();
+
+    if (branch === "master") {
+      await this.addJenkinsResults(builds);
+    }
 
     const data = {};
 
@@ -374,6 +455,10 @@ export default class BuildHistoryDisplay extends Component {
       {
         regex: /ci\/circleci: binary_windows_/,
         name: "ci/circleci: binary_windows",
+      },
+      {
+        regex: /(pytorch-linux-bionic-rocm)|(pytorch_linux_bionic_rocm)/,
+        name: "ROCm",
       },
     ];
 
