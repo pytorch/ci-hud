@@ -7,6 +7,8 @@ import React, { Component } from "react";
 import Card from "react-bootstrap/Card";
 import AuthorizeGitHub from "./AuthorizeGitHub.js";
 import TestReportRenderer from "./pr/TestReportRenderer.js";
+import Editor from "@monaco-editor/react";
+
 import {
   BsFillCaretRightFill,
   BsCaretDownFill,
@@ -16,7 +18,6 @@ import {
   GoCheck,
   GoX,
 } from "react-icons/all";
-import { LazyLog } from "react-lazylog";
 
 import { parseXml, formatBytes, asyncAll, s3, github } from "./utils.js";
 
@@ -345,16 +346,26 @@ export default class PrDisplay extends Component {
       isShowing = true;
       if (check.log.text) {
         const totalLines = (check.log.text.match(/\n/g) || "").length + 1;
-
         log = (
-          <div style={{ height: `${Math.min(totalLines + 4, 30)}em` }}>
-            <LazyLog
-              extraLines={1}
-              enableSearch
-              caseInsensitive
-              selectableLines
-              scrollToLine={totalLines}
-              text={check.log.text}
+          <div
+            style={{
+              height: `${Math.min(totalLines + 4, 30)}em`,
+              marginBottom: "20px",
+            }}
+          >
+            <Editor
+              height="80vh"
+              defaultLanguage="log"
+              defaultValue={check.log.text}
+              theme="vs-dark"
+              options={{
+                scrollBeyondLastLine: false,
+                lineNumbersMinChars: totalLines.toString().length + 1,
+              }}
+              onMount={(editor, monaco) => {
+                editor.revealLine(totalLines);
+              }}
+              loading={<p>Loading viewer...</p>}
             />
           </div>
         );
