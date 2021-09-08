@@ -5,7 +5,7 @@
   "dependencies": {
     "@monaco-editor/react": "^4.2.2",
     "@toast-ui/chart": "^4.3.4",
-    "axios": "^0.21.1",
+    "axios": "^0.21.2",
     "bootstrap": "^4.6.0",
     "d3v4": "^4.2.2",
     "fflate": "^0.7.1",
