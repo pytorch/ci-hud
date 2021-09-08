@@ -353,20 +353,20 @@ export default class PrDisplay extends Component {
               marginBottom: "20px",
             }}
           >
-          <Editor
-            height="80vh"
-            defaultLanguage="log"
-            defaultValue={check.log.text}
-            theme="vs-dark"
-            options={{
-              scrollBeyondLastLine: false,
-              lineNumbersMinChars: totalLines.toString().length + 1,
-            }}
-            onMount={(editor, monaco) => {
-              editor.revealLine(totalLines);
-            }}
-            loading={<p>Loading viewer...</p>}
-          />
+            <Editor
+              height="80vh"
+              defaultLanguage="log"
+              defaultValue={check.log.text}
+              theme="vs-dark"
+              options={{
+                scrollBeyondLastLine: false,
+                lineNumbersMinChars: totalLines.toString().length + 1,
+              }}
+              onMount={(editor, monaco) => {
+                editor.revealLine(totalLines);
+              }}
+              loading={<p>Loading viewer...</p>}
+            />
           </div>
         );
       } else {
