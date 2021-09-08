@@ -5,7 +5,6 @@
 
 import React, { Component } from "react";
 import Card from "react-bootstrap/Card";
-import { LazyLog } from "react-lazylog";
 import { highlightElement } from "highlight.js";
 import { strFromU8, unzipSync } from "fflate";
 

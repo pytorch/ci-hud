@@ -213,34 +213,36 @@ export default class BuildHistoryDisplay extends Component {
     });
 
     // Step 3: Add jenkins jobs
-    jenkins_data.builds.forEach((topBuild) => {
-      if (topBuild.changeSet.items.length !== 1) {
-        return;
-      }
-      const buildCommitId = topBuild.changeSet.items[0].commitId;
-      if (!(buildCommitId in commitIdxMap)) {
-        return;
-      }
-      const buildIdx = commitIdxMap[buildCommitId];
-      function go(subBuild) {
-        if (
-          subBuild.build &&
-          subBuild.build._class ===
-            "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
-        ) {
-          subBuild.build.subBuilds.forEach(go);
-        } else {
-          builds[buildIdx].sb_map.set(
-            getJenkinsJobName(subBuild),
-            Object.fromEntries([
-              ["status", subBuild.result],
-              ["build_url", jenkins.link(subBuild.url + "/console")],
-            ])
-          );
+    if (jenkins_data) {
+      jenkins_data.builds.forEach((topBuild) => {
+        if (topBuild.changeSet.items.length !== 1) {
+          return;
         }
-      }
-      topBuild.subBuilds.forEach(go);
-    });
+        const buildCommitId = topBuild.changeSet.items[0].commitId;
+        if (!(buildCommitId in commitIdxMap)) {
+          return;
+        }
+        const buildIdx = commitIdxMap[buildCommitId];
+        function go(subBuild) {
+          if (
+            subBuild.build &&
+            subBuild.build._class ===
+              "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
+          ) {
+            subBuild.build.subBuilds.forEach(go);
+          } else {
+            builds[buildIdx].sb_map.set(
+              getJenkinsJobName(subBuild),
+              Object.fromEntries([
+                ["status", subBuild.result],
+                ["build_url", jenkins.link(subBuild.url + "/console")],
+              ])
+            );
+          }
+        }
+        topBuild.subBuilds.forEach(go);
+      });
+    }
   }
   async update() {
     const currentTime = new Date();
