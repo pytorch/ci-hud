@@ -94,9 +94,14 @@ export default class TestReportRenderer extends Component {
       let data = reports[filename];
       if (data.testsuite) {
         suites.push(data.testsuite);
-      } else if (data.testsuites) {
-        for (const suite of data.testsuites.testsuite) {
-          suites.push(suite);
+      } else if (data.testsuites && data.testsuites.testsuite) {
+        if (typeof data.testsuites.testsuite[Symbol.iterator] === "function") {
+          for (const suite of data.testsuites.testsuite) {
+            suites.push(suite);
+          }
+        } else {
+          // GoogleTest wraps single testsuite in testsuites tag
+          suites.push(data.testsuites.testsuite);
         }
       } else {
         console.error("unknown report type", data);
