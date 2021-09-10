@@ -95,8 +95,12 @@ export default class TestReportRenderer extends Component {
       if (data.testsuite) {
         suites.push(data.testsuite);
       } else if (data.testsuites) {
-        for (const suite of data.testsuites.testsuite) {
-          suites.push(suite);
+        if (Array.isArray(data.testsuites.testsuite)) {
+          for (const suite of data.testsuites.testsuite) {
+            suites.push(suite);
+          }
+        } else {
+          suites.push(data.testsuites.testsuite);
         }
       } else {
         console.error("unknown report type", data);
