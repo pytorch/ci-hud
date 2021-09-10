@@ -245,6 +245,16 @@ export default class BuildHistoryDisplay extends Component {
     }
   }
   async update() {
+    let content = await fetch(
+      "https://ossci-job-status.s3.amazonaws.com/mysql_status_master.json.gz"
+    );
+    let x = await content.json();
+    // console.log(content);
+    // console.log(x);
+    // return;
+    this.setState({ allInOne: x });
+    return;
+    // return;
     const currentTime = new Date();
     const branch = this.props.job.replace(/^pytorch-/, "");
     const build_prefix = branch === "master" ? branch : "pr";
@@ -473,6 +483,57 @@ export default class BuildHistoryDisplay extends Component {
       },
     ];
 
+    if (!this.state.allInOne) {
+      return <p>Loading</p>;
+    }
+    console.log(this.state.allInOne);
+    const commits = this.state.allInOne;
+    let headers = Object.keys(commits[0].jobs);
+    headers = headers.sort();
+    let headersTds = [
+      <td>pr</td>,
+      <td>commit time</td>,
+    ];
+    for (const header of headers) {
+      headersTds.push(<th className="rotate"><div>{header}</div></th>);
+    }
+    headersTds.push(<td>commit author</td>);
+    headersTds.push(<td>commit message</td>);
+    headersTds.push(<td>commit hash</td>);
+
+    let rowsTds = [];
+    for (const commit of commits) {
+      let cells = [];
+      cells.push(<td>#{commit.pr}</td>);
+      cells.push(<td>{commit.head_commit_timestamp}</td>);
+
+      for (const header of headers) {
+        let job = commit.jobs[header];
+        if (!job) {
+          cells.push(<td></td>);
+        } else {
+          cells.push(<td><a href={commit.jobs[header][1]}>{result_icon(commit.jobs[header][0])}</a></td>);
+        }
+      }
+
+      cells.push(<td>{commit.head_commit_author_username}</td>);
+      cells.push(<td>{commit.head_commit_title}</td>);
+      cells.push(<td>{commit.head_commit_id}</td>);
+
+
+      rowsTds.push(<tr>{cells}</tr>);
+    }
+    return (
+      <table className="buildHistoryTable">
+        <thead>
+          <tr>{headersTds}</tr>
+        </thead>
+        <tbody>
+          {rowsTds}
+        </tbody>
+      </table>
+    );
+
     // Initialize the groups
     for (const group of groups) {
       group.jobNames = [];
@@ -555,6 +616,9 @@ export default class BuildHistoryDisplay extends Component {
       return result;
     }
 
+    console.log(this.state.builds);
+    console.log(this.state.consecutive_failure_count);
+    console.log(this.state.known_jobs);
     let builds = this.state.builds;
     let consecutive_failure_count = this.state.consecutive_failure_count;
 
