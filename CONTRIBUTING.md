@@ -26,7 +26,7 @@ Facebook has a [bounty program](https://www.facebook.com/whitehat/) for the safe
 disclosure of security bugs. In those cases, please go through the process
 outlined on that page and do not file a public issue.
 
-## Using Deploy Previews
+## Log-ins for Local Development and Deploy Previews
 
 Log-ins don't work on the Netlify deploy previews since the GitHub app has hud.pytorch.org hardcoded as its callback URL. To see changes that require the GitHub API in a preview you can manually copy your OAuth token. In the JS console on hud.pytorch.org, run `localStorage.getItem("gh_pat")`. Then in the preview's console, run `localStorage.setItem("gh_pat", "<the token>")`.
 
