@@ -876,9 +876,10 @@ export default class BuildHistoryDisplay extends Component {
       // TODO: need to store this in index or payload
       const whenString = summarize_date(build.timestamp);
 
-      if (!found) {
-        return <Fragment key={build.id} />;
-      }
+      // TODO: Add preference to show/hide those
+      // if (!found) {
+      //  return <Fragment key={build.id} />;
+      // }
 
       return (
         <tr key={build.id} className={stale ? "stale" : ""}>
