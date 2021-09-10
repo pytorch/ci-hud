@@ -25,11 +25,15 @@ export default class AuthorizeGitHub extends Component {
       return;
     }
     this.state.code = code;
+    let errorMsg = "bad code passed to GitHub OAuth, sign into GitHub again";
     let result = await fetch(`${AUTH_SERVER}/authenticate/${code}`).then((r) =>
       r.json()
-    );
+    ).catch((error) => {
+      errorMsg = "Error happened while communicating to auth server: " + error;
+      return {token: null};
+    });
     if (!result.token) {
-      alert("bad code passed to GitHub OAuth, sign into GitHub again");
+      alert(errorMsg);
     } else {
       localStorage.setItem("gh_pat", result.token);
       this.state.loggedin = true;
