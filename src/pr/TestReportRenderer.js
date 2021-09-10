@@ -70,7 +70,10 @@ export default class TestReportRenderer extends Component {
     this.state = {};
   }
   componentDidMount() {
-    this.update();
+    this.update().catch((error) => {
+      this.state.updateFailure = error.toString();
+      this.setState(this.state);
+    });
   }
 
   async update() {
@@ -122,6 +125,13 @@ export default class TestReportRenderer extends Component {
 
   render() {
     if (!this.state.failures) {
+      if (this.state.updateFailure) {
+        return (
+          <p style={{ color: "red" }}>
+            Loading/parsing failed:{this.state.updateFailure}
+          </p>
+        );
+      }
       return <p>loading and parsing test results...</p>;
     }
 
