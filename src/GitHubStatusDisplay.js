@@ -215,14 +215,19 @@ export default class BuildHistoryDisplay extends Component {
     // Step 3: Add jenkins jobs
     if (jenkins_data) {
       jenkins_data.builds.forEach((topBuild) => {
-        if (topBuild.changeSet.items.length !== 1) {
+        const changeSetItems = topBuild.changeSet.items.reverse();
+        if (changeSetItems.length === 0) {
           return;
         }
-        const buildCommitId = topBuild.changeSet.items[0].commitId;
+        const buildCommitId = changeSetItems[0]?.commitId;
+        const buildIdx = commitIdxMap[buildCommitId];
+        builds[buildIdx].changeSet = changeSetItems;
+        if (changeSetItems.length >= 1) {
+          return;
+        }
         if (!(buildCommitId in commitIdxMap)) {
           return;
         }
-        const buildIdx = commitIdxMap[buildCommitId];
         function go(subBuild) {
           if (
             subBuild.build &&
@@ -813,22 +818,9 @@ export default class BuildHistoryDisplay extends Component {
       }
 
       function renderPullRequestNumber(comment) {
-        let m = comment.match(/\(#(\d+)\)/);
-        if (m) {
-          return (
-            <Fragment>
-              <a
-                href={"https://github.com/pytorch/pytorch/pull/" + m[1]}
-                target="_blank"
-              >
-                #{m[1]}
-              </a>
-            </Fragment>
-          );
-        }
-        m = comment.match(
-          /https:\/\/github.com\/pytorch\/pytorch\/pull\/(\d+)/
-        );
+        let m =
+          comment.match(/\(#(\d+)\)/) ||
+          comment.match(/https:\/\/github.com\/pytorch\/pytorch\/pull\/(\d+)/);
         if (m) {
           return (
             <Fragment>
@@ -844,6 +836,24 @@ export default class BuildHistoryDisplay extends Component {
         return <Fragment />;
       }
 
+      function renderDescription(id, message) {
+        return (
+          <div key={id}>
+            <a style={{ color: "#003d7f" }} href={`/commit/${id}`}>
+              {drop_pr_number(message).split("\n")[0]}{" "}
+            </a>
+            <code>
+              <a
+                href={"https://github.com/pytorch/pytorch/commit/" + id}
+                target="_blank"
+              >
+                {id.slice(0, 7)}
+              </a>
+            </code>
+          </div>
+        );
+      }
+
       let author = build.author.username
         ? build.author.username
         : build.author.name;
@@ -852,22 +862,6 @@ export default class BuildHistoryDisplay extends Component {
       if (author.length > 10) {
         author = `${author.slice(0, 10)}...`;
       }
-
-      const desc = (
-        <div key={build.id}>
-          <a style={{ color: "#003d7f" }} href={`/commit/${build.id}`}>
-            {drop_pr_number(build.message).split("\n")[0]}{" "}
-          </a>
-          <code>
-            <a
-              href={"https://github.com/pytorch/pytorch/commit/" + build.id}
-              target="_blank"
-            >
-              {build.id.slice(0, 7)}
-            </a>
-          </code>
-        </div>
-      );
 
       // TODO: Too lazy to set up PR numbers for the old ones
 
@@ -883,14 +877,20 @@ export default class BuildHistoryDisplay extends Component {
       return (
         <tr key={build.id} className={stale ? "stale" : ""}>
           <th className="left-cell">
-            {renderPullRequestNumber(build.message)}
+            {build.changeSet?.map(({ comment }) => (
+              <div>{renderPullRequestNumber(comment)}</div>
+            ))}
           </th>
           <td className="left-cell" title={build.timestamp}>
             {whenString}
           </td>
           {status_cols}
           <td className="right-cell">{author}</td>
-          <td>{desc}</td>
+          <td>
+            {build.changeSet?.map(({ commitId, comment }) =>
+              renderDescription(commitId, comment)
+            )}
+          </td>
         </tr>
       );
     });
