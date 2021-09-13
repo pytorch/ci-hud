@@ -355,11 +355,13 @@ export default class BuildHistoryDisplay extends Component {
     const isDockerJob = name.startsWith("ci/circleci: docker");
     const isGCJob = name.startsWith("ci/circleci: ecr_gc");
     const isCIFlowShouldRunJob = name.endsWith("ciflow_should_run");
+    const isGenerateTestMatrixJob = name.endsWith("generate-test-matrix");
     return !(
       isDockerJob ||
       name === "welcome" ||
       isGCJob ||
-      isCIFlowShouldRunJob
+      isCIFlowShouldRunJob ||
+      isGenerateTestMatrixJob
     );
   }
 
