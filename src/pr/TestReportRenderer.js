@@ -72,6 +72,7 @@ export default class TestReportRenderer extends Component {
   componentDidMount() {
     this.update().catch((error) => {
       this.state.updateFailure = error.toString();
+      console.error(error);
       this.setState(this.state);
     });
   }
@@ -115,7 +116,11 @@ export default class TestReportRenderer extends Component {
       let numErrors = +suite.errors;
       let numFailures = +suite.failures;
       if (numErrors + numFailures > 0) {
-        for (const testcase of suite.testcase) {
+        let cases = suite.testcase;
+        if (!Array.isArray(cases)) {
+          cases = [cases];
+        }
+        for (const testcase of cases) {
           if (testcase.failure || testcase.error) {
             failures.push(testcase);
           }
@@ -132,7 +137,7 @@ export default class TestReportRenderer extends Component {
       if (this.state.updateFailure) {
         return (
           <p style={{ color: "red" }}>
-            Loading/parsing failed:{this.state.updateFailure}
+            Loading/parsing failed: {this.state.updateFailure}
           </p>
         );
       }
