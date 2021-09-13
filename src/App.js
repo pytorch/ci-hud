@@ -32,7 +32,7 @@ const App = () => (
         </h1>
       </header>
       <ul className="menu">
-        <li>New-style (Does not show Jenkins builds):</li>
+        <li>New-style:</li>
         {["pytorch"].map((e) => (
           <Fragment key={e}>
             {["master", "nightly", "release/1.9"].map((trigger) => (
