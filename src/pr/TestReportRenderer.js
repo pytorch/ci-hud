@@ -200,7 +200,7 @@ export default class TestReportRenderer extends Component {
           for (const suite of data.testsuites.testsuite) {
             suites.push(suite);
           }
-        } else {
+        } else if (data.testsuites.testsuite) {
           suites.push(data.testsuites.testsuite);
         }
       } else {
