@@ -98,8 +98,7 @@ class TestSummary extends Component {
       data = data.sort((a, b) => {
         a = a.passed + a.error;
         b = b.passed + b.error;
-        if (a === b) return 0;
-        return a > b ? -1 : 1;
+        return b - a;
       });
 
       for (const classStats of data) {
