@@ -7,6 +7,11 @@ import React, { Component } from "react";
 import Card from "react-bootstrap/Card";
 import { highlightElement } from "highlight.js";
 import { strFromU8, unzipSync } from "fflate";
+import {
+  GoCheck,
+  BsFillCaretRightFill,
+  BsFillCaretDownFill,
+} from "react-icons/all";
 
 import { parseXml, formatBytes, asyncAll, s3, github } from "../utils.js";
 
@@ -41,20 +46,112 @@ class TestSuite extends Component {
         }}
       >
         <Card.Body>
-          <Card.Title>
-            <p style={{ fontSize: "0.8em" }}>
+          <div>
+            <p>
+              <span style={{ color: "grey" }}>
+                {tcase.file}:{tcase.line}:
+              </span>
               {tcase.classname}.{tcase.name}
             </p>
-          </Card.Title>
-          <div>
-            <div style={{ fontSize: "0.8em" }}>
-              {tcase.file}:{tcase.line} {failure.type}
-            </div>
             <pre ref={this.nodeRef}>
               <code className="language-python">
                 {failure.textContent.trim()}
               </code>
             </pre>
+          </div>
+        </Card.Body>
+      </Card>
+    );
+  }
+}
+
+class TestSummary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      showDetail: false,
+    };
+  }
+
+  render() {
+    const toggle = () => {
+      this.state.showDetail = !this.state.showDetail;
+      this.setState(this.state);
+    };
+    const iconStyle = { cursor: "pointer" };
+    let icon = <BsFillCaretRightFill style={iconStyle} onClick={toggle} />;
+    if (this.state.showSuites) {
+      icon = <BsFillCaretDownFill style={iconStyle} onClick={toggle} />;
+    }
+    let suiteDetail = null;
+    if (this.state.showDetail) {
+      let rows = [];
+
+      let data = [];
+      for (const [filename, classes] of Object.entries(this.props.info)) {
+        for (const [classname, stats] of Object.entries(classes)) {
+          stats.filename = filename;
+          stats.classname = classname;
+          data.push(stats);
+        }
+      }
+      data = data.sort((a, b) => {
+        a = a.passed + a.error;
+        b = b.passed + b.error;
+        return b - a;
+      });
+
+      for (const classStats of data) {
+        let filename = classStats.filename.split("/").slice(-1)[0];
+        let name = `${filename}:${classStats.classname}`;
+        rows.push(
+          <tr style={{ fontSize: "12px" }} key={name}>
+            <td style={{ fontFamily: '"Monaco", monospace' }}>
+              <span style={{ color: "grey" }}>{filename}:</span>
+              <span>{classStats.classname}</span>
+            </td>
+            <td className="center">{classStats.passed}</td>
+            <td className="center">{classStats.error}</td>
+            <td className="center">{classStats.skipped}</td>
+          </tr>
+        );
+      }
+      suiteDetail = (
+        <table style={{ marginTop: "6px" }} className="table">
+          <thead>
+            <tr>
+              <th className="center">Name</th>
+              <th className="center">Passed</th>
+              <th className="center">Errors</th>
+              <th className="center">Skipped</th>
+            </tr>
+          </thead>
+          <tbody>{rows}</tbody>
+        </table>
+      );
+    }
+    return (
+      <Card
+        style={{
+          marginTop: "5px",
+        }}
+      >
+        <Card.Body>
+          <Card.Title style={{ marginBottom: 0 }}>Test Summary</Card.Title>
+          <div>
+            <p style={{ marginBottom: 0 }}>
+              Ran {this.props.totals.cases} test cases in{" "}
+              {this.props.totals.classes} classes from {this.props.totals.files}{" "}
+              files
+              <button
+                style={{ marginLeft: "10px", fontSize: "0.8em" }}
+                className="btn btn-secondary"
+                onClick={toggle}
+              >
+                {this.state.showDetail ? "Hide" : "Show"} Details
+              </button>
+            </p>
+            {suiteDetail}
           </div>
         </Card.Body>
       </Card>
@@ -107,30 +204,72 @@ export default class TestReportRenderer extends Component {
           suites.push(data.testsuites.testsuite);
         }
       } else {
-        console.error("unknown report type", data);
+        console.error("Unknown report type", data);
       }
     }
 
     let failures = [];
+    let testInfo = {};
+    const totals = {
+      classes: 0,
+      cases: 0,
+      files: 0,
+      time: 0,
+    };
     for (const suite of suites) {
       let numErrors = +suite.errors;
       let numFailures = +suite.failures;
+      let cases = suite.testcase;
+      if (!Array.isArray(cases)) {
+        cases = [cases];
+      }
       if (numErrors + numFailures > 0) {
-        let cases = suite.testcase;
-        if (!Array.isArray(cases)) {
-          cases = [cases];
-        }
         for (const testcase of cases) {
           if (testcase.failure || testcase.error) {
             failures.push(testcase);
           }
         }
       }
+
+      const getStatus = (testcase) => {
+        if (testcase.skipped) {
+          return "skipped";
+        }
+        if (testcase.error || testcase.failure) {
+          return "error";
+        }
+        return "passed";
+      };
+      for (const testcase of cases) {
+        totals.cases += 1;
+        if (!testInfo[testcase.file]) {
+          testInfo[testcase.file] = {};
+          totals.files += 1;
+        }
+        if (!testInfo[testcase.file][testcase.classname]) {
+          totals.classes += 1;
+          testInfo[testcase.file][testcase.classname] = {
+            passed: 0,
+            error: 0,
+            skipped: 0,
+            time: 0,
+            cases: 0,
+          };
+        }
+        totals.time += +testcase.time;
+        testInfo[testcase.file][testcase.classname][getStatus(testcase)] += 1;
+        testInfo[testcase.file][testcase.classname].cases += 1;
+        testInfo[testcase.file][testcase.classname].time += +testcase.time;
+      }
     }
 
     this.state.failures = failures;
+    this.state.totals = totals;
+    this.state.testInfo = testInfo;
     this.setState(this.state);
   }
+
+  renderSummary() {}
 
   render() {
     if (!this.state.failures) {
@@ -146,8 +285,29 @@ export default class TestReportRenderer extends Component {
 
     let results = [];
 
+    const summary = (
+      <TestSummary info={this.state.testInfo} totals={this.state.totals} />
+    );
+
     if (this.state.failures.length == 0) {
-      return <p>all tests passed</p>;
+      return (
+        <div>
+          {summary}
+          <Card
+            style={{
+              marginTop: "5px",
+              backgroundColor: "#ebffeb",
+            }}
+          >
+            <Card.Body>
+              <Card.Title style={{ marginBottom: 0 }}>
+                <GoCheck style={{ color: "#22863a" }} />{" "}
+                <span>All tests passed</span>
+              </Card.Title>
+            </Card.Body>
+          </Card>
+        </div>
+      );
     }
 
     let i = 0;
@@ -155,6 +315,11 @@ export default class TestReportRenderer extends Component {
       results.push(<TestSuite key={i++} testcase={testcase} />);
     }
 
-    return <div>{results}</div>;
+    return (
+      <div>
+        {summary}
+        {results}
+      </div>
+    );
   }
 }
