@@ -270,3 +270,15 @@ body {
 .center {
   text-align: center;
 }
+
+.hideRadio input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  -ms-appearance: none;
+  -o-appearance: none;
+  appearance: none;
+}
+
+.hideRadio label {
+  font-size: 0.75em;
+}

@@ -5,6 +5,9 @@
 
 import React, { Component } from "react";
 import Card from "react-bootstrap/Card";
+import ButtonGroup from "react-bootstrap/ButtonGroup";
+import ToggleButton from "react-bootstrap/ToggleButton";
+import Button from "react-bootstrap/Button";
 import AuthorizeGitHub from "./AuthorizeGitHub.js";
 import TestReportRenderer from "./pr/TestReportRenderer.js";
 import Editor from "@monaco-editor/react";
@@ -196,6 +199,7 @@ export default class PrDisplay extends Component {
         check.log = {
           text: null,
           shown: false,
+          logLevel: "Minimal",
         };
       });
     });
@@ -366,29 +370,117 @@ export default class PrDisplay extends Component {
     return title;
   }
 
+  filterLog(log) {
+    let negativeRegexes = [
+      /Z Entering 'third_party/,
+      /Z http\.https:\/\/github\.com\/\.extraheader/,
+      /Z deleted: sha256/,
+      /Z untagged: sha256/,
+      /Z untagged: .*amazonaws/,
+      /Z \s*adding: /,
+      /Z \s*inflating: /,
+      /Z \s*extracting: /,
+      /Z adding /,
+      /Z copying /,
+      /Z creating /,
+      /Z refs\/remotes\/origin/,
+      /Z Synchronizing submodule url for/,
+      /Z Receiving objects:/,
+      /Z Resolving deltas:/,
+      /Z remote: Compressing objects:/,
+      /Z Submodule path /,
+      /Z remote: Counting objects:/,
+      /Z [a-z0-9]{12}: Waiting/,
+      /Z [a-z0-9]{12}: Pulling fs layer/,
+      /Z [a-z0-9]{12}: Verifying Checksum/,
+      /Z [a-z0-9]{12}: Download complete/,
+      /Z [a-z0-9]{12}: Pull complete/,
+      /Z url\.https:\/\/github\.com/,
+      /Z Generating XML reports/,
+      /Z Generated XML report/,
+      /Z Test results will be stored/,
+    ];
+
+    const lines = log.split("\n");
+    let newLog = "";
+
+    for (const line of lines) {
+      let include = true;
+      for (const regex of negativeRegexes) {
+        if (line.match(regex)) {
+          include = false;
+          break;
+        }
+      }
+      if (include) {
+        newLog += line + "\n";
+      }
+    }
+    return newLog;
+  }
+
   renderLogViewer(check) {
     let log = null;
     let isShowing = false;
+    const radios = ["Minimal", "All"];
     if (check.log.shown) {
       isShowing = true;
       if (check.log.text) {
-        const totalLines = (check.log.text.match(/\n/g) || "").length + 1;
+        let logText = null;
+        if (check.log.logLevel == "All") {
+          logText = check.log.text;
+        } else {
+          logText = this.filterLog(check.log.text);
+        }
+
+        const totalLines = (logText.match(/\n/g) || "").length + 1;
+        let existingEditor = null;
+        if (check.log.existingEditor) {
+          check.log.existingEditor.setValue(logText);
+          check.log.existingEditor.revealLine(totalLines);
+        }
+
         log = (
           <div
             style={{
               marginBottom: "20px",
             }}
           >
+            <div className="hideRadio">
+              <span>Log Level: </span>
+              <div style={{ display: "inline" }}>
+                <ButtonGroup>
+                  {radios.map((radio, idx) => (
+                    <ToggleButton
+                      key={idx}
+                      id={`radio-${idx}`}
+                      type="radio"
+                      variant="outline-info"
+                      name="radio"
+                      value={radio}
+                      checked={check.log.logLevel === radio}
+                      onChange={(e) => {
+                        check.log.logLevel = radio;
+                        this.setState(this.state);
+                      }}
+                    >
+                      {radio}
+                    </ToggleButton>
+                  ))}
+                </ButtonGroup>
+              </div>
+            </div>
             <Editor
               height="80vh"
               defaultLanguage="log"
-              defaultValue={check.log.text}
+              defaultValue={logText}
               theme="vs-dark"
               options={{
                 scrollBeyondLastLine: false,
                 lineNumbersMinChars: totalLines.toString().length + 1,
               }}
               onMount={(editor, monaco) => {
+                check.log.existingEditor = editor;
                 editor.revealLine(totalLines);
               }}
               loading={<p>Loading viewer...</p>}
@@ -781,7 +873,9 @@ export default class PrDisplay extends Component {
       for (const run of runs) {
         if (run.data.status === type) {
           displayRuns.push(
-            <div style={{ marginBottom: "4px" }}>{run.element}</div>
+            <div key={run.data.databaseId} style={{ marginBottom: "4px" }}>
+              {run.element}
+            </div>
           );
         }
       }
