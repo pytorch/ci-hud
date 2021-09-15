@@ -319,7 +319,6 @@ export default class PrDisplay extends Component {
     let title = null;
     if (this.state.commit) {
       if (this.isPr()) {
-        console.log(this.state.pr);
         title = (
           <div>
             <h3>
