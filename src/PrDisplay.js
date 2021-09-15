@@ -375,7 +375,6 @@ export default class PrDisplay extends Component {
         log = (
           <div
             style={{
-              height: `${Math.min(totalLines + 4, 30)}em`,
               marginBottom: "20px",
             }}
           >
