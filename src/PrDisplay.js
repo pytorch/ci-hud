@@ -263,31 +263,57 @@ export default class PrDisplay extends Component {
     // Search through all the checks for a docs build, if it's completed then
     // assume it's also been uploaded to S3 (which should happen as part of the
     // docs build on PRs)
-    let docPreview = <span></span>;
-    if (this.state.runs) {
+    let python = null;
+    let cpp = null;
+
+    const runIsPassing = (name) => {
       for (const [run_index, run] of this.state.runs.entries()) {
         for (const [index, check] of run.checkRuns.nodes.entries()) {
           if (
-            check.name === "pytorch_python_doc_build" &&
+            check.name === name &&
             check.status === "COMPLETED" &&
             check.conclusion === "SUCCESS"
           ) {
-            docPreview = (
-              <div style={{ paddingBottom: "5px" }}>
-                <a
-                  href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/`}
-                  target="_blank"
-                  className="btn btn-primary"
-                >
-                  Documentation Preview
-                </a>
-              </div>
-            );
+            console.log(check.name, "yes");
+            return true;
           }
         }
       }
+      return false;
+    };
+
+    if (this.state.runs) {
+      if (runIsPassing("build-docs (python)")) {
+        python = (
+          <a
+            href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/`}
+            target="_blank"
+            className="btn btn-primary"
+            style={{ marginRight: "5px" }}
+          >
+            Python Docs
+          </a>
+        );
+      }
+      if (runIsPassing("build-docs (cpp)")) {
+        cpp = (
+          <a
+            href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/`}
+            target="_blank"
+            className="btn btn-primary"
+          >
+            C++ Docs
+          </a>
+        );
+      }
     }
-    return docPreview;
+    return (
+      <div style={{ paddingBottom: "5px" }}>
+        {python}
+
+        {cpp}
+      </div>
+    );
   }
 
   renderTitle() {
@@ -340,7 +366,7 @@ export default class PrDisplay extends Component {
   }
 
   renderLogViewer(check) {
-    let log = <div></div>;
+    let log = null;
     let isShowing = false;
     if (check.log.shown) {
       isShowing = true;
@@ -376,8 +402,29 @@ export default class PrDisplay extends Component {
     return [log, isShowing];
   }
 
-  renderChecks(checkRuns) {
+  getArtifactName(checkName) {
+    return (
+      checkName
+        .replace("(", "")
+        .replace(")", "")
+        .replace("test ", "test-reports-test-")
+        .replaceAll(", ", "-") + ".zip"
+    );
+  }
+
+  renderChecks(checkRuns, s3Artifacts) {
     const checks = [];
+    const testResultArtifacts = {};
+    if (!s3Artifacts) {
+      s3Artifacts = [];
+    }
+    let artifactsByName = {};
+    for (const artifact of s3Artifacts) {
+      let prefix = artifact.Key["#text"];
+      let name = prefix.split("/").slice(-1)[0];
+      artifactsByName[name] = artifact;
+    }
+
     for (const [index, check] of checkRuns.entries()) {
       // Show the log viewer + toggle chevron
       const toggle = () => {
@@ -402,17 +449,55 @@ export default class PrDisplay extends Component {
         <GoPrimitiveDot style={{ color: "#dbab09" }} />
       );
 
+      let renderResultsButton = null;
+      let artifactDetails = null;
+      let artifactName = this.getArtifactName(check.name);
+      if (artifactsByName[artifactName]) {
+        const artifact = artifactsByName[artifactName];
+        const size = formatBytes(parseInt(artifact.Size["#text"]));
+        renderResultsButton = (
+          <button
+            style={{ marginLeft: "5px", fontSize: "0.7em", fontWeight: "bold" }}
+            className="btn btn-info"
+            onClick={async () => {
+              // showReport might be undefined the first time so explicitly
+              // spell it out here to avoid any falsiness
+              if (artifact.showReport) {
+                artifact.showReport = false;
+              } else {
+                artifact.showReport = true;
+              }
+              this.setState(this.state);
+              this.render();
+            }}
+          >
+            {artifact.showReport ? "Hide" : `Tests (${size})`}
+          </button>
+        );
+        testResultArtifacts[artifact.Key] = true;
+
+        if (artifact.showReport) {
+          const key = `s3-${check.name}-${artifactName}`;
+          let prefix = artifact.Key["#text"];
+          let url = `https://gha-artifacts.s3.amazonaws.com/${prefix}`;
+          artifactDetails = (
+            <TestReportRenderer testReportZip={url} key={key} />
+          );
+        }
+      }
       checks.push({
         data: check,
         element: (
-          <div key={"check-run-" + index}>
+          <div style={{ marginBottom: "2px" }} key={"check-run-" + index}>
             {statusIcon} <a href={check.detailsUrl}>{check.name}</a> {icon}{" "}
             {log}
+            {renderResultsButton}
+            {artifactDetails}
           </div>
         ),
       });
     }
-    return checks;
+    return [checks, testResultArtifacts];
   }
 
   renderArtifact(args) {
@@ -445,6 +530,9 @@ export default class PrDisplay extends Component {
       // The URL in the response is for the API, not browsers, so make it
       // manually
       let url = `https://github.com/pytorch/pytorch/suites/${run.databaseId}/artifacts/${artifact.id}`;
+      if (artifact.name.startsWith("test-reports-")) {
+        continue;
+      }
       artifacts.push(
         this.renderArtifact({
           kind: "gha",
@@ -459,36 +547,17 @@ export default class PrDisplay extends Component {
     return artifacts;
   }
 
-  renderS3Artifacts(run) {
+  renderS3Artifacts(run, testResultArtifacts) {
     let artifacts = [];
     if (run.s3_artifacts) {
       for (const [index, artifact] of run.s3_artifacts.entries()) {
+        if (testResultArtifacts[artifact.Key]) {
+          // Already shown inline with a step, so don't show it again
+          continue;
+        }
         let prefix = artifact.Key["#text"];
         let name = prefix.split("/").slice(-1)[0];
         let url = `https://gha-artifacts.s3.amazonaws.com/${prefix}`;
-
-        let extra = null;
-        if (name.startsWith("test-reports-") && name.endsWith(".zip")) {
-          extra = (
-            <button
-              style={{ marginLeft: "5px", fontSize: "0.7em" }}
-              className="btn btn-info"
-              onClick={async () => {
-                // showReport might be undefined the first time so explicitly
-                // spell it out here to avoid any falsiness
-                if (artifact.showReport) {
-                  artifact.showReport = false;
-                } else {
-                  artifact.showReport = true;
-                }
-                this.setState(this.state);
-                this.render();
-              }}
-            >
-              {artifact.showReport ? "Hide Results" : "Render Results"}
-            </button>
-          );
-        }
 
         artifacts.push(
           this.renderArtifact({
@@ -498,14 +567,8 @@ export default class PrDisplay extends Component {
             size_in_bytes: parseInt(artifact.Size["#text"]),
             url: url,
             expired: false,
-            extra: extra,
           })
         );
-
-        if (artifact.showReport) {
-          let key = `s3-${index}-reports`;
-          artifacts.push(<TestReportRenderer testReportZip={url} key={key} />);
-        }
       }
     }
     return artifacts;
@@ -604,7 +667,10 @@ export default class PrDisplay extends Component {
       // Render all of the check runs as a list
 
       for (const [run_index, run] of this.state.runs.entries()) {
-        const checksData = this.renderChecks(run.checkRuns.nodes);
+        const [checksData, testResultArtifacts] = this.renderChecks(
+          run.checkRuns.nodes,
+          run.s3_artifacts
+        );
         const checks = checksData.map((x) => x.element);
 
         let artifacts = [];
@@ -623,7 +689,9 @@ export default class PrDisplay extends Component {
         }
 
         // List out artifacts from s3
-        artifacts = artifacts.concat(this.renderS3Artifacts(run));
+        artifacts = artifacts.concat(
+          this.renderS3Artifacts(run, testResultArtifacts)
+        );
 
         // If there were any artifacts, set up the 'div' to show them
         let artifactsElement = <div></div>;
@@ -712,7 +780,9 @@ export default class PrDisplay extends Component {
     function add(type) {
       for (const run of runs) {
         if (run.data.status === type) {
-          displayRuns.push(run.element);
+          displayRuns.push(
+            <div style={{ marginBottom: "4px" }}>{run.element}</div>
+          );
         }
       }
     }
