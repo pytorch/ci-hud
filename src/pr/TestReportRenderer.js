@@ -84,28 +84,43 @@ class TestSummary extends Component {
       icon = <BsFillCaretDownFill style={iconStyle} onClick={toggle} />;
     }
     let suiteDetail = null;
+
+    let data = [];
+    for (const [filename, classes] of Object.entries(this.props.info)) {
+      for (const [classname, stats] of Object.entries(classes)) {
+        stats.filename = filename;
+        stats.classname = classname;
+        data.push(stats);
+      }
+    }
+    data = data.sort((a, b) => {
+      a = a.passed + a.error;
+      b = b.passed + b.error;
+      return b - a;
+    });
+    let totals = {
+      passed: 0,
+      error: 0,
+      skipped: 0,
+    };
+    for (const item of data) {
+      totals.passed += item.passed;
+      totals.error += item.error;
+      totals.skipped += item.skipped;
+    }
     if (this.state.showDetail) {
       let rows = [];
-
-      let data = [];
-      for (const [filename, classes] of Object.entries(this.props.info)) {
-        for (const [classname, stats] of Object.entries(classes)) {
-          stats.filename = filename;
-          stats.classname = classname;
-          data.push(stats);
-        }
-      }
-      data = data.sort((a, b) => {
-        a = a.passed + a.error;
-        b = b.passed + b.error;
-        return b - a;
-      });
-
       for (const classStats of data) {
         let filename = classStats.filename.split("/").slice(-1)[0];
         let name = `${filename}:${classStats.classname}`;
         rows.push(
-          <tr style={{ fontSize: "12px" }} key={name}>
+          <tr
+            style={{
+              fontSize: "12px",
+              backgroundColor: classStats.error > 0 ? "#ffe4e4" : "white",
+            }}
+            key={name}
+          >
             <td style={{ fontFamily: '"Monaco", monospace' }}>
               <span style={{ color: "grey" }}>{filename}:</span>
               <span>{classStats.classname}</span>
@@ -143,6 +158,10 @@ class TestSummary extends Component {
               Ran {this.props.totals.cases} test cases in{" "}
               {this.props.totals.classes} classes from {this.props.totals.files}{" "}
               files
+            </p>
+            <p style={{ marginBottom: 0 }}>
+              {totals.passed} tests passed, {totals.error} tests failed,{" "}
+              {totals.skipped} tests skipped
               <button
                 style={{ marginLeft: "10px", fontSize: "0.8em" }}
                 className="btn btn-secondary"
