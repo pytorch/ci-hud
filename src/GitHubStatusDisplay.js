@@ -688,6 +688,9 @@ export default class BuildHistoryDisplay extends Component {
               onClick={() => {
                 toggleGroup(group);
               }}
+              onAuxClick={() => {
+                toggleGroup(group);
+              }}
               style={{ cursor: "pointer" }}
             >
               <span style={{ color: "#d0d0d0" }}>Group </span>
@@ -767,6 +770,9 @@ export default class BuildHistoryDisplay extends Component {
                   fontWeight: "bold",
                 }}
                 onClick={() => {
+                  toggleGroup(data.group);
+                }}
+                onAuxClick={() => {
                   toggleGroup(data.group);
                 }}
               >
