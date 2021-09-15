@@ -274,7 +274,6 @@ export default class PrDisplay extends Component {
             check.status === "COMPLETED" &&
             check.conclusion === "SUCCESS"
           ) {
-            console.log(check.name, "yes");
             return true;
           }
         }
@@ -286,7 +285,7 @@ export default class PrDisplay extends Component {
       if (runIsPassing("build-docs (python)")) {
         python = (
           <a
-            href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/`}
+            href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/index.html`}
             target="_blank"
             className="btn btn-primary"
             style={{ marginRight: "5px" }}
@@ -298,7 +297,7 @@ export default class PrDisplay extends Component {
       if (runIsPassing("build-docs (cpp)")) {
         cpp = (
           <a
-            href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/`}
+            href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/cppdocs/index.html`}
             target="_blank"
             className="btn btn-primary"
           >
@@ -320,17 +319,20 @@ export default class PrDisplay extends Component {
     let title = null;
     if (this.state.commit) {
       if (this.isPr()) {
+        console.log(this.state.pr);
         title = (
-          <h2>
-            <a
-              href={
-                "https://github.com/pytorch/pytorch/pull/" +
-                this.state.pr_number
-              }
-            >
-              PR #{this.state.pr_number}
-            </a>
-          </h2>
+          <div>
+            <h3>
+              <a
+                href={
+                  "https://github.com/pytorch/pytorch/pull/" +
+                  this.state.pr_number
+                }
+              >
+                {this.state.pr.title} (#{this.state.pr_number})
+              </a>
+            </h3>
+          </div>
         );
       } else {
         let subject = this.state.commit.messageHeadline;
