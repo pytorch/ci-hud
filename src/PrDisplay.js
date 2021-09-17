@@ -984,6 +984,10 @@ export default class PrDisplay extends Component {
     add("GROUP");
     add("SKIPPED");
 
+    if (this.state.runs && displayRuns.length == 0) {
+      displayRuns = <p style={{ fontWeight: "bold" }}>No jobs found</p>;
+    }
+
     return (
       <div>
         <AuthorizeGitHub />
@@ -992,13 +996,7 @@ export default class PrDisplay extends Component {
         {loading}
 
         {this.renderDocPreviewButton()}
-        <div>
-          {displayRuns.length == 0 ? (
-            <p style={{ fontWeight: "bold" }}>No jobs found</p>
-          ) : (
-            displayRuns
-          )}
-        </div>
+        <div>{displayRuns}</div>
       </div>
     );
   }
