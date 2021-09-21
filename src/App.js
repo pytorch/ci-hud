@@ -36,7 +36,7 @@ const App = () => (
         <li>New-style:</li>
         {["pytorch"].map((e) => (
           <Fragment key={e}>
-            {["master", "nightly", "release/1.9"].map((trigger) => (
+            {["master", "nightly", "release/1.10"].map((trigger) => (
               <li key={`${e}-${trigger}`}>
                 <Link to={`/build2/${e}-${trigger}`}>
                   {e}-{trigger}
