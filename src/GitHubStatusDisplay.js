@@ -123,6 +123,38 @@ function getJenkinsJobName(subBuild) {
   }
 }
 
+class NameFilterForm extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      jobNameFilter: props.defaultValue || "",
+      onSubmit: props.onSubmit || ((_) => {}),
+    };
+  }
+  render() {
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          this.state.onSubmit(this.state.jobNameFilter);
+        }}
+      >
+        <label htmlFor="job-name-filter">Name filter:&nbsp;</label>
+        <input
+          type="input"
+          name="job-name-filter"
+          id="job-name-filter"
+          value={this.state.jobNameFilter}
+          onChange={(e) => {
+            this.setState({ jobNameFilter: e.target.value });
+          }}
+        />
+        <input style={{ marginLeft: "3px" }} type="submit" value="Go" />
+      </form>
+    );
+  }
+}
+
 export default class BuildHistoryDisplay extends Component {
   constructor(props) {
     super(props);
@@ -947,22 +979,11 @@ export default class BuildHistoryDisplay extends Component {
               <label htmlFor="group-jobs">Group related jobs</label>
             </li>
             <li>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  let filter = document.getElementById("job-name-filter");
-                  this.setState({ jobNameFilter: filter.value });
+              <NameFilterForm
+                onSubmit={(filter) => {
+                  this.setState({ jobNameFilter: filter });
                 }}
-              >
-                <label htmlFor="job-name-filter">Name filter:&nbsp;</label>
-                <input
-                  type="input"
-                  name="job-name-filter"
-                  id="job-name-filter"
-                  value={this.jobNameFilter ? this.jobNameFilter : undefined}
-                />
-                <input style={{ marginLeft: "3px" }} type="submit" value="Go" />
-              </form>
+              />
             </li>
           </ul>
         </div>
