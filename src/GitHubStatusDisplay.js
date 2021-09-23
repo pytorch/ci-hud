@@ -169,6 +169,7 @@ export default class BuildHistoryDisplay extends Component {
     if (!("showNotifications" in prefs))
       prefs["showNotifications"] = !isMobile();
     if (!("groupJobs" in prefs)) prefs["groupJobs"] = true;
+    let jobNameFilter = this.props.jobNameFilter || "";
     return {
       builds: [],
       known_jobs: [],
@@ -176,8 +177,8 @@ export default class BuildHistoryDisplay extends Component {
       currentTime: new Date(),
       updateTime: new Date(0),
       showNotifications: prefs.showNotifications,
-      groupJobs: prefs.groupJobs,
-      jobNameFilter: "",
+      groupJobs: jobNameFilter.length === 0 ? prefs.groupJobs : false,
+      jobNameFilter: jobNameFilter,
     };
   }
   componentDidMount() {
@@ -983,6 +984,7 @@ export default class BuildHistoryDisplay extends Component {
                 onSubmit={(filter) => {
                   this.setState({ jobNameFilter: filter });
                 }}
+                defaultValue={this.props.jobNameFilter}
               />
             </li>
           </ul>

@@ -182,6 +182,7 @@ const Build2 = ({ match }) => {
       interval={60000}
       job={match.url.replace(/^\/build2\//, "")}
       mode={query.get("mode")}
+      jobNameFilter={query.get("name_filter")}
     />
   );
 };
