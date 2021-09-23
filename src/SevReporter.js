@@ -11,7 +11,7 @@ import { github } from "./utils.js";
 function getIssuesQuery() {
   return `
       {
-        search(type:ISSUE,first:100,query:"is:open is:issue label:\\\"ci: sev\\\"") {
+        search(type:ISSUE,first:100,query:"is:open is:issue label:\\\"HUD SEV\\\"") {
           nodes {
             ... on Issue {
               number
