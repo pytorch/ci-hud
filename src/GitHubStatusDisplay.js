@@ -127,7 +127,7 @@ class NameFilterForm extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      jobNameFilter: props.defaultValue || '',
+      jobNameFilter: props.defaultValue || "",
       onSubmit: props.onSubmit || ((_) => {}),
     };
   }
@@ -145,7 +145,9 @@ class NameFilterForm extends Component {
           name="job-name-filter"
           id="job-name-filter"
           value={this.state.jobNameFilter}
-          onChange={(e) => { this.setState({'jobNameFilter': e.target.value});}}
+          onChange={(e) => {
+            this.setState({ jobNameFilter: e.target.value });
+          }}
         />
         <input style={{ marginLeft: "3px" }} type="submit" value="Go" />
       </form>
@@ -979,7 +981,7 @@ export default class BuildHistoryDisplay extends Component {
             <li>
               <NameFilterForm
                 onSubmit={(filter) => {
-                  this.setState({ jobNameFilter: filter});
+                  this.setState({ jobNameFilter: filter });
                 }}
               />
             </li>
