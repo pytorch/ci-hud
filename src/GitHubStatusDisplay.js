@@ -782,7 +782,9 @@ export default class BuildHistoryDisplay extends Component {
 
     function decoratedBuildUrl(url) {
       // Add check_suite_focus=true to GHA checkruns
-      const ghaRegex = new RegExp("^https://github.com/pytorch/pytorch/runs/\\d+$");
+      const ghaRegex = new RegExp(
+        "^https://github.com/pytorch/pytorch/runs/\\d+$"
+      );
       if (url.match(ghaRegex)) {
         return url + "?check_suite_focus=true";
       }
