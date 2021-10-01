@@ -13,6 +13,7 @@ import {
   BsFillCaretRightFill,
   BsFillCaretDownFill,
   ImSpinner2,
+  FcCancel,
 } from "react-icons/all";
 
 function isMobile() {
@@ -566,8 +567,12 @@ export default class BuildHistoryDisplay extends Component {
         );
       if (is_aborted(result))
         return (
-          <span role="img" style={{ color: "gray" }} aria-label="cancelled">
-            .
+          <span
+            role="img"
+            style={{ marginLeft: "-2px", color: "gray" }}
+            aria-label="cancelled"
+          >
+            <FcCancel />
           </span>
         );
       if (is_pending(result))
