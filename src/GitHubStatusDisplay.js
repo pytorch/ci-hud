@@ -780,6 +780,17 @@ export default class BuildHistoryDisplay extends Component {
       return "pending";
     }
 
+    function decoratedBuildUrl(url) {
+      // Add check_suite_focus=true to GHA checkruns
+      const ghaRegex = new RegExp(
+        "^https://github.com/pytorch/pytorch/runs/\\d+$"
+      );
+      if (url.match(ghaRegex)) {
+        return url + "?check_suite_focus=true";
+      }
+      return url;
+    }
+
     const rows = builds.map((build) => {
       let found = false;
       const sb_map = build.sb_map;
@@ -822,7 +833,7 @@ export default class BuildHistoryDisplay extends Component {
             cell = (
               <div className="display-cell">
                 <a
-                  href={sb.build_url}
+                  href={decoratedBuildUrl(sb.build_url)}
                   className="icon"
                   target="_blank"
                   alt={jobName}
