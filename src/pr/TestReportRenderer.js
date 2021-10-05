@@ -36,7 +36,25 @@ class TestSuite extends Component {
 
   render() {
     const tcase = this.props.testcase;
-    const failure = tcase.failure || tcase.error;
+    let failure = tcase.failure || tcase.error;
+
+    let failures = null;
+    if (Array.isArray(failure)) {
+      failures = failure;
+    } else {
+      failures = [failure];
+    }
+
+    let content = failures.map((f) => f.textContent.trim()).join("\n\n");
+
+    let fileinfo = null;
+    if (tcase.file && tcase.line) {
+      fileinfo = (
+        <span style={{ color: "grey" }}>
+          {tcase.file}:{tcase.line}:
+        </span>
+      );
+    }
     return (
       <Card
         style={{
@@ -48,15 +66,11 @@ class TestSuite extends Component {
         <Card.Body>
           <div>
             <p>
-              <span style={{ color: "grey" }}>
-                {tcase.file}:{tcase.line}:
-              </span>
+              {fileinfo}
               {tcase.classname}.{tcase.name}
             </p>
             <pre ref={this.nodeRef}>
-              <code className="language-python">
-                {failure.textContent.trim()}
-              </code>
+              <code className="language-python">{content}</code>
             </pre>
           </div>
         </Card.Body>
