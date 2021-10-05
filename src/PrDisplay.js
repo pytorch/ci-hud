@@ -11,6 +11,7 @@ import Button from "react-bootstrap/Button";
 import AuthorizeGitHub from "./AuthorizeGitHub.js";
 import TestReportRenderer from "./pr/TestReportRenderer.js";
 import Editor from "@monaco-editor/react";
+import ReactMarkdown from "react-markdown";
 
 import {
   BsFillCaretRightFill,
@@ -34,6 +35,15 @@ function getPrQuery(number) {
           title
           number
           url
+          body
+          comments(last: 10) {
+            nodes {
+              author {
+                login
+              }
+              body
+            }
+          }
           commits(last: 1) {
             nodes {
               commit {
@@ -368,6 +378,65 @@ export default class PrDisplay extends Component {
       }
     }
     return title;
+  }
+
+  findDiffInComments(comments) {
+    let diff = null;
+    for (const comment of comments) {
+      // We don't care about user supplied updates from ghstack since those are
+      // in the PR body
+      if (comment.author.login === "facebook-github-bot") {
+        let match = comment.body.match(
+          /https:\/\/www\.internalfb\.com\/diff\/(D\d+)/
+        );
+        if (match) {
+          diff = match[1];
+        }
+      }
+    }
+    return diff;
+  }
+
+  renderDiff() {
+    if (!this.state.commit) {
+      return null;
+    }
+
+    // Try to find the diff in the commit message or PR body
+    let text = this.state.commit.messageBody;
+    let diff = null;
+    if (this.isPr()) {
+      text = this.state.pr.body;
+    }
+    const match = text.match(/Differential Revision: (\[)?(D\d+)(\])?/);
+    if (match) {
+      diff = match[2];
+    }
+
+    if (!diff && this.isPr()) {
+      // If we didn't find a diff, search the PR comment for facebook-github-bot
+      // comments
+      diff = this.findDiffInComments(this.state.pr.comments.nodes);
+    }
+
+    return <a href={`https://www.internalfb.com/diff/${diff}`}>{diff}</a>;
+  }
+
+  renderBody() {
+    if (!this.state.commit) {
+      return null;
+    }
+
+    let text = this.state.commit.messageBody;
+    if (this.isPr()) {
+      text = this.state.pr.body;
+    }
+
+    return (
+      <div style={{ maxHeight: "13em", overflow: "scroll", margin: "10px" }}>
+        <ReactMarkdown children={text} />
+      </div>
+    );
   }
 
   filterLog(log) {
@@ -993,6 +1062,8 @@ export default class PrDisplay extends Component {
         <AuthorizeGitHub />
 
         {this.renderTitle()}
+        {this.renderDiff()}
+        {this.renderBody()}
         {loading}
 
         {this.renderDocPreviewButton()}
