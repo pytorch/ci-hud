@@ -56,24 +56,23 @@ export default class AuthorizeGitHub extends Component {
     const existingToken = localStorage.getItem("gh_pat");
     if (existingToken) {
       return (
-        <div>
-          <a href="/github_logout">Log out</a>
+        <div style={{ display: "inline" }}>
+          <a href="/github_logout">log out</a>
         </div>
       );
     }
     if (!this.state.code) {
       return (
-        <div>
+        <div style={{ display: "inline" }}>
           <a href="https://github.com/login/oauth/authorize?scope=public_repo&client_id=7e8b4df19d85405ac1b2">
-            Click here
+            log in
           </a>{" "}
-          to sign in to GitHub
         </div>
       );
     }
     return (
       <div>
-        <p>Loading...</p>
+        <p>loading...</p>
       </div>
     );
   }

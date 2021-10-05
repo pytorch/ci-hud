@@ -1059,8 +1059,6 @@ export default class PrDisplay extends Component {
 
     return (
       <div>
-        <AuthorizeGitHub />
-
         {this.renderTitle()}
         {this.renderDiff()}
         {this.renderBody()}
