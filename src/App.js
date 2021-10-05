@@ -17,6 +17,7 @@ import JobCorrelationHeatmap from "./JobCorrelationHeatmap.js";
 import GitHubActionsDisplay from "./GitHubActionsDisplay.js";
 import AuthorizeGitHub from "./AuthorizeGitHub.js";
 import SevReporter from "./SevReporter.js";
+import Links from "./Links.js";
 import {
   BrowserRouter as Router,
   Route,
@@ -28,108 +29,26 @@ import {
 const App = () => (
   <Router basename={process.env.PUBLIC_URL + "/"}>
     <div className="App">
-      <header className="App-header">
-        <h1 className="App-title">
-          <Link to="/">hud.pytorch.org</Link>
-        </h1>
-      </header>
-      <ul className="menu">
-        <li>New-style:</li>
-        {["pytorch"].map((e) => (
-          <Fragment key={e}>
-            {["master", "nightly", "release/1.10"].map((trigger) => (
-              <li key={`${e}-${trigger}`}>
-                <Link to={`/build2/${e}-${trigger}`}>
-                  {e}-{trigger}
-                </Link>
-              </li>
-            ))}
-          </Fragment>
-        ))}
-        {["torchbench-v0-nightly", "status"].map((e) => (
-          <li key={`${e}`}>
-            <Link to={`/${e}`}>{e}</Link>
-          </li>
-        ))}
-      </ul>
-      <ul className="deprecated-menu">
-        <li>Old-style:</li>
-        {[
-          "pytorch",
-          // "tensorcomp",
-          // "translate",
-          "rocm-pytorch",
-        ].map((e) => (
-          <Fragment key={e}>
-            {["master", "pull-request"].map((trigger) => (
-              <li key={e + "-" + trigger}>
-                <Link to={"/build1/" + e + "-" + trigger}>
-                  {e}-{trigger}
-                </Link>
-                &nbsp; (
-                <Link to={"/build1/" + e + "-" + trigger + "?mode=perf"}>
-                  perf
-                </Link>
-                /
-                <Link to={"/build1/" + e + "-" + trigger + "?mode=cost"}>
-                  cost
-                </Link>
-                {e === "pytorch" && trigger === "master" ? (
-                  <Fragment>
-                    /
-                    <Link to={"/build1/" + e + "-" + trigger + "?mode=binary"}>
-                      binary
-                    </Link>
-                  </Fragment>
-                ) : (
-                  <Fragment />
-                )}
-                )
-              </li>
-            ))}
-          </Fragment>
-        ))}
-        <Fragment key="nightlies-uploaded">
-          <li>
-            <Link to={"/build1/nightlies-uploaded"}>nightlies-uploaded</Link>
-          </li>
-        </Fragment>
-      </ul>
-      <SevReporter />
-      <Switch>
-        <Route path="/build" component={BuildRoute} />
-        <Route path="/build1" component={Build1Route} />
-        <Route
-          path="/pytorch/pytorch/pull/:segment"
-          render={(props) => {
-            return <Redirect to={`/pr/${props.match.params.segment}`} />;
-          }}
-        ></Route>
-        <Route
-          path="/pytorch/pytorch/pull/*/commits/:segment"
-          render={(props) => {
-            return <Redirect to={`/commit/${props.match.params.segment}`} />;
-          }}
-        ></Route>
-        <Route
-          path="/pytorch/pytorch/commit/:segment"
-          render={(props) => {
-            return <Redirect to={`/commit/${props.match.params.segment}`} />;
-          }}
-        ></Route>
-        <Route path="/pr/:segment" component={PrRoute} />
-        <Route path="/commit/:segment" component={CommitPage} />
-        <Route path="/build2" component={Build2Route} />
-        <Route path="/build3" component={Build3Route} />
-        <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
-        <Route path="/github_logout" component={LogoutGitHub} />
-        <Route path="/authorize_github" component={AuthorizeGithubRoute} />
-        <Route path="/status" component={Status} />
-        <Route exact path="/">
-          <Redirect to="/build2/pytorch-master" />
-        </Route>
-        <Route path="*" exact={true} component={RouteNotFound} />
-      </Switch>
+      <Links />
+      <div style={{ margin: "0" }} className="container">
+        <SevReporter />
+        <Switch>
+          <Route path="/build" component={BuildRoute} />
+          <Route path="/build1" component={Build1Route} />
+          <Route path="/pr" component={PrRoute} />
+          <Route path="/commit/:segment" component={CommitPage} />
+          <Route path="/build2" component={Build2Route} />
+          <Route path="/build3" component={Build3Route} />
+          <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
+          <Route path="/github_logout" component={LogoutGitHub} />
+          <Route path="/authorize_github" component={AuthorizeGithubRoute} />
+          <Route path="/status" component={Status} />
+          <Route exact path="/">
+            <Redirect to="/build2/pytorch-master" />
+          </Route>
+          <Route path="*" exact={true} component={RouteNotFound} />
+        </Switch>
+      </div>
     </div>
   </Router>
 );
