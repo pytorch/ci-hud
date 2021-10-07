@@ -7,6 +7,7 @@ import React, { Component, Fragment } from "react";
 import jenkins from "./Jenkins.js";
 import AsOf from "./AsOf.js";
 import { summarize_job, summarize_date } from "./Summarize.js";
+import getGroups from "./groups/index.js";
 import Tooltip from "rc-tooltip";
 import axios from "axios";
 import {
@@ -172,7 +173,10 @@ export default class BuildHistoryDisplay extends Component {
     if (!("groupJobs" in prefs)) prefs["groupJobs"] = true;
     let jobNameFilter = this.props.jobNameFilter || "";
     return {
+      fetchedBuilds: false,
+      fetchError: false,
       builds: [],
+      lastUpdateDate: null,
       known_jobs: [],
       showGroups: [],
       currentTime: new Date(),
@@ -201,7 +205,7 @@ export default class BuildHistoryDisplay extends Component {
         groupJobs: this.state.groupJobs,
       })
     );
-    if (this.props.job !== prevProps.job) {
+    if (this.props.branch !== prevProps.branch) {
       this.setState(this.initialState());
       this.update();
     }
@@ -216,7 +220,7 @@ export default class BuildHistoryDisplay extends Component {
     // instance*; even when pagination is requested, Jenkins will
     // still load ALL builds into memory before servicing your
     // request.  I've filed this at https://issues.jenkins-ci.org/browse/JENKINS-49908
-    let jenkins_data = await jenkins.job(this.props.job, {
+    let jenkins_data = await jenkins.job(`pytorch-${this.props.branch}`, {
       tree: `builds[
                 url,
                 number,
@@ -280,27 +284,51 @@ export default class BuildHistoryDisplay extends Component {
   }
   async update() {
     const currentTime = new Date();
-    const branch = this.props.job.replace(/^pytorch-/, "");
-    const build_prefix = branch === "master" ? branch : "pr";
-    const url_prefix = "https://s3.amazonaws.com/ossci-job-status";
     this.setState({ currentTime: currentTime });
 
-    const commits = await axios.get(`${url_prefix}/${branch}/index.json`);
+    const branch = this.props.branch;
+    const user = this.props.user;
+    const repo = this.props.repo;
+    const jsonUrl = `https://s3.amazonaws.com/ossci-job-status/v5/${user}/${repo}/${branch.replace(
+      "/",
+      "_"
+    )}.json`;
+    let commits = null;
+    try {
+      commits = await axios.get(jsonUrl);
+    } catch {
+      this.setState({ fetchError: true });
+      return;
+    }
 
-    const requests = commits.data.map(async (build) => {
-      try {
-        const r = await axios.get(
-          `${url_prefix}/${build_prefix}/${build.id}.json`
-        );
-        build.sb_map = objToStrMap(r.data);
-      } catch (e) {
-        build.sb_map = new Map();
-        // swallow
+    // Marshal new build format into the old build format
+    const builds = [];
+    for (const commit of commits.data) {
+      const build_map = new Map();
+      for (const job of commit.jobs) {
+        let status = job.status;
+        if (status === "neutral") {
+          status = "skipped";
+        }
+        if (status === "queued") {
+          status = "pending";
+        }
+        build_map.set(job.name, {
+          build_url: job.url,
+          status: status,
+        });
       }
-      return build;
-    });
-    const builds = await axios.all(requests);
-    builds.reverse();
+      builds.push({
+        author: {
+          username: commit.author,
+        },
+        message: commit.headline + "\n" + commit.body,
+        sb_map: build_map,
+        id: commit.sha,
+        timestamp: commit.date,
+        url: `https://github.com/pytorch/pytorch/commit/${commit.sha}`,
+      });
+    }
 
     if (branch === "master") {
       await this.addJenkinsResults(builds);
@@ -309,6 +337,8 @@ export default class BuildHistoryDisplay extends Component {
     const data = {};
 
     data.updateTime = new Date();
+    data.lastUpdateDate = new Date(commits.headers["last-modified"]);
+    data.fetchedBuilds = true;
     data.connectedIn = data.updateTime - currentTime;
 
     const known_jobs_set = new Set();
@@ -331,7 +361,7 @@ export default class BuildHistoryDisplay extends Component {
     //  - pytorch_doc_push: don't care about this
     //  - nightlies: these don't run all the time
 
-    if (this.props.job.startsWith("pytorch-")) {
+    if (this.props.repo === "pytorch") {
       data.consecutive_failure_count = computeConsecutiveFailureCount(data);
 
       // Compute what notifications to show
@@ -400,116 +430,9 @@ export default class BuildHistoryDisplay extends Component {
   }
 
   render() {
-    let groups = [
-      {
-        regex: /Lint/,
-        name: "Lint Jobs",
-      },
-      {
-        regex:
-          /(\(periodic-pytorch)|(ci\/circleci: periodic_pytorch)|(^periodic-)/,
-        name: "Periodic Jobs",
-      },
-      {
-        regex: /(Linux CI \(pytorch-linux-)|(^linux-)/,
-        name: "Linux GitHub Actions",
-      },
-      {
-        regex:
-          /(Add annotations )|(Close stale pull requests)|(Label PRs & Issues)|(Triage )|(Update S3 HTML indices)|(codecov\/project)|(Facebook CLA Check)|(auto-label-rocm)/,
-        name: "Annotations and labeling",
-      },
-      {
-        regex:
-          /(ci\/circleci: docker-pytorch-)|(ci\/circleci: ecr_gc_job_)|(ci\/circleci: docker_for_ecr_gc_build_job)|(Garbage Collect ECR Images)/,
-        name: "Docker",
-      },
-      {
-        regex: /(Windows CI \(pytorch-)|(^win-)/,
-        name: "Windows GitHub Actions",
-      },
-      {
-        regex: / \/ calculate-docker-image/,
-        name: "GitHub calculate-docker-image",
-      },
-      {
-        regex: /ci\/circleci: pytorch_ios_/,
-        name: "ci/circleci: pytorch_ios",
-      },
-      {
-        regex:
-          /(ci\/circleci: pytorch_parallelnative_)|(ci\/circleci: pytorch_paralleltbb_)|(paralleltbb-linux-)|(parallelnative-linux-)/,
-        name: "Parallel",
-      },
-      {
-        regex:
-          /(ci\/circleci: pytorch_cpp_doc_build)|(ci\/circleci: pytorch_cpp_doc_test)|(pytorch_python_doc_build)|(pytorch_doc_test)/,
-        name: "Docs",
-      },
-      {
-        regex: /ci\/circleci: pytorch_linux_bionic_cuda10_2_cudnn7_py3_9_gcc7_/,
-        name: "ci/circleci: pytorch_linux_bionic_cuda10_2_cudnn7_py3_9_gcc7",
-      },
-      {
-        regex: /ci\/circleci: pytorch_linux_xenial_cuda10_2_cudnn7_py3_/,
-        name: "ci/circleci: pytorch_linux_xenial_cuda10_2_cudnn7_py3",
-      },
-      {
-        regex: /ci\/circleci: pytorch_linux_xenial_cuda11_1_cudnn8_py3_gcc7_/,
-        name: "ci/circleci: pytorch_linux_xenial_cuda11_1_cudnn8_py3_gcc7",
-      },
-      {
-        regex:
-          /(ci\/circleci: pytorch_linux_xenial_py3_clang5_android_ndk_r19c_)|(ci\/circleci: pytorch-linux-xenial-py3-clang5-android-ndk-r19c-)/,
-        name: "ci/circleci: pytorch_linux_xenial_py3_clang5_android_ndk",
-      },
-      {
-        regex: /ci\/circleci: pytorch_linux_xenial_py3_6_gcc7_build/,
-        name: "ci/circleci: pytorch_linux_xenial_py3_clang5_asan_build",
-      },
-      {
-        regex: /ci\/circleci: pytorch_linux_xenial_py3_clang5_mobile_/,
-        name: "ci/circleci: pytorch_linux_xenial_py3_clang5_mobile",
-      },
-      {
-        regex: /ci\/circleci: pytorch_linux_xenial_py3_clang7_onnx_/,
-        name: "ci/circleci: pytorch_linux_xenial_py3_clang7_onnx",
-      },
-      {
-        regex: /ci\/circleci: pytorch_linux_xenial_py3_clang5_asan_/,
-        name: "ci/circleci: pytorch_linux_xenial_py3_clang5_asan",
-      },
-      {
-        regex: /ci\/circleci: pytorch_linux_xenial_py3_6_gcc7_/,
-        name: "ci/circleci: pytorch_linux_xenial_py3_6_gcc7",
-      },
-      {
-        regex: /ci\/circleci: pytorch_macos_10_13_py3_/,
-        name: "ci/circleci: pytorch_macos_10_13_py3",
-      },
-      {
-        regex: /ci\/circleci: pytorch_linux_xenial_py3_6_gcc5_4_/,
-        name: "ci/circleci: pytorch_linux_xenial_py3_6_gcc5_4",
-      },
-      {
-        regex: /ci\/circleci: binary_linux_/,
-        name: "ci/circleci: binary_linux",
-      },
-      {
-        regex: /ci\/circleci: binary_macos_/,
-        name: "ci/circleci: binary_macos",
-      },
-      {
-        regex: /ci\/circleci: binary_windows_/,
-        name: "ci/circleci: binary_windows",
-      },
-      {
-        regex: /(pytorch-linux-bionic-rocm)|(pytorch_linux_bionic_rocm)/,
-        name: "ROCm",
-      },
-    ];
-
     // Initialize the groups
+    let groups = getGroups(this.props.repo);
+
     for (const group of groups) {
       group.jobNames = [];
     }
@@ -538,7 +461,10 @@ export default class BuildHistoryDisplay extends Component {
 
     const groupIsFailing = (group) => {
       for (const jobName of group.jobNames) {
-        if (this.state.consecutive_failure_count.has(jobName)) {
+        if (
+          this.state.consecutive_failure_count &&
+          this.state.consecutive_failure_count.has(jobName)
+        ) {
           return true;
         }
       }
@@ -694,12 +620,18 @@ export default class BuildHistoryDisplay extends Component {
 
     const visibleJobsHeaders = [];
     for (const data of groupedVisibleJobs) {
-      const jobName = data.name;
+      let jobName = data.name;
+      if (data.group.jobNames.length === 1) {
+        jobName = data.group.jobNames[0];
+      }
       let header = (
         <th className="rotate" key={jobName}>
           <div
             className={
-              consecutive_failure_count.has(jobName) ? "failing-header" : ""
+              consecutive_failure_count &&
+              consecutive_failure_count.has(jobName)
+                ? "failing-header"
+                : ""
             }
           >
             {summarize_job(jobName)}
@@ -795,7 +727,13 @@ export default class BuildHistoryDisplay extends Component {
       }
       return url;
     }
-
+    builds.forEach((build) => {
+      build.sb_map.forEach((item) => {
+        if (item.status) {
+          item.status = item.status.toLowerCase();
+        }
+      });
+    });
     const rows = builds.map((build) => {
       let found = false;
       const sb_map = build.sb_map;
@@ -832,6 +770,9 @@ export default class BuildHistoryDisplay extends Component {
           }
         } else {
           // Ungrouped job, show it directly
+          if (data.group.jobNames.length === 1) {
+            jobName = data.group.jobNames[0];
+          }
           const sb = sb_map.get(jobName);
           if (sb !== undefined) {
             found = true;
@@ -901,15 +842,12 @@ export default class BuildHistoryDisplay extends Component {
         return <Fragment />;
       }
 
-      let author = build.author.username
-        ? build.author.username
-        : build.author.name;
+      let author = build.author.username;
 
       // Cut off author at arbitrary length
       if (author.length > 10) {
         author = `${author.slice(0, 10)}...`;
       }
-
       const desc = (
         <div key={build.id}>
           <a style={{ color: "#003d7f" }} href={`/commit/${build.id}`}>
@@ -953,9 +891,47 @@ export default class BuildHistoryDisplay extends Component {
       );
     });
 
+    let loadingInfo = null;
+    if (this.state.fetchError) {
+      loadingInfo = (
+        <p>
+          Error fetching commits, either the branch does not exist or is not
+          tracked by the{" "}
+          <a href="https://github.com/pytorch/test-infra/tree/main/aws/lambda/github-status-sync">
+            status syncing job
+          </a>
+        </p>
+      );
+    } else if (this.state.fetchedBuilds && rows.length == 0) {
+      loadingInfo = <p>Fetched data but found no rows</p>;
+    } else if (!this.state.fetchedBuilds) {
+      loadingInfo = (
+        <div style={{ margin: "10px" }}>
+          <ImSpinner2 className="icon-spin" />
+        </div>
+      );
+    }
+
+    let lastUpdate = null;
+    if (this.state.lastUpdateDate) {
+      lastUpdate = (
+        <p style={{ fontSize: "0.8em" }}>
+          Last updated {this.state.lastUpdateDate.toLocaleString()}
+        </p>
+      );
+    }
+
     return (
       <div>
-        <h2>{this.props.job} history </h2>
+        <h4>
+          <a
+            href={`https://github.com/${this.props.user}/${this.props.repo}/commits/${this.props.branch}`}
+          >
+            {this.props.user}/{this.props.repo}/{this.props.branch}
+          </a>{" "}
+          CI history{" "}
+        </h4>
+        {lastUpdate}
         <div>
           <ul className="menu">
             {isMobile() ? null : (
@@ -1005,19 +981,22 @@ export default class BuildHistoryDisplay extends Component {
             </li>
           </ul>
         </div>
-        <table className="buildHistoryTable">
-          <thead>
-            <tr>
-              <th className="left-cell">PR#</th>
-              <th className="left-cell">Date</th>
-              {visibleJobsHeaders}
-              <th className="right-cell">User</th>
-              <th className="right-cell">Description</th>
-            </tr>
-          </thead>
-          <tbody>{rows}</tbody>
-        </table>
-        {rows.length > 0 ? null : <ImSpinner2 className="icon-spin" />}
+        {rows.length > 0 ? (
+          <table className="buildHistoryTable">
+            <thead>
+              <tr>
+                <th className="left-cell">PR#</th>
+                <th className="left-cell">Date</th>
+                {visibleJobsHeaders}
+                <th className="right-cell">User</th>
+                <th className="right-cell">Description</th>
+              </tr>
+            </thead>
+            <tbody>{rows}</tbody>
+          </table>
+        ) : null}
+
+        {loadingInfo}
       </div>
     );
   }

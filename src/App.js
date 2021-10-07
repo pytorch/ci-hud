@@ -53,9 +53,31 @@ const App = () => (
               return <Redirect to={`/commit/${props.match.params.segment}`} />;
             }}
           ></Route>
+          <Route
+            path="/ci/:user/:repo/:branch+"
+            render={(props) => {
+              const query = new URLSearchParams(window.location.search);
+              const params = props.match.params;
+              return (
+                <GitHubStatusDisplay
+                  interval={60000}
+                  repo={params.repo}
+                  user={params.user}
+                  branch={params.branch}
+                  jobNameFilter={query.get("name_filter")}
+                />
+              );
+            }}
+          ></Route>
           <Route path="/pr/:segment" component={PrRoute} />
           <Route path="/commit/:segment" component={CommitPage} />
-          <Route path="/build2" component={Build2Route} />
+          <Route
+            path="/build2/:segment"
+            render={(props) => {
+              const branch = props.match.params.segment.replace("pytorch-", "");
+              return <Redirect to={`/ci/pytorch/pytorch/${branch}`} />;
+            }}
+          />
           <Route path="/build3" component={Build3Route} />
           <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
           <Route path="/github_logout" component={LogoutGitHub} />
