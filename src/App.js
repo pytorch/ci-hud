@@ -35,7 +35,25 @@ const App = () => (
         <Switch>
           <Route path="/build" component={BuildRoute} />
           <Route path="/build1" component={Build1Route} />
-          <Route path="/pr" component={PrRoute} />
+          <Route
+            path="/pytorch/pytorch/pull/:segment"
+            render={(props) => {
+              return <Redirect to={`/pr/${props.match.params.segment}`} />;
+            }}
+          ></Route>
+          <Route
+            path="/pytorch/pytorch/pull/*/commits/:segment"
+            render={(props) => {
+              return <Redirect to={`/commit/${props.match.params.segment}`} />;
+            }}
+          ></Route>
+          <Route
+            path="/pytorch/pytorch/commit/:segment"
+            render={(props) => {
+              return <Redirect to={`/commit/${props.match.params.segment}`} />;
+            }}
+          ></Route>
+          <Route path="/pr/:segment" component={PrRoute} />
           <Route path="/commit/:segment" component={CommitPage} />
           <Route path="/build2" component={Build2Route} />
           <Route path="/build3" component={Build3Route} />
