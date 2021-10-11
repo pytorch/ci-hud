@@ -44,7 +44,7 @@ const App = () => (
           <Route path="/authorize_github" component={AuthorizeGithubRoute} />
           <Route path="/status" component={Status} />
           <Route exact path="/">
-            <Redirect to="/build2/pytorch-master" />
+            <Redirect to="/build3/pytorch-master" />
           </Route>
           <Route path="*" exact={true} component={RouteNotFound} />
         </Switch>
