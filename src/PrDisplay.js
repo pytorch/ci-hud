@@ -148,6 +148,9 @@ export default class PrDisplay extends Component {
   isPr() {
     return this.state.pr_number !== undefined;
   }
+  hasError() {
+    return this.state.error_message !== undefined;
+  }
 
   extractItem(result, key) {
     // Some of the stuff from s3 can come in as a single object or an array,
@@ -163,6 +166,9 @@ export default class PrDisplay extends Component {
   }
 
   async componentDidUpdate(prevProps, prevState) {
+    if (this.hasError()) {
+      return;
+    }
     for (const run of this.state.runs) {
       for (const check of run.checkRuns.nodes) {
         if (!check.log.shown || check.log.text !== null) {
@@ -189,13 +195,26 @@ export default class PrDisplay extends Component {
     if (!localStorage.getItem("gh_pat")) {
       return;
     }
+    if (this.hasError()) {
+      return;
+    }
 
     if (this.isPr()) {
       let pr_result = await github.graphql(getPrQuery(this.state.pr_number));
       this.state.pr = pr_result.repository.pullRequest;
+      if (this.state.pr === null) {
+        this.state.error_message = "Failed to fetch PR " + this.state.pr_number;
+        this.setState(this.state);
+        return;
+      }
       this.state.commit = this.state.pr.commits.nodes[0].commit;
     } else {
       let commit = await github.graphql(getCommitQuery(this.state.commit_hash));
+      if (commit.repository.object == null) {
+        this.state.error_message = "Failed to fetch " + this.state.commit_hash;
+        this.setState(this.state);
+        return;
+      }
       this.state.commit = commit.repository.object.history.nodes[0];
     }
 
@@ -1031,7 +1050,9 @@ export default class PrDisplay extends Component {
     runs = runs.concat(this.renderGroups(groups));
 
     let loading = null;
-    if (!this.state.commit) {
+    if (this.state.error_message) {
+      loading = <p style={{ color: "red" }}> {this.state.error_message}</p>;
+    } else if (!this.state.commit) {
       loading = <p>Loading... (make sure you are signed in)</p>;
     }
 
