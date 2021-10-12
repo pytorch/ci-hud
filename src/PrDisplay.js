@@ -27,6 +27,14 @@ import { parseXml, formatBytes, asyncAll, s3, github } from "./utils.js";
 
 const PREVIEW_BASE_URL = "https://docs-preview.pytorch.org";
 
+// Returns true if the location is local or a deploy preview
+function isOnDevelopmentHost() {
+  return (
+    window.location.href.startsWith("http://localhost") ||
+    window.location.href.startsWith("https://deploy-preview")
+  );
+}
+
 function getPrQuery(number) {
   return `
     {
@@ -190,6 +198,16 @@ export default class PrDisplay extends Component {
     // Set some global persistent state to redirect back to this window for log
     // ins
     localStorage.setItem("last_redirect", window.location.href);
+
+    if (isOnDevelopmentHost()) {
+      // If we're in development, prompt the user for a token to manually enter
+      if (!localStorage.getItem("gh_pat")) {
+        const token = prompt(
+          'In development mode, GitHub API token not found. You can get it from hud.pytorch.org by running localStorage.getItem("gh_pat") in the JavaScript console.'
+        );
+        localStorage.setItem("gh_pat", token);
+      }
+    }
 
     // Fetch the PR's info from GitHub's GraphQL API
     if (!localStorage.getItem("gh_pat")) {
