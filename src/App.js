@@ -15,6 +15,7 @@ import PerfHistoryDisplay from "./PerfHistoryDisplay.js";
 import PrDisplay from "./PrDisplay.js";
 import JobCorrelationHeatmap from "./JobCorrelationHeatmap.js";
 import GitHubActionsDisplay from "./GitHubActionsDisplay.js";
+import GitHubOverview from "./GitHubOverview.js";
 import AuthorizeGitHub from "./AuthorizeGitHub.js";
 import SevReporter from "./SevReporter.js";
 import Links from "./Links.js";
@@ -69,6 +70,12 @@ const App = () => (
               );
             }}
           ></Route>
+          <Route
+            path="/overview"
+            render={() => {
+              return <GitHubOverview />;
+            }}
+          />
           <Route path="/pr/:segment" component={PrRoute} />
           <Route path="/commit/:segment" component={CommitPage} />
           <Route

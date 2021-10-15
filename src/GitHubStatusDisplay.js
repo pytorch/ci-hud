@@ -293,7 +293,6 @@ export default class BuildHistoryDisplay extends Component {
       "/",
       "_"
     )}.json`;
-
     let commits = null;
     try {
       commits = await axios.get(jsonUrl);
@@ -776,15 +775,11 @@ export default class BuildHistoryDisplay extends Component {
           }
           const sb = sb_map.get(jobName);
           if (sb !== undefined) {
-            let url = sb.build_url;
-            if (!url) {
-              url = sb.url;
-            }
             found = true;
             cell = (
               <div className="display-cell">
                 <a
-                  href={decoratedBuildUrl(url)}
+                  href={decoratedBuildUrl(sb.build_url)}
                   className="icon"
                   target="_blank"
                   alt={jobName}
