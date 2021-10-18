@@ -106,6 +106,9 @@ export default class Links extends Component {
                 <a href="https://metrics.pytorch.org">metrics</a>
               </li>
               <li>
+                <a href="/overview">overview</a>
+              </li>
+              <li>
                 <a
                   href="more"
                   onClick={(e) => {

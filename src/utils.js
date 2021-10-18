@@ -122,10 +122,10 @@ export let github = {
   raw: github_raw,
 };
 
-export async function s3(prefix) {
+export async function s3(prefix, bucket) {
   // List the gha-artifacts S3 bucket by a specific prefix
   return await fetch(
-    "https://gha-artifacts.s3.amazonaws.com/?" +
+    `https://${bucket}.s3.amazonaws.com/?` +
       new URLSearchParams({
         "list-type": 2,
         delimiter: "/",

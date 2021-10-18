@@ -282,7 +282,10 @@ export default class PrDisplay extends Component {
       run.s3_artifacts = [];
       return async () => {
         // Check that the workflow run exists
-        let result = await s3(`pytorch/pytorch/${run.workflowRun.databaseId}/`);
+        let result = await s3(
+          `pytorch/pytorch/${run.workflowRun.databaseId}/`,
+          "gha-artifacts"
+        );
 
         let prefixes = this.extractItem(
           result.ListBucketResult,
