@@ -67,6 +67,9 @@ export default class PrDisplay extends Component {
   }
 
   render() {
+    if (!window.location.href.includes("pytorch/pytorch")) {
+      return null;
+    }
     const existingSevs = this.state.sevs;
     const renderedSevs = [];
     for (const [index, sev] of existingSevs.entries()) {
