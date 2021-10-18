@@ -25,11 +25,19 @@ export default class Links extends Component {
       more = (
         <div>
           <ul className="menu">
-            {["torchbench-v0-nightly", "status"].map((e) => (
-              <li key={`${e}`}>
-                <Link to={`/${e}`}>{e}</Link>
-              </li>
-            ))}
+            <li>Libraries:</li>
+            <li>
+              <Link to="/ci/pytorch/audio/main">audio</Link>
+            </li>
+            <li>
+              <Link to="/ci/pytorch/vision/main">vision</Link>
+            </li>
+            <li>
+              <Link to="/ci/pytorch/text/main">text</Link>
+            </li>
+            <li>
+              <Link to="/torchbench-v0-nightly">torchbench</Link>
+            </li>
           </ul>
           <ul className="deprecated-menu">
             <li>Old-style:</li>
@@ -77,6 +85,11 @@ export default class Links extends Component {
                 </Link>
               </li>
             </Fragment>
+          </ul>
+          <ul className="menu">
+            <li>
+              <Link to="/status">status</Link>
+            </li>
           </ul>
         </div>
       );

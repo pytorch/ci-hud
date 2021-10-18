@@ -35,10 +35,10 @@ function isOnDevelopmentHost() {
   );
 }
 
-function getPrQuery(number) {
+function getPrQuery(user, repo, number) {
   return `
     {
-      repository(name: "pytorch", owner: "pytorch") {
+      repository(name: "${repo}", owner: "${user}") {
         pullRequest(number: ${number}) {
           title
           number
@@ -91,10 +91,10 @@ function getPrQuery(number) {
   `;
 }
 
-function getCommitQuery(hash) {
+function getCommitQuery(user, repo, hash) {
   return `
     {
-      repository(name: "pytorch", owner: "pytorch") {
+      repository(name: "${repo}", owner: "${user}") {
         object(oid:"${hash}") {
           ... on Commit {
             history(first: 1) {
@@ -184,7 +184,9 @@ export default class PrDisplay extends Component {
         }
 
         github
-          .raw(`repos/pytorch/pytorch/actions/jobs/${check.databaseId}/logs`)
+          .raw(
+            `repos/${this.props.user}/${this.props.repo}/actions/jobs/${check.databaseId}/logs`
+          )
           .then((log) => log.text())
           .then((log) => {
             check.log.text = log;
@@ -218,7 +220,9 @@ export default class PrDisplay extends Component {
     }
 
     if (this.isPr()) {
-      let pr_result = await github.graphql(getPrQuery(this.state.pr_number));
+      let pr_result = await github.graphql(
+        getPrQuery(this.props.user, this.props.repo, this.state.pr_number)
+      );
       this.state.pr = pr_result.repository.pullRequest;
       if (this.state.pr === null) {
         this.state.error_message = "Failed to fetch PR " + this.state.pr_number;
@@ -227,7 +231,9 @@ export default class PrDisplay extends Component {
       }
       this.state.commit = this.state.pr.commits.nodes[0].commit;
     } else {
-      let commit = await github.graphql(getCommitQuery(this.state.commit_hash));
+      let commit = await github.graphql(
+        getCommitQuery(this.props.user, this.props.repo, this.state.commit_hash)
+      );
       if (commit.repository.object == null) {
         this.state.error_message = "Failed to fetch " + this.state.commit_hash;
         this.setState(this.state);
@@ -255,7 +261,7 @@ export default class PrDisplay extends Component {
         return async () => {
           let id = run.workflowRun.databaseId;
           run.artifacts = await github.json(
-            `repos/pytorch/pytorch/actions/runs/${id}/artifacts`
+            `repos/${this.props.user}/${this.props.repo}/actions/runs/${id}/artifacts`
           );
         };
       })
@@ -280,6 +286,13 @@ export default class PrDisplay extends Component {
     // there)
     let promises = this.state.runs.map((run) => {
       run.s3_artifacts = [];
+      if (this.props.repo !== "pytorch") {
+        // Ignore for non-pytorch/pytorch repos
+        return async () => {
+          // Intentional no-op
+          return;
+        };
+      }
       return async () => {
         // Check that the workflow run exists
         let result = await s3(
@@ -297,7 +310,7 @@ export default class PrDisplay extends Component {
         if (prefixes && prefixes.length > 0) {
           for (const prefixItem of prefixes) {
             let prefix = prefixItem.Prefix["#text"];
-            let result = await s3(prefix);
+            let result = await s3(prefix, "gha-artifacts");
             let contents = this.extractItem(
               result.ListBucketResult,
               "Contents"
@@ -377,10 +390,7 @@ export default class PrDisplay extends Component {
           <div>
             <h3>
               <a
-                href={
-                  "https://github.com/pytorch/pytorch/pull/" +
-                  this.state.pr_number
-                }
+                href={`https://github.com/${this.props.user}/${this.props.repo}/pull/${this.state.pr_number}`}
               >
                 {this.state.pr.title} (#{this.state.pr_number})
               </a>
@@ -397,7 +407,9 @@ export default class PrDisplay extends Component {
           headline = (
             <p>
               {subject}{" "}
-              <a href={`https://github.com/pytorch/pytorch/pull/${pr_number}`}>
+              <a
+                href={`https://github.com/${this.props.user}/${this.props.repo}/pull/${pr_number}`}
+              >
                 (#{pr_number})
               </a>
             </p>
@@ -828,7 +840,7 @@ export default class PrDisplay extends Component {
     for (const [index, artifact] of run.artifacts.artifacts.entries()) {
       // The URL in the response is for the API, not browsers, so make it
       // manually
-      let url = `https://github.com/pytorch/pytorch/suites/${run.databaseId}/artifacts/${artifact.id}`;
+      let url = `https://github.com/${this.props.user}/${this.props.repo}/suites/${run.databaseId}/artifacts/${artifact.id}`;
       if (artifact.name.startsWith("test-reports-")) {
         continue;
       }

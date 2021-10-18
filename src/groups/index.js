@@ -1,9 +1,13 @@
 import { groups as pytorch } from "./pytorch.js";
 import { groups as vision } from "./vision.js";
+import { groups as audio } from "./audio.js";
+import { groups as text } from "./text.js";
 
 const map = {
   pytorch: pytorch,
   vision: vision,
+  audio: audio,
+  text: text,
 };
 
 export default function getGroups(repo) {

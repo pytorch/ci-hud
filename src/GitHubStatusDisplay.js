@@ -326,7 +326,7 @@ export default class BuildHistoryDisplay extends Component {
         sb_map: build_map,
         id: commit.sha,
         timestamp: commit.date,
-        url: `https://github.com/pytorch/pytorch/commit/${commit.sha}`,
+        url: `https://github.com/${this.props.user}/${this.props.repo}/commit/${commit.sha}`,
       });
     }
 
@@ -717,16 +717,20 @@ export default class BuildHistoryDisplay extends Component {
       return "pending";
     }
 
-    function decoratedBuildUrl(url) {
+    const decoratedBuildUrl = (url) => {
       // Add check_suite_focus=true to GHA checkruns
       const ghaRegex = new RegExp(
-        "^https://github.com/pytorch/pytorch/runs/\\d+$"
+        "^https://github.com/" +
+          this.props.user +
+          "/" +
+          this.props.repo +
+          "/runs/\\d+$"
       );
       if (url.match(ghaRegex)) {
         return url + "?check_suite_focus=true";
       }
       return url;
-    }
+    };
     builds.forEach((build) => {
       build.sb_map.forEach((item) => {
         if (item.status) {
@@ -810,13 +814,13 @@ export default class BuildHistoryDisplay extends Component {
         return msg.replace(/\(#[0-9]+\)/, "");
       }
 
-      function renderPullRequestNumber(comment) {
+      const renderPullRequestNumber = (comment) => {
         let m = comment.match(/\(#(\d+)\)/);
         if (m) {
           return (
             <Fragment>
               <a
-                href={"https://github.com/pytorch/pytorch/pull/" + m[1]}
+                href={`https://github.com/${this.props.user}/${this.props.repo}/pull/${m[1]}`}
                 target="_blank"
               >
                 #{m[1]}
@@ -831,7 +835,7 @@ export default class BuildHistoryDisplay extends Component {
           return (
             <Fragment>
               <a
-                href={"https://github.com/pytorch/pytorch/pull/" + m[1]}
+                href={`https://github.com/${this.props.user}/${this.props.repo}/pull/${m[1]}`}
                 target="_blank"
               >
                 #{m[1]}
@@ -840,7 +844,7 @@ export default class BuildHistoryDisplay extends Component {
           );
         }
         return <Fragment />;
-      }
+      };
 
       let author = build.author.username;
 
@@ -850,12 +854,15 @@ export default class BuildHistoryDisplay extends Component {
       }
       const desc = (
         <div key={build.id}>
-          <a style={{ color: "#003d7f" }} href={`/commit/${build.id}`}>
+          <a
+            style={{ color: "#003d7f" }}
+            href={`/commit/${this.props.user}/${this.props.repo}/${build.id}`}
+          >
             {drop_pr_number(build.message).split("\n")[0]}{" "}
           </a>
           <code>
             <a
-              href={"https://github.com/pytorch/pytorch/commit/" + build.id}
+              href={`https://github.com/${this.props.user}/${this.props.repo}/commit/${build.id}`}
               target="_blank"
             >
               {build.id.slice(0, 7)}

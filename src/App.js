@@ -76,8 +76,52 @@ const App = () => (
               return <GitHubOverview />;
             }}
           />
-          <Route path="/pr/:segment" component={PrRoute} />
-          <Route path="/commit/:segment" component={CommitPage} />
+          <Route
+            path="/pr/:user/:repo/:number"
+            render={(props) => {
+              const params = props.match.params;
+              return (
+                <PrDisplay
+                  pr_number={params.number}
+                  user={params.user}
+                  repo={params.repo}
+                />
+              );
+            }}
+          />
+          <Route
+            path="/pr/:number"
+            render={(props) => {
+              return (
+                <Redirect
+                  to={`/pr/pytorch/pytorch/${props.match.params.number}`}
+                />
+              );
+            }}
+          />
+          <Route
+            path="/commit/:user/:repo/:commit"
+            render={(props) => {
+              const params = props.match.params;
+              return (
+                <PrDisplay
+                  commit_hash={params.commit}
+                  user={params.user}
+                  repo={params.repo}
+                />
+              );
+            }}
+          />
+          <Route
+            path="/commit/:commit"
+            render={(props) => {
+              return (
+                <Redirect
+                  to={`/commit/pytorch/pytorch/${props.match.params.commit}`}
+                />
+              );
+            }}
+          />
           <Route
             path="/build2/:segment"
             render={(props) => {
@@ -182,21 +226,6 @@ const Build3 = ({ match }) => {
       mode={query.get("mode")}
     />
   );
-};
-
-const PrPage = ({ match }) => {
-  return <PrDisplay pr_number={parseInt(match.url.replace(/^\/pr\//, ""))} />;
-};
-
-const PrRoute = ({ match }) => (
-  <Fragment>
-    <Route exact path={match.url} component={PrPage} />
-    <Route path={`${match.url}/:segment`} component={PrRoute} />
-  </Fragment>
-);
-
-const CommitPage = ({ match }) => {
-  return <PrDisplay commit_hash={match.url.replace(/^\/commit\//, "")} />;
 };
 
 const RouteNotFound = ({ match }) => {
