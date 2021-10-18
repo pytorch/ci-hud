@@ -91,13 +91,15 @@ export default class Links extends Component {
             <ul style={{ display: "inline" }} className="menu">
               {["pytorch"].map((e) => (
                 <Fragment key={e}>
-                  {["master", "nightly", "release/1.10"].map((trigger) => (
-                    <li key={`${e}-${trigger}`}>
-                      <Link to={`/build2/${e}-${trigger}`}>
-                        {e}-{trigger}
-                      </Link>
-                    </li>
-                  ))}
+                  {["master", "viable/strict", "nightly", "release/1.10"].map(
+                    (branch) => (
+                      <li key={`${branch}`}>
+                        <Link to={`/ci/pytorch/pytorch/${branch}`}>
+                          {branch}
+                        </Link>
+                      </li>
+                    )
+                  )}
                 </Fragment>
               ))}
               <li>
