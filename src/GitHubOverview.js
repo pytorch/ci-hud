@@ -13,6 +13,7 @@ const COLORS = {
   green: "#58c157",
   yellow: "#e2b325",
   red: "#ff0504",
+  grey: "#a3a3a3",
   blank: "rgba(0, 0, 0, 0)",
 };
 
@@ -38,7 +39,7 @@ class BranchDisplay extends Component {
       success: COLORS.green,
       failure: COLORS.red,
       error: COLORS.red,
-      neutral: COLORS.red,
+      neutral: COLORS.grey,
       cancelled: COLORS.red,
       pending: COLORS.yellow,
       queued: COLORS.yellow,
