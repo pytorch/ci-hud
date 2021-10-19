@@ -38,6 +38,11 @@ export default class Links extends Component {
             <li>
               <Link to="/torchbench-v0-nightly">torchbench</Link>
             </li>
+            <li>
+              <Link to="/ci/PyTorchLightning/pytorch-lightning/master">
+                pytorch-lightning
+              </Link>
+            </li>
           </ul>
           <ul className="deprecated-menu">
             <li>Old-style:</li>

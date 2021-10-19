@@ -150,7 +150,11 @@ export default class GitHubOverview extends Component {
     let items = [];
     if (result.ListBucketResult.CommonPrefixes) {
       let folders = result.ListBucketResult.CommonPrefixes;
-      items = items.concat(folders.map((item) => item.Prefix.textContent));
+      if (Array.isArray(folders)) {
+        items = items.concat(folders.map((item) => item.Prefix.textContent));
+      } else {
+        items.push(folders.Prefix.textContent);
+      }
     }
     if (result.ListBucketResult.Contents) {
       let files = result.ListBucketResult.Contents;
@@ -165,10 +169,19 @@ export default class GitHubOverview extends Component {
   }
 
   async update() {
-    const prefixes = await this.s3ListBucket("v5/pytorch/");
-    const promises = prefixes.map((repo) => this.s3ListBucket(repo));
-    const repos = await Promise.all(promises);
-    this.setState({ repos: repos });
+    // List users with a folder
+    const users = await this.s3ListBucket("v5/");
+    const promises = users.map((user) => {
+      return (async () => {
+        const prefixes = await this.s3ListBucket(user);
+        // List repos in a folder
+        return await Promise.all(
+          prefixes.map((repo) => this.s3ListBucket(repo))
+        );
+      })();
+    });
+    let repos = await Promise.all(promises);
+    this.setState({ repos: repos.flat() });
   }
 
   render() {

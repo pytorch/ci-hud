@@ -330,7 +330,7 @@ export default class BuildHistoryDisplay extends Component {
       });
     }
 
-    if (branch === "master") {
+    if (this.props.repo === "pytorch" && branch === "master") {
       await this.addJenkinsResults(builds);
     }
 
