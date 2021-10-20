@@ -848,10 +848,6 @@ export default class BuildHistoryDisplay extends Component {
 
       let author = build.author.username;
 
-      // Cut off author at arbitrary length
-      if (author.length > 10) {
-        author = `${author.slice(0, 10)}...`;
-      }
       const desc = (
         <div key={build.id}>
           <a
@@ -885,14 +881,26 @@ export default class BuildHistoryDisplay extends Component {
 
       return (
         <tr key={build.id} className={stale ? "stale" : ""}>
-          <th className="left-cell">
-            {renderPullRequestNumber(build.message)}
-          </th>
           <td className="left-cell" title={build.timestamp}>
             {whenString}
           </td>
           {status_cols}
-          <td className="right-cell">{author}</td>
+          <td
+            className="right-cell"
+            style={{
+              maxWidth: "6em",
+              textOverflow: "ellipsis",
+              overflow: "hidden",
+            }}
+          >
+            {author}
+          </td>
+          <th
+            className="right-cell"
+            style={{ paddingLeft: "0", paddingRight: "5px" }}
+          >
+            {renderPullRequestNumber(build.message)}
+          </th>
           <td>{desc}</td>
         </tr>
       );
@@ -992,10 +1000,10 @@ export default class BuildHistoryDisplay extends Component {
           <table className="buildHistoryTable">
             <thead>
               <tr>
-                <th className="left-cell">PR#</th>
                 <th className="left-cell">Date</th>
                 {visibleJobsHeaders}
                 <th className="right-cell">User</th>
+                <th className="right-cell">PR#</th>
                 <th className="right-cell">Description</th>
               </tr>
             </thead>
