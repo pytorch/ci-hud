@@ -155,7 +155,7 @@ export default class Links extends Component {
                 </a>
               </li>
               <li>
-                <a href="https://github.com/pytorch/pytorch-ci-hud/issues/new">
+                <a href="https://github.com/pytorch/ci-hud/issues/new?assignees=&labels=&template=feature_request.yaml&title=%5Bfeature%5D%3A+">
                   requests
                 </a>
               </li>
