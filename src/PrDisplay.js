@@ -785,7 +785,7 @@ export default class PrDisplay extends Component {
             {artifact.showReport ? "Hide" : `Tests (${size})`}
           </button>
         );
-        testResultArtifacts[artifact.Key] = true;
+        testResultArtifacts[artifact.Key["#text"]] = true;
 
         if (artifact.showReport) {
           const key = `s3-${check.name}-${artifactName}`;
@@ -862,7 +862,7 @@ export default class PrDisplay extends Component {
     let artifacts = [];
     if (run.s3_artifacts) {
       for (const [index, artifact] of run.s3_artifacts.entries()) {
-        if (testResultArtifacts[artifact.Key]) {
+        if (testResultArtifacts[artifact.Key["#text"]]) {
           // Already shown inline with a step, so don't show it again
           continue;
         }
