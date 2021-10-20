@@ -1,0 +1,9 @@
+name: Feature Request
+description: Request a new feature or functionality
+title: "[feature]: "
+body:
+  - type: textarea
+    id: request
+    attributes:
+      label: Feature Request
+      placeholder: Describe a new feature or functionality
