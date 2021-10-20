@@ -9,7 +9,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import ComputerDisplay from "./ComputerDisplay.js";
 import QueueDisplay from "./QueueDisplay.js";
 import BuildHistoryDisplay from "./BuildHistoryDisplay.js";
-import GitHubStatusDisplaySingle from "./GitHubStatusDisplaySingle.js";
 import GitHubStatusDisplay from "./GitHubStatusDisplay.js";
 import PerfHistoryDisplay from "./PerfHistoryDisplay.js";
 import PrDisplay from "./PrDisplay.js";
@@ -129,7 +128,13 @@ const App = () => (
               return <Redirect to={`/ci/pytorch/pytorch/${branch}`} />;
             }}
           />
-          <Route path="/build3" component={Build3Route} />
+          <Route
+            path="/build3/:segment"
+            render={(props) => {
+              const branch = props.match.params.segment.replace("pytorch-", "");
+              return <Redirect to={`/ci/pytorch/pytorch/${branch}`} />;
+            }}
+          />
           <Route path="/torchbench-v0-nightly" component={TorchBenchRoute} />
           <Route path="/github_logout" component={LogoutGitHub} />
           <Route path="/authorize_github" component={AuthorizeGithubRoute} />
@@ -217,17 +222,6 @@ const Build2 = ({ match }) => {
   );
 };
 
-const Build3 = ({ match }) => {
-  const query = new URLSearchParams(window.location.search);
-  return (
-    <GitHubStatusDisplaySingle
-      interval={60000}
-      job={match.url.replace(/^\/build3\//, "")}
-      mode={query.get("mode")}
-    />
-  );
-};
-
 const RouteNotFound = ({ match }) => {
   return <p>Route not found: {match.url}</p>;
 };
@@ -250,13 +244,6 @@ const Build2Route = ({ match }) => (
   <Fragment>
     <Route exact path={match.url} component={Build2} />
     <Route path={`${match.url}/:segment`} component={Build2Route} />
-  </Fragment>
-);
-
-const Build3Route = ({ match }) => (
-  <Fragment>
-    <Route exact path={match.url} component={Build3} />
-    <Route path={`${match.url}/:segment`} component={Build3Route} />
   </Fragment>
 );
 
