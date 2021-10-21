@@ -210,7 +210,9 @@ export default class PrDisplay extends Component {
         const token = prompt(
           'In development mode, GitHub API token not found. You can get it from hud.pytorch.org by running localStorage.getItem("gh_pat") in the JavaScript console.'
         );
-        localStorage.setItem("gh_pat", token);
+        if (token) {
+          localStorage.setItem("gh_pat", token);
+        }
       }
     }
 
