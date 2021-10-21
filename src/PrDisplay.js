@@ -168,7 +168,10 @@ export default class PrDisplay extends Component {
   }
 
   componentDidMount() {
-    this.update();
+    this.update().catch((error) => {
+      this.state.error_message = error.toString();
+      this.setState(this.state);
+    });
   }
 
   isPr() {
@@ -225,19 +228,23 @@ export default class PrDisplay extends Component {
         const token = prompt(
           'In development mode, GitHub API token not found. You can get it from hud.pytorch.org by running localStorage.getItem("gh_pat") in the JavaScript console.'
         );
-        localStorage.setItem("gh_pat", token);
+        if (token) {
+          localStorage.setItem("gh_pat", token);
+        }
       }
     }
 
-    // Fetch the PR's info from GitHub's GraphQL API
-    if (!localStorage.getItem("gh_pat")) {
-      return;
-    }
     if (this.hasError()) {
       return;
     }
 
+    if (!localStorage.getItem("gh_pat")) {
+      this.state.error_message = "GitHub token no found, please log in";
+      this.setState(this.state);
+      return;
+    }
     if (this.isPr()) {
+      // Fetch the PR's info from GitHub's GraphQL API
       let pr_result = await github.graphql(
         getPrQuery(this.props.user, this.props.repo, this.state.pr_number)
       );
