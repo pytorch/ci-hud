@@ -216,15 +216,17 @@ export default class PrDisplay extends Component {
       }
     }
 
-    // Fetch the PR's info from GitHub's GraphQL API
-    if (!localStorage.getItem("gh_pat")) {
-      return;
-    }
     if (this.hasError()) {
       return;
     }
 
+    if (!localStorage.getItem("gh_pat")) {
+      this.state.error_message = "GitHub token no found, please log in";
+      this.setState(this.state);
+      return;
+    }
     if (this.isPr()) {
+      // Fetch the PR's info from GitHub's GraphQL API
       let pr_result = await github.graphql(
         getPrQuery(this.props.user, this.props.repo, this.state.pr_number)
       );
