@@ -150,7 +150,10 @@ export default class PrDisplay extends Component {
   }
 
   componentDidMount() {
-    this.update();
+    this.update().catch((error) => {
+      this.state.error_message = error.toString();
+      this.setState(this.state);
+    });
   }
 
   isPr() {
