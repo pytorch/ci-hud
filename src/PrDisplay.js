@@ -241,12 +241,12 @@ export default class PrDisplay extends Component {
         getPrQuery(this.props.user, this.props.repo, this.state.pr_number)
       );
       pr = pr_result.repository.pullRequest;
-      if (pr === null) {
+      if (pr === null || pr === undefined) {
         this.state.error_message = "Failed to fetch PR " + this.state.pr_number;
         this.setState(this.state);
         return;
       }
-      commit = this.state.pr.commits.nodes[0].commit;
+      commit = pr.commits.nodes[0].commit;
     } else {
       let commitResponse = await github.graphql(
         getCommitQuery(this.props.user, this.props.repo, this.state.commit_hash)
