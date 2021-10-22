@@ -5,7 +5,6 @@
 
 import React, { Component } from "react";
 import { s3 } from "./utils.js";
-import Card from "react-bootstrap/Card";
 import { BsFillQuestionCircleFill } from "react-icons/bs";
 import Tooltip from "rc-tooltip";
 
@@ -186,7 +185,6 @@ export default class GitHubOverview extends Component {
   }
 
   render() {
-    let cards = [];
     let branches = [];
     for (const repo of this.state.repos) {
       const match = repo[0].match(/v5\/(.*)\/(.*)\//);

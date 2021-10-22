@@ -4,14 +4,13 @@
 // LICENSE file in the root directory of this source tree.
 
 import React, { Component } from "react";
-import AuthorizeGitHub from "./AuthorizeGitHub.js";
 
 import { github } from "./utils.js";
 
 function getIssuesQuery() {
   return `
       {
-        search(type:ISSUE,first:100,query:"is:open is:issue label:\\\"ci: sev\\\"") {
+        search(type:ISSUE,first:100,query:"is:open is:issue label:\\"ci: sev\\"") {
           nodes {
             ... on Issue {
               number

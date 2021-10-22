@@ -7,10 +7,9 @@ import React, { Component } from "react";
 import Card from "react-bootstrap/Card";
 import { highlightElement } from "highlight.js";
 import { strFromU8, unzipSync } from "fflate";
-import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
 import { GoCheck } from "react-icons/go";
 
-import { parseXml, formatBytes, asyncAll, s3, github } from "../utils.js";
+import { parseXml } from "../utils.js";
 
 class TestSuite extends Component {
   constructor(props) {
@@ -24,7 +23,6 @@ class TestSuite extends Component {
 
   highlight = () => {
     if (this.nodeRef) {
-      let code = this.nodeRef.current.children[0];
       highlightElement(this.nodeRef.current.children[0], {
         language: "python",
       });
@@ -86,14 +84,9 @@ class TestSummary extends Component {
 
   render() {
     const toggle = () => {
-      this.state.showDetail = !this.state.showDetail;
-      this.setState(this.state);
+      const prev = this.state.showDetail;
+      this.setState({ showDetail: !prev });
     };
-    const iconStyle = { cursor: "pointer" };
-    let icon = <BsFillCaretRightFill style={iconStyle} onClick={toggle} />;
-    if (this.state.showSuites) {
-      icon = <BsFillCaretDownFill style={iconStyle} onClick={toggle} />;
-    }
     let suiteDetail = null;
 
     let data = [];
@@ -198,9 +191,8 @@ export default class TestReportRenderer extends Component {
   }
   componentDidMount() {
     this.update().catch((error) => {
-      this.state.updateFailure = error.toString();
       console.error(error);
-      this.setState(this.state);
+      this.setState({ updateFailure: error.toString() });
     });
   }
 
@@ -293,10 +285,11 @@ export default class TestReportRenderer extends Component {
       }
     }
 
-    this.state.failures = failures;
-    this.state.totals = totals;
-    this.state.testInfo = testInfo;
-    this.setState(this.state);
+    this.setState({
+      failures: failures,
+      totals: totals,
+      testInfo: testInfo,
+    });
   }
 
   renderSummary() {}
@@ -319,7 +312,7 @@ export default class TestReportRenderer extends Component {
       <TestSummary info={this.state.testInfo} totals={this.state.totals} />
     );
 
-    if (this.state.failures.length == 0) {
+    if (this.state.failures.length === 0) {
       return (
         <div>
           {summary}

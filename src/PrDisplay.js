@@ -7,8 +7,6 @@ import React, { Component } from "react";
 import Card from "react-bootstrap/Card";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import ToggleButton from "react-bootstrap/ToggleButton";
-import Button from "react-bootstrap/Button";
-import AuthorizeGitHub from "./AuthorizeGitHub.js";
 import TestReportRenderer from "./pr/TestReportRenderer.js";
 import Editor from "@monaco-editor/react";
 import ReactMarkdown from "react-markdown";
@@ -19,7 +17,7 @@ import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
 
 import { GoPrimitiveDot, GoCircleSlash, GoCheck, GoX } from "react-icons/go";
 
-import { parseXml, formatBytes, asyncAll, s3, github } from "./utils.js";
+import { formatBytes, asyncAll, s3, github } from "./utils.js";
 
 const PREVIEW_BASE_URL = "https://docs-preview.pytorch.org";
 
@@ -163,8 +161,7 @@ export default class PrDisplay extends Component {
 
   componentDidMount() {
     this.update().catch((error) => {
-      this.state.error_message = error.toString();
-      this.setState(this.state);
+      this.setState({ error_message: error.toString() });
     });
   }
 
@@ -233,38 +230,40 @@ export default class PrDisplay extends Component {
     }
 
     if (!localStorage.getItem("gh_pat")) {
-      this.state.error_message = "GitHub token no found, please log in";
-      this.setState(this.state);
+      this.setState({ error_message: "GitHub token no found, please log in" });
       return;
     }
+    let pr = undefined;
+    let commit = undefined;
     if (this.isPr()) {
       // Fetch the PR's info from GitHub's GraphQL API
       let pr_result = await github.graphql(
         getPrQuery(this.props.user, this.props.repo, this.state.pr_number)
       );
-      this.state.pr = pr_result.repository.pullRequest;
-      if (this.state.pr === null) {
+      pr = pr_result.repository.pullRequest;
+      if (pr === null) {
         this.state.error_message = "Failed to fetch PR " + this.state.pr_number;
         this.setState(this.state);
         return;
       }
-      this.state.commit = this.state.pr.commits.nodes[0].commit;
+      commit = this.state.pr.commits.nodes[0].commit;
     } else {
-      let commit = await github.graphql(
+      let commitResponse = await github.graphql(
         getCommitQuery(this.props.user, this.props.repo, this.state.commit_hash)
       );
-      if (commit.repository.object == null) {
-        this.state.error_message = "Failed to fetch " + this.state.commit_hash;
-        this.setState(this.state);
+      if (commitResponse.repository.object == null) {
+        this.setState({
+          error_message: `Failed to fetch ${this.state.commit_hash}`,
+        });
         return;
       }
-      this.state.commit = commit.repository.object.history.nodes[0];
+      commit = commitResponse.repository.object.history.nodes[0];
     }
 
     // The GraphQL API doesn't have any types for artifacts (at least as far as
     // I can tell), so we have to fall back to iterating through them all via
     // the v3 JSON API
-    let workflow_runs = this.state.commit.checkSuites.nodes;
+    let workflow_runs = commit.checkSuites.nodes;
     workflow_runs = workflow_runs.filter((x) => x.workflowRun);
     workflow_runs.forEach((run) => {
       run.checkRuns.nodes.forEach((check) => {
@@ -292,14 +291,17 @@ export default class PrDisplay extends Component {
         ? 1
         : -1
     );
-    this.state.runs = workflow_runs;
-    for (const run of this.state.runs) {
+    for (const run of workflow_runs) {
       run.status = this.mergeStatuses(
         run.checkRuns.nodes.map((check) => check.conclusion)
       );
     }
-    this.state.statuses = this.state.commit.status.contexts;
-    this.setState(this.state);
+    this.setState({
+      pr: pr,
+      commit: commit,
+      runs: workflow_runs,
+      statuses: commit.status.contexts,
+    });
 
     // Go through all the runs and check if there is a prefix for the workflow
     // run in S3 (indicating that there are some relevant artifacts stored
@@ -354,8 +356,8 @@ export default class PrDisplay extends Component {
     let cpp = null;
 
     const runIsPassing = (name) => {
-      for (const [run_index, run] of this.state.runs.entries()) {
-        for (const [index, check] of run.checkRuns.nodes.entries()) {
+      for (const run of this.state.runs) {
+        for (const check of run.checkRuns.nodes) {
           if (
             check.name === name &&
             check.status === "COMPLETED" &&
@@ -376,6 +378,7 @@ export default class PrDisplay extends Component {
             target="_blank"
             className="btn btn-primary"
             style={{ marginRight: "5px" }}
+            rel="noreferrer"
           >
             Python Docs
           </a>
@@ -387,6 +390,7 @@ export default class PrDisplay extends Component {
             href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/cppdocs/index.html`}
             target="_blank"
             className="btn btn-primary"
+            rel="noreferrer"
           >
             C++ Docs
           </a>
@@ -543,14 +547,13 @@ export default class PrDisplay extends Component {
       isShowing = true;
       if (check.log.text) {
         let logText = null;
-        if (check.log.logLevel == "All") {
+        if (check.log.logLevel === "All") {
           logText = check.log.text;
         } else {
           logText = filterLog(check.log.text);
         }
 
         const totalLines = (logText.match(/\n/g) || "").length + 1;
-        let existingEditor = null;
         if (check.log.existingEditor) {
           check.log.existingEditor.setValue(logText);
           check.log.existingEditor.revealLine(totalLines);
@@ -740,7 +743,6 @@ export default class PrDisplay extends Component {
   }
 
   renderGitHubArtifacts(run) {
-    let reportUrl = null;
     let artifacts = [];
     for (const [index, artifact] of run.artifacts.artifacts.entries()) {
       // The URL in the response is for the API, not browsers, so make it
@@ -772,7 +774,6 @@ export default class PrDisplay extends Component {
           continue;
         }
         let prefix = artifact.Key["#text"];
-        let name = prefix.split("/").slice(-1)[0];
         let url = `https://gha-artifacts.s3.amazonaws.com/${prefix}`;
 
         artifacts.push(
@@ -791,7 +792,7 @@ export default class PrDisplay extends Component {
   }
 
   mergeStatuses(statuses) {
-    if (statuses.length == 0) {
+    if (statuses.length === 0) {
       return "SKIPPED";
     }
     const counts = {
@@ -946,28 +947,6 @@ export default class PrDisplay extends Component {
           </Card>
         );
 
-        function pushGroupCard(icon, itemCard) {
-          groups[title].push(card);
-          if (groups[title].length === 1) {
-            // If this is the first instance of this group, add the header
-            const groupCard = (
-              <Card key={"group-card-" + run_index}>
-                <Card.Body>
-                  <Card.Title>
-                    {title} {icon}
-                  </Card.Title>
-                </Card.Body>
-              </Card>
-            );
-            runs.push({
-              data: { status: "GROUP" },
-              element: groupCard,
-            });
-          }
-          if (itemCard) {
-          }
-        }
-
         // Some jobs are uninteresting and there are a bunch of them, so group
         // them all together here
         if (title in groups) {
@@ -1033,7 +1012,7 @@ export default class PrDisplay extends Component {
       }
     }
 
-    if (this.state.runs && displayRuns.length == 0) {
+    if (this.state.runs && displayRuns.length === 0) {
       displayRuns = <p style={{ fontWeight: "bold" }}>No jobs found</p>;
     }
 

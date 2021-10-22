@@ -5,7 +5,6 @@
 
 import React, { Component, Fragment } from "react";
 import jenkins from "./Jenkins.js";
-import AsOf from "./AsOf.js";
 import { summarize_job, summarize_date } from "./Summarize.js";
 import getGroups from "./groups/index.js";
 import Tooltip from "rc-tooltip";
@@ -64,14 +63,6 @@ function is_skipped(result) {
 
 function is_infra_failure(result) {
   return result === "infrastructure_fail";
-}
-
-function objToStrMap(obj) {
-  let strMap = new Map();
-  for (let k of Object.keys(obj)) {
-    strMap.set(k, obj[k]);
-  }
-  return strMap;
 }
 
 function computeConsecutiveFailureCount(data, failure_window = 10) {
@@ -525,10 +516,6 @@ export default class BuildHistoryDisplay extends Component {
     const visibleJobs = this.state.known_jobs.filter((name) =>
       this.shouldShowJob(name)
     );
-    let s = "";
-    for (const j of visibleJobs) {
-      s += j + "\n";
-    }
 
     // Collapse down groups of jobs based on a regex match to the name
     const groupedVisibleJobsMap = {};
@@ -579,7 +566,7 @@ export default class BuildHistoryDisplay extends Component {
     // so they show up next to their group header
     for (const group of this.state.showGroups) {
       let groupBaseIndex = groupedVisibleJobs.findIndex(
-        (job) => job.name == group.name
+        (job) => job.name === group.name
       );
       if (groupBaseIndex === null) {
         console.error(`Unable to find group ${group.name}`);
@@ -588,7 +575,7 @@ export default class BuildHistoryDisplay extends Component {
 
       for (const jobName of group.jobNames) {
         let jobIndex = groupedVisibleJobs.findIndex(
-          (job) => job.name == jobName
+          (job) => job.name === jobName
         );
         if (jobIndex === null) {
           console.error(`Unable to job ${jobName} in group ${group.name}`);
@@ -679,7 +666,7 @@ export default class BuildHistoryDisplay extends Component {
       // 5. Otherwise pending
 
       jobs = jobs.filter((x) => x !== undefined);
-      if (jobs.length == 0) {
+      if (jobs.length === 0) {
         // No jobs in the group so don't show anything
         return null;
       }
@@ -737,7 +724,6 @@ export default class BuildHistoryDisplay extends Component {
       });
     });
     const rows = builds.map((build) => {
-      let found = false;
       const sb_map = build.sb_map;
 
       const status_cols = groupedVisibleJobs.map((data) => {
@@ -768,7 +754,6 @@ export default class BuildHistoryDisplay extends Component {
                 {result_icon(status)}
               </div>
             );
-            found = true;
           }
         } else {
           // Ungrouped job, show it directly
@@ -777,7 +762,6 @@ export default class BuildHistoryDisplay extends Component {
           }
           const sb = sb_map.get(jobName);
           if (sb !== undefined) {
-            found = true;
             cell = (
               <div className="display-cell">
                 <a
@@ -785,6 +769,7 @@ export default class BuildHistoryDisplay extends Component {
                   className="icon"
                   target="_blank"
                   alt={jobName}
+                  rel="noreferrer"
                 >
                   {result_icon(sb.status)}
                 </a>
@@ -820,6 +805,7 @@ export default class BuildHistoryDisplay extends Component {
               <a
                 href={`https://github.com/${this.props.user}/${this.props.repo}/pull/${m[1]}`}
                 target="_blank"
+                rel="noreferrer"
               >
                 #{m[1]}
               </a>
@@ -835,6 +821,7 @@ export default class BuildHistoryDisplay extends Component {
               <a
                 href={`https://github.com/${this.props.user}/${this.props.repo}/pull/${m[1]}`}
                 target="_blank"
+                rel="noreferrer"
               >
                 #{m[1]}
               </a>
@@ -858,6 +845,7 @@ export default class BuildHistoryDisplay extends Component {
             <a
               href={`https://github.com/${this.props.user}/${this.props.repo}/commit/${build.id}`}
               target="_blank"
+              rel="noreferrer"
             >
               {build.id.slice(0, 7)}
             </a>
@@ -915,7 +903,7 @@ export default class BuildHistoryDisplay extends Component {
           </a>
         </p>
       );
-    } else if (this.state.fetchedBuilds && rows.length == 0) {
+    } else if (this.state.fetchedBuilds && rows.length === 0) {
       loadingInfo = <p>Fetched data but found no rows</p>;
     } else if (!this.state.fetchedBuilds) {
       loadingInfo = (
