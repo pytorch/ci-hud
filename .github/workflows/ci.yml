@@ -5,7 +5,25 @@ on:
     branches:
       - main
 jobs:
-  ci:
+  lint:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install
+        run: yarn install --frozen-lockfile
+      - name: Lint
+        run: yarn prettier --check src
+  test:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install
+        run: yarn install --frozen-lockfile
+      - name: Test
+        run: yarn test
+  build:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -16,9 +34,11 @@ jobs:
         run: yarn prettier --check src
       - name: Build
         run: yarn build
-      - name: Deploy
-        if: github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
+      # hud.pytorch.org is hosted on Netlify, but this is left here in case we
+      # want a quick way to switch back in the future.
+      # - name: Deploy
+      #   if: github.ref == 'refs/heads/main'
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: ./build

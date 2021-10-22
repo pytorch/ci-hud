@@ -15,15 +15,9 @@ import ReactMarkdown from "react-markdown";
 import { filterLog, registerLogLanguage } from "./pr/logs.js";
 import CircleCICard from "./pr/CircleCICard.js";
 
-import {
-  BsFillCaretRightFill,
-  BsCaretDownFill,
-  BsFillCaretDownFill,
-  GoPrimitiveDot,
-  GoCircleSlash,
-  GoCheck,
-  GoX,
-} from "react-icons/all";
+import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
+
+import { GoPrimitiveDot, GoCircleSlash, GoCheck, GoX } from "react-icons/go";
 
 import { parseXml, formatBytes, asyncAll, s3, github } from "./utils.js";
 

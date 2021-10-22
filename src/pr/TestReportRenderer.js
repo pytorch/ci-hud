@@ -7,11 +7,8 @@ import React, { Component } from "react";
 import Card from "react-bootstrap/Card";
 import { highlightElement } from "highlight.js";
 import { strFromU8, unzipSync } from "fflate";
-import {
-  GoCheck,
-  BsFillCaretRightFill,
-  BsFillCaretDownFill,
-} from "react-icons/all";
+import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
+import { GoCheck } from "react-icons/go";
 
 import { parseXml, formatBytes, asyncAll, s3, github } from "../utils.js";
 

@@ -6,7 +6,7 @@
 import React, { Component } from "react";
 import { s3 } from "./utils.js";
 import Card from "react-bootstrap/Card";
-import { BsFillQuestionCircleFill } from "react-icons/all";
+import { BsFillQuestionCircleFill } from "react-icons/bs";
 import Tooltip from "rc-tooltip";
 
 const COLORS = {

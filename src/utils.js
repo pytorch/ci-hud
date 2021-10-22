@@ -23,10 +23,10 @@ export function parseXml(xml, arrayTags) {
   let dom = null;
   if (window.DOMParser) dom = new DOMParser().parseFromString(xml, "text/xml");
   else if (window.ActiveXObject) {
-    dom = new ActiveXObject("Microsoft.XMLDOM");
-    dom.async = false;
-    if (!dom.loadXML(xml))
-      throw dom.parseError.reason + " " + dom.parseError.srcText;
+    // dom = new ActiveXObject("Microsoft.XMLDOM");
+    // dom.async = false;
+    // if (!dom.loadXML(xml))
+    //   throw dom.parseError.reason + " " + dom.parseError.srcText;
   } else throw new Error("cannot parse xml string!");
 
   function parseNode(xmlNode, result) {

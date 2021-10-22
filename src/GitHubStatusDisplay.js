@@ -10,12 +10,9 @@ import { summarize_job, summarize_date } from "./Summarize.js";
 import getGroups from "./groups/index.js";
 import Tooltip from "rc-tooltip";
 import axios from "axios";
-import {
-  BsFillCaretRightFill,
-  BsFillCaretDownFill,
-  ImSpinner2,
-  FcCancel,
-} from "react-icons/all";
+import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
+import { ImSpinner2 } from "react-icons/im";
+import { FcCancel } from "react-icons/fc";
 
 function isMobile() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -191,10 +188,11 @@ export default class BuildHistoryDisplay extends Component {
     this.interval = setInterval(this.update.bind(this), this.props.interval);
     if (
       !isMobile() &&
+      window.Notification &&
       this.state.showNotifications &&
-      Notification.permission !== "granted"
+      window.Notification.permission !== "granted"
     ) {
-      Notification.requestPermission();
+      window.Notification.requestPermission();
     }
   }
   componentDidUpdate(prevProps) {
@@ -372,7 +370,7 @@ export default class BuildHistoryDisplay extends Component {
           this.state.consecutive_failure_count.forEach((v, key) => {
             if (!data.consecutive_failure_count.has(key)) {
               // It's fixed!
-              new Notification("✅ " + this.props.job, {
+              new window.Notification("✅ " + this.props.job, {
                 body: summarize_job(key),
               });
             }
@@ -385,7 +383,7 @@ export default class BuildHistoryDisplay extends Component {
             !this.state.consecutive_failure_count.has(key)
           ) {
             // It's failed!
-            new Notification("❌ " + this.props.job, {
+            new window.Notification("❌ " + this.props.job, {
               body: summarize_job(key),
             });
           }
@@ -962,8 +960,8 @@ export default class BuildHistoryDisplay extends Component {
                 <label htmlFor="show-notifications">
                   Show notifications on master failure
                   {this.state.showNotifications &&
-                  Notification &&
-                  Notification.permission === "denied" ? (
+                  window.Notification &&
+                  window.Notification.permission === "denied" ? (
                     <Fragment>
                       {" "}
                       <strong>

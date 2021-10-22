@@ -27,7 +27,7 @@ import {
 } from "react-router-dom";
 
 const App = () => (
-  <Router basename={process.env.PUBLIC_URL + "/"}>
+  <Router>
     <div className="App">
       <Links />
       <div style={{ margin: "0" }} className="container">

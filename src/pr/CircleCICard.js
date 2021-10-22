@@ -6,15 +6,9 @@ import Button from "react-bootstrap/Button";
 import Editor from "@monaco-editor/react";
 import { filterLog, registerLogLanguage } from "./logs.js";
 
-import {
-  BsFillCaretRightFill,
-  BsCaretDownFill,
-  BsFillCaretDownFill,
-  GoPrimitiveDot,
-  GoCircleSlash,
-  GoCheck,
-  GoX,
-} from "react-icons/all";
+import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
+
+import { GoPrimitiveDot, GoCircleSlash, GoCheck, GoX } from "react-icons/go";
 
 export default class CircleCICard extends Component {
   constructor(props) {
