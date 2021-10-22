@@ -5,17 +5,13 @@
 
 import React, { Component, Fragment } from "react";
 import jenkins from "./Jenkins.js";
-import AsOf from "./AsOf.js";
 import { summarize_job, summarize_date } from "./Summarize.js";
 import getGroups from "./groups/index.js";
 import Tooltip from "rc-tooltip";
 import axios from "axios";
-import {
-  BsFillCaretRightFill,
-  BsFillCaretDownFill,
-  ImSpinner2,
-  FcCancel,
-} from "react-icons/all";
+import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
+import { ImSpinner2 } from "react-icons/im";
+import { FcCancel } from "react-icons/fc";
 
 function isMobile() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -67,14 +63,6 @@ function is_skipped(result) {
 
 function is_infra_failure(result) {
   return result === "infrastructure_fail";
-}
-
-function objToStrMap(obj) {
-  let strMap = new Map();
-  for (let k of Object.keys(obj)) {
-    strMap.set(k, obj[k]);
-  }
-  return strMap;
 }
 
 function computeConsecutiveFailureCount(data, failure_window = 10) {
@@ -191,10 +179,11 @@ export default class BuildHistoryDisplay extends Component {
     this.interval = setInterval(this.update.bind(this), this.props.interval);
     if (
       !isMobile() &&
+      window.Notification &&
       this.state.showNotifications &&
-      Notification.permission !== "granted"
+      window.Notification.permission !== "granted"
     ) {
-      Notification.requestPermission();
+      window.Notification.requestPermission();
     }
   }
   componentDidUpdate(prevProps) {
@@ -372,7 +361,7 @@ export default class BuildHistoryDisplay extends Component {
           this.state.consecutive_failure_count.forEach((v, key) => {
             if (!data.consecutive_failure_count.has(key)) {
               // It's fixed!
-              new Notification("✅ " + this.props.job, {
+              new window.Notification("✅ " + this.props.job, {
                 body: summarize_job(key),
               });
             }
@@ -385,7 +374,7 @@ export default class BuildHistoryDisplay extends Component {
             !this.state.consecutive_failure_count.has(key)
           ) {
             // It's failed!
-            new Notification("❌ " + this.props.job, {
+            new window.Notification("❌ " + this.props.job, {
               body: summarize_job(key),
             });
           }
@@ -527,10 +516,6 @@ export default class BuildHistoryDisplay extends Component {
     const visibleJobs = this.state.known_jobs.filter((name) =>
       this.shouldShowJob(name)
     );
-    let s = "";
-    for (const j of visibleJobs) {
-      s += j + "\n";
-    }
 
     // Collapse down groups of jobs based on a regex match to the name
     const groupedVisibleJobsMap = {};
@@ -581,7 +566,7 @@ export default class BuildHistoryDisplay extends Component {
     // so they show up next to their group header
     for (const group of this.state.showGroups) {
       let groupBaseIndex = groupedVisibleJobs.findIndex(
-        (job) => job.name == group.name
+        (job) => job.name === group.name
       );
       if (groupBaseIndex === null) {
         console.error(`Unable to find group ${group.name}`);
@@ -590,7 +575,7 @@ export default class BuildHistoryDisplay extends Component {
 
       for (const jobName of group.jobNames) {
         let jobIndex = groupedVisibleJobs.findIndex(
-          (job) => job.name == jobName
+          (job) => job.name === jobName
         );
         if (jobIndex === null) {
           console.error(`Unable to job ${jobName} in group ${group.name}`);
@@ -681,7 +666,7 @@ export default class BuildHistoryDisplay extends Component {
       // 5. Otherwise pending
 
       jobs = jobs.filter((x) => x !== undefined);
-      if (jobs.length == 0) {
+      if (jobs.length === 0) {
         // No jobs in the group so don't show anything
         return null;
       }
@@ -739,7 +724,6 @@ export default class BuildHistoryDisplay extends Component {
       });
     });
     const rows = builds.map((build) => {
-      let found = false;
       const sb_map = build.sb_map;
 
       const status_cols = groupedVisibleJobs.map((data) => {
@@ -770,7 +754,6 @@ export default class BuildHistoryDisplay extends Component {
                 {result_icon(status)}
               </div>
             );
-            found = true;
           }
         } else {
           // Ungrouped job, show it directly
@@ -779,7 +762,6 @@ export default class BuildHistoryDisplay extends Component {
           }
           const sb = sb_map.get(jobName);
           if (sb !== undefined) {
-            found = true;
             cell = (
               <div className="display-cell">
                 <a
@@ -787,6 +769,7 @@ export default class BuildHistoryDisplay extends Component {
                   className="icon"
                   target="_blank"
                   alt={jobName}
+                  rel="noreferrer"
                 >
                   {result_icon(sb.status)}
                 </a>
@@ -822,6 +805,7 @@ export default class BuildHistoryDisplay extends Component {
               <a
                 href={`https://github.com/${this.props.user}/${this.props.repo}/pull/${m[1]}`}
                 target="_blank"
+                rel="noreferrer"
               >
                 #{m[1]}
               </a>
@@ -837,6 +821,7 @@ export default class BuildHistoryDisplay extends Component {
               <a
                 href={`https://github.com/${this.props.user}/${this.props.repo}/pull/${m[1]}`}
                 target="_blank"
+                rel="noreferrer"
               >
                 #{m[1]}
               </a>
@@ -860,6 +845,7 @@ export default class BuildHistoryDisplay extends Component {
             <a
               href={`https://github.com/${this.props.user}/${this.props.repo}/commit/${build.id}`}
               target="_blank"
+              rel="noreferrer"
             >
               {build.id.slice(0, 7)}
             </a>
@@ -917,7 +903,7 @@ export default class BuildHistoryDisplay extends Component {
           </a>
         </p>
       );
-    } else if (this.state.fetchedBuilds && rows.length == 0) {
+    } else if (this.state.fetchedBuilds && rows.length === 0) {
       loadingInfo = <p>Fetched data but found no rows</p>;
     } else if (!this.state.fetchedBuilds) {
       loadingInfo = (
@@ -962,8 +948,8 @@ export default class BuildHistoryDisplay extends Component {
                 <label htmlFor="show-notifications">
                   Show notifications on master failure
                   {this.state.showNotifications &&
-                  Notification &&
-                  Notification.permission === "denied" ? (
+                  window.Notification &&
+                  window.Notification.permission === "denied" ? (
                     <Fragment>
                       {" "}
                       <strong>

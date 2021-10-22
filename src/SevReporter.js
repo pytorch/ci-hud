@@ -3,15 +3,14 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-import { Component } from "react";
-import AuthorizeGitHub from "./AuthorizeGitHub.js";
+import React, { Component } from "react";
 
 import { github } from "./utils.js";
 
 function getIssuesQuery() {
   return `
       {
-        search(type:ISSUE,first:100,query:"is:open is:issue label:\\\"ci: sev\\\"") {
+        search(type:ISSUE,first:100,query:"is:open is:issue label:\\"ci: sev\\"") {
           nodes {
             ... on Issue {
               number

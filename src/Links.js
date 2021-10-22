@@ -5,11 +5,8 @@
 
 import React, { Component, Fragment } from "react";
 import { AiFillGithub } from "react-icons/ai";
-import { BiHelpCircle } from "react-icons/bi";
 import { Link } from "react-router-dom";
 import AuthorizeGitHub from "./AuthorizeGitHub";
-
-const AUTH_SERVER = "https://auth.pytorch.org";
 
 export default class Links extends Component {
   constructor(props) {
@@ -131,8 +128,8 @@ export default class Links extends Component {
                   href="more"
                   onClick={(e) => {
                     e.preventDefault();
-                    this.state.showMore = !this.state.showMore;
-                    this.setState(this.state);
+                    const prev = this.state.showMore;
+                    this.setState({ showMore: !prev });
                     return false;
                   }}
                 >

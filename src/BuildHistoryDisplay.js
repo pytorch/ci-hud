@@ -627,6 +627,7 @@ export default class BuildHistoryDisplay extends Component {
                 href={cellHref}
                 className="icon"
                 target="_blank"
+                rel="noreferrer"
                 alt={getJobName(sb)}
               >
                 {result_icon(sb.result)}
@@ -669,6 +670,7 @@ export default class BuildHistoryDisplay extends Component {
               <a
                 href={"https://github.com/pytorch/pytorch/pull/" + m[1]}
                 target="_blank"
+                rel="noreferrer"
               >
                 #{m[1]}
               </a>
@@ -689,6 +691,7 @@ export default class BuildHistoryDisplay extends Component {
                   "https://github.com/pytorch/pytorch/commit/" + commit.commitId
                 }
                 target="_blank"
+                rel="noreferrer"
               >
                 {commit.commitId.slice(0, 7)}
               </a>
@@ -811,12 +814,12 @@ export default class BuildHistoryDisplay extends Component {
       return (
         <tr key={build.number} className={stale ? "stale" : ""}>
           <th className="left-cell">
-            <a href={build.url} target="_blank">
+            <a href={build.url} target="_blank" rel="noreferrer">
               {build.number}
             </a>
           </th>
           <th className="left-cell">
-            <a href={pull_link} target="_blank">
+            <a href={pull_link} target="_blank" rel="noreferrer">
               {pull_id ? "#" + pull_id : ""}
             </a>
           </th>
@@ -850,7 +853,11 @@ export default class BuildHistoryDisplay extends Component {
     return (
       <div>
         <h2>
-          <a href={jenkins.link("job/" + this.props.job)} target="_blank">
+          <a
+            href={jenkins.link("job/" + this.props.job)}
+            target="_blank"
+            rel="noreferrer"
+          >
             {this.props.job}
           </a>{" "}
           history{" "}

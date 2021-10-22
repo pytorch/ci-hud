@@ -2,19 +2,12 @@ import React, { Component } from "react";
 import Card from "react-bootstrap/Card";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import ToggleButton from "react-bootstrap/ToggleButton";
-import Button from "react-bootstrap/Button";
 import Editor from "@monaco-editor/react";
 import { filterLog, registerLogLanguage } from "./logs.js";
 
-import {
-  BsFillCaretRightFill,
-  BsCaretDownFill,
-  BsFillCaretDownFill,
-  GoPrimitiveDot,
-  GoCircleSlash,
-  GoCheck,
-  GoX,
-} from "react-icons/all";
+import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
+
+import { GoPrimitiveDot, GoCircleSlash, GoCheck, GoX } from "react-icons/go";
 
 export default class CircleCICard extends Component {
   constructor(props) {
@@ -92,20 +85,17 @@ export default class CircleCICard extends Component {
 
   renderLogViewer(step) {
     let log = null;
-    let isShowing = false;
     const radios = ["Minimal", "All"];
     if (step.log.shown) {
-      isShowing = true;
       if (step.log.text) {
         let logText = null;
-        if (step.log.logLevel == "All") {
+        if (step.log.logLevel === "All") {
           logText = step.log.text;
         } else {
           logText = filterLog(step.log.text);
         }
 
         const totalLines = (logText.match(/\n/g) || "").length + 1;
-        let existingEditor = null;
         if (step.log.existingEditor) {
           step.log.existingEditor.setValue(logText);
           step.log.existingEditor.revealLine(totalLines);
@@ -182,7 +172,6 @@ export default class CircleCICard extends Component {
       let steps = [];
       for (const [i, step] of this.state.data.steps.entries()) {
         const name = step.name;
-        const logUrl = step.actions[0].output_url;
 
         let statusIcon = this.renderStatusIcon(step.actions[0].status);
         const iconStyle = { cursor: "pointer" };

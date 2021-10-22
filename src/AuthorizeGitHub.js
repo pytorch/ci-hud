@@ -46,7 +46,7 @@ export default class AuthorizeGitHub extends Component {
     const lastRedirect = localStorage.getItem("last_redirect");
     if (lastRedirect) {
       localStorage.removeItem("last_redirect");
-      if (lastRedirect != window.location.href) {
+      if (lastRedirect !== window.location.href) {
         window.location.href = lastRedirect;
       }
     }

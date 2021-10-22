@@ -22,15 +22,12 @@ export function formatBytes(size) {
 export function parseXml(xml, arrayTags) {
   let dom = null;
   if (window.DOMParser) dom = new DOMParser().parseFromString(xml, "text/xml");
-  else if (window.ActiveXObject) {
-    dom = new ActiveXObject("Microsoft.XMLDOM");
-    dom.async = false;
-    if (!dom.loadXML(xml))
-      throw dom.parseError.reason + " " + dom.parseError.srcText;
-  } else throw new Error("cannot parse xml string!");
+  else {
+    throw new Error("cannot parse xml string!");
+  }
 
   function parseNode(xmlNode, result) {
-    if (xmlNode.nodeName == "#text") {
+    if (xmlNode.nodeName === "#text") {
       let v = xmlNode.nodeValue;
       if (v.trim()) result["#text"] = v;
       return;
@@ -43,7 +40,7 @@ export function parseXml(xml, arrayTags) {
         result[xmlNode.nodeName] = [existing, jsonNode];
       else result[xmlNode.nodeName].push(jsonNode);
     } else {
-      if (arrayTags && arrayTags.indexOf(xmlNode.nodeName) != -1)
+      if (arrayTags && arrayTags.indexOf(xmlNode.nodeName) !== -1)
         result[xmlNode.nodeName] = [jsonNode];
       else result[xmlNode.nodeName] = jsonNode;
     }
@@ -82,7 +79,7 @@ async function github_graphql_raw(query) {
     body: JSON.stringify({ query: query }),
   });
   if (result.status !== 200) {
-    throw `Error fetching data from GitHub: ${await result.text()}`;
+    throw new Error(`Error fetching data from GitHub: ${await result.text()}`);
   }
   return await result.json();
 }

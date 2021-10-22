@@ -21,13 +21,12 @@ import Links from "./Links.js";
 import {
   BrowserRouter as Router,
   Route,
-  Link,
   Redirect,
   Switch,
 } from "react-router-dom";
 
 const App = () => (
-  <Router basename={process.env.PUBLIC_URL + "/"}>
+  <Router>
     <div className="App">
       <Links />
       <div style={{ margin: "0" }} className="container">
@@ -209,19 +208,6 @@ const Build1 = ({ match }) => {
   );
 };
 
-const Build2 = ({ match }) => {
-  // Uhhh, am I really supposed to rob window.location here?
-  const query = new URLSearchParams(window.location.search);
-  return (
-    <GitHubStatusDisplay
-      interval={60000}
-      job={match.url.replace(/^\/build2\//, "")}
-      mode={query.get("mode")}
-      jobNameFilter={query.get("name_filter")}
-    />
-  );
-};
-
 const RouteNotFound = ({ match }) => {
   return <p>Route not found: {match.url}</p>;
 };
@@ -237,13 +223,6 @@ const Build1Route = ({ match }) => (
   <Fragment>
     <Route exact path={match.url} component={Build1} />
     <Route path={`${match.url}/:segment`} component={Build1Route} />
-  </Fragment>
-);
-
-const Build2Route = ({ match }) => (
-  <Fragment>
-    <Route exact path={match.url} component={Build2} />
-    <Route path={`${match.url}/:segment`} component={Build2Route} />
   </Fragment>
 );
 

@@ -1,9 +1,12 @@
 {
-  "name": "pytorch-ci-hud",
-  "version": "0.1.0",
+  "name": "ci-hud",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
     "@monaco-editor/react": "^4.2.2",
+    "@testing-library/jest-dom": "^5.11.4",
+    "@testing-library/react": "^11.1.0",
+    "@testing-library/user-event": "^12.1.10",
     "@toast-ui/chart": "^4.3.4",
     "axios": "^0.21.2",
     "bootstrap": "^4.6.0",
@@ -13,21 +16,27 @@
     "highlight.js": "^11.0.1",
     "parse-duration": "^0.1.1",
     "rc-tooltip": "^5.1.1",
-    "react": "^16.10.0",
+    "react": "^17.0.2",
     "react-bootstrap": "^1.6.1",
-    "react-dom": "^16.2.0",
+    "react-dom": "^17.0.2",
     "react-icons": "^4.2.0",
     "react-markdown": "^7.0.1",
-    "react-router-dom": "^4.2.2",
-    "react-scripts": "^4.0.3"
+    "react-router-dom": "^5.3.0",
+    "react-scripts": "4.0.3",
+    "web-vitals": "^1.0.1"
   },
   "homepage": "https://hud.pytorch.org",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject",
-    "deploy": "gh-pages -d build"
+    "test": "./node_modules/jest/bin/jest.js --config jest.config.js",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
   },
   "browserslist": {
     "production": [
@@ -42,6 +51,9 @@
     ]
   },
   "devDependencies": {
+    "@babel/preset-react": "^7.14.5",
+    "identity-obj-proxy": "^3.0.0",
+    "jest-canvas-mock": "^2.3.1",
     "prettier": "2.3.1"
   }
 }
