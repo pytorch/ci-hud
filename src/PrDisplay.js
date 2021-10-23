@@ -153,20 +153,19 @@ export default class PrDisplay extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      pr_number: this.props.pr_number,
-      commit_hash: this.props.commit_hash,
       showGroups: [],
     };
   }
 
   componentDidMount() {
     this.update().catch((error) => {
+      console.error(error);
       this.setState({ error_message: error.toString() });
     });
   }
 
   isPr() {
-    return this.state.pr_number !== undefined;
+    return this.props.pr_number !== undefined;
   }
   hasError() {
     return this.state.error_message !== undefined;
@@ -238,22 +237,22 @@ export default class PrDisplay extends Component {
     if (this.isPr()) {
       // Fetch the PR's info from GitHub's GraphQL API
       let pr_result = await github.graphql(
-        getPrQuery(this.props.user, this.props.repo, this.state.pr_number)
+        getPrQuery(this.props.user, this.props.repo, this.props.pr_number)
       );
       pr = pr_result.repository.pullRequest;
       if (pr === null || pr === undefined) {
-        this.state.error_message = "Failed to fetch PR " + this.state.pr_number;
+        this.state.error_message = "Failed to fetch PR " + this.props.pr_number;
         this.setState(this.state);
         return;
       }
       commit = pr.commits.nodes[0].commit;
     } else {
       let commitResponse = await github.graphql(
-        getCommitQuery(this.props.user, this.props.repo, this.state.commit_hash)
+        getCommitQuery(this.props.user, this.props.repo, this.props.commit_hash)
       );
       if (commitResponse.repository.object == null) {
         this.setState({
-          error_message: `Failed to fetch ${this.state.commit_hash}`,
+          error_message: `Failed to fetch ${this.props.commit_hash}`,
         });
         return;
       }
@@ -374,7 +373,7 @@ export default class PrDisplay extends Component {
       if (runIsPassing("build-docs (python)")) {
         python = (
           <a
-            href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/index.html`}
+            href={`${PREVIEW_BASE_URL}/${this.props.pr_number}/index.html`}
             target="_blank"
             className="btn btn-primary"
             style={{ marginRight: "5px" }}
@@ -387,7 +386,7 @@ export default class PrDisplay extends Component {
       if (runIsPassing("build-docs (cpp)")) {
         cpp = (
           <a
-            href={`${PREVIEW_BASE_URL}/${this.state.pr_number}/cppdocs/index.html`}
+            href={`${PREVIEW_BASE_URL}/${this.props.pr_number}/cppdocs/index.html`}
             target="_blank"
             className="btn btn-primary"
             rel="noreferrer"
@@ -414,9 +413,9 @@ export default class PrDisplay extends Component {
           <div>
             <h3>
               <a
-                href={`https://github.com/${this.props.user}/${this.props.repo}/pull/${this.state.pr_number}`}
+                href={`https://github.com/${this.props.user}/${this.props.repo}/pull/${this.props.pr_number}`}
               >
-                {this.state.pr.title} (#{this.state.pr_number})
+                {this.state.pr.title} (#{this.props.pr_number})
               </a>
             </h3>
           </div>
