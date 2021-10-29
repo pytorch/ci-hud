@@ -30,6 +30,10 @@ export const groups = [
     name: "GitHub calculate-docker-image",
   },
   {
+    regex: /docker-builds/,
+    name: "CI Docker Image Builds",
+  },
+  {
     regex: /ci\/circleci: pytorch_ios_/,
     name: "ci/circleci: pytorch_ios",
   },
