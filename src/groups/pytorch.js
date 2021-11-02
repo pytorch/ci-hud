@@ -38,6 +38,10 @@ export const groups = [
     name: "ci/circleci: pytorch_ios",
   },
   {
+    regex: /^ios-/,
+    name: "iOS Github Actions",
+  },
+  {
     regex:
       /(ci\/circleci: pytorch_parallelnative_)|(ci\/circleci: pytorch_paralleltbb_)|(paralleltbb-linux-)|(parallelnative-linux-)/,
     name: "Parallel",
