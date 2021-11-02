@@ -296,11 +296,15 @@ export default class PrDisplay extends Component {
         run.checkRuns.nodes.map((check) => check.conclusion)
       );
     }
+    let statuses = [];
+    if (commit.status) {
+      statuses = commit.status.contexts;
+    }
     this.setState({
       pr: pr,
       commit: commit,
       runs: workflow_runs,
-      statuses: commit.status.contexts,
+      statuses: statuses,
     });
 
     // Go through all the runs and check if there is a prefix for the workflow
