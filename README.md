@@ -26,6 +26,10 @@ Submitting a PR will trigger a [preview build](https://www.netlify.com/products/
 
 Log-ins don't work on the Netlify deploy previews since the GitHub app has hud.pytorch.org hardcoded as its callback URL. To see changes that require the GitHub API in a preview you can manually copy your OAuth token. In the JS console on hud.pytorch.org, run `localStorage.getItem("gh_pat")`. Then in the preview's console, run `localStorage.setItem("gh_pat", "<the token>")`.
 
+## Data
+
+The data backing the HUD is updated via a series of cron-based GitHub Actions. See [`.github/`](.github) for details.
+
 ## License
 
 This repository uses the MIT License, as found in the [LICENSE](LICENSE) file.
