@@ -7,6 +7,7 @@ import React, { Component } from "react";
 import Card from "react-bootstrap/Card";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import ToggleButton from "react-bootstrap/ToggleButton";
+import FailureReport from "./pr/FailureReport.js";
 import TestReportRenderer from "./pr/TestReportRenderer.js";
 import Editor from "@monaco-editor/react";
 import ReactMarkdown from "react-markdown";
@@ -697,6 +698,9 @@ export default class PrDisplay extends Component {
           </button>
         );
         testResultArtifacts[artifact.Key["#text"]] = true;
+        let prefix = artifact.Key["#text"];
+        check.artifactUrl = `https://gha-artifacts.s3.amazonaws.com/${prefix}`;
+        check.artifact = artifact;
 
         if (artifact.showReport) {
           const key = `s3-${check.name}-${artifactName}`;
@@ -981,10 +985,9 @@ export default class PrDisplay extends Component {
         if (!status.targetUrl.includes("https://circleci.com")) {
           continue;
         }
+        status.status = status.state;
         runs.push({
-          data: {
-            status: status.state,
-          },
+          data: status,
           element: <CircleCICard key={status.context} status={status} />,
         });
       }
@@ -1015,6 +1018,18 @@ export default class PrDisplay extends Component {
       }
     }
 
+    const failures = runs.filter((run) => run.data.status === "FAILURE");
+    let report = null;
+    if (failures.length > 0) {
+      report = (
+        <FailureReport
+          user={this.props.user}
+          repo={this.props.repo}
+          failures={failures}
+        />
+      );
+    }
+
     if (this.state.runs && displayRuns.length === 0) {
       displayRuns = <p style={{ fontWeight: "bold" }}>No jobs found</p>;
     }
@@ -1027,6 +1042,7 @@ export default class PrDisplay extends Component {
         {loading}
 
         {this.renderDocPreviewButton()}
+        {report}
         <div>{displayRuns}</div>
       </div>
     );

@@ -8,6 +8,7 @@ import Card from "react-bootstrap/Card";
 import { highlightElement } from "highlight.js";
 import { strFromU8, unzipSync } from "fflate";
 import { GoCheck } from "react-icons/go";
+import Spin from "../Spin.js";
 
 import { parseXml } from "../utils.js";
 
@@ -284,6 +285,9 @@ export default class TestReportRenderer extends Component {
         testInfo[testcase.file][testcase.classname].time += +testcase.time;
       }
     }
+    if (this.props.onLoaded) {
+      this.props.onLoaded(failures, totals, testInfo);
+    }
 
     this.setState({
       failures: failures,
@@ -303,7 +307,7 @@ export default class TestReportRenderer extends Component {
           </p>
         );
       }
-      return <p>loading and parsing test results...</p>;
+      return <Spin text="Loading test results" />;
     }
 
     let results = [];
@@ -315,7 +319,7 @@ export default class TestReportRenderer extends Component {
     if (this.state.failures.length === 0) {
       return (
         <div>
-          {summary}
+          {this.props.noSummary ? null : summary}
           <Card
             style={{
               marginTop: "5px",
@@ -340,7 +344,7 @@ export default class TestReportRenderer extends Component {
 
     return (
       <div>
-        {summary}
+        {this.props.noSummary ? null : summary}
         {results}
       </div>
     );
