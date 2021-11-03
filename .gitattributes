@@ -1,2 +1,2 @@
 yarn.lock linguist-generated=true
-
+.github/workflows/generated-*.yml linguist-generated=true
