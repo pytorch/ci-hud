@@ -9,6 +9,7 @@ import { summarize_job, summarize_date } from "./Summarize.js";
 import getGroups from "./groups/index.js";
 import Tooltip from "rc-tooltip";
 import axios from "axios";
+import UpdateButton from "./status/UpdateButton.js";
 import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
 import { ImSpinner2 } from "react-icons/im";
 import { FcCancel } from "react-icons/fc";
@@ -278,7 +279,7 @@ export default class BuildHistoryDisplay extends Component {
     const branch = this.props.branch;
     const user = this.props.user;
     const repo = this.props.repo;
-    const jsonUrl = `https://s3.amazonaws.com/ossci-job-status/v5/${user}/${repo}/${branch.replace(
+    const jsonUrl = `https://s3.amazonaws.com/ossci-job-status/v6/${user}/${repo}/${branch.replace(
       "/",
       "_"
     )}.json`;
@@ -917,7 +918,12 @@ export default class BuildHistoryDisplay extends Component {
     if (this.state.lastUpdateDate) {
       lastUpdate = (
         <p style={{ fontSize: "0.8em" }}>
-          Last updated {this.state.lastUpdateDate.toLocaleString()}
+          Last updated {this.state.lastUpdateDate.toLocaleString()}{" "}
+          <UpdateButton
+            repo={this.props.repo}
+            user={this.props.user}
+            branch={this.props.branch}
+          />
         </p>
       );
     }
