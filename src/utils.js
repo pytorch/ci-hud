@@ -81,7 +81,14 @@ async function github_graphql_raw(query) {
   if (result.status !== 200) {
     throw new Error(`Error fetching data from GitHub: ${await result.text()}`);
   }
-  return await result.json();
+
+  const data = await result.json();
+  if (data.errors) {
+    throw new Error(
+      `Error in GraphQL response: ${JSON.stringify(data.errors)}`
+    );
+  }
+  return data;
 }
 
 async function github_graphql(query) {
@@ -109,6 +116,7 @@ export async function github_raw(url) {
       Authorization: "token " + pat,
     },
   });
+
   return result;
 }
 

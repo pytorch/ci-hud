@@ -13,7 +13,7 @@ import Editor from "@monaco-editor/react";
 import ReactMarkdown from "react-markdown";
 import { filterLog, registerLogLanguage } from "./pr/logs.js";
 import CircleCICard from "./pr/CircleCICard.js";
-
+import Spin from "./Spin.js";
 import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
 
 import { GoPrimitiveDot, GoCircleSlash, GoCheck, GoX } from "react-icons/go";
@@ -28,6 +28,24 @@ function isOnDevelopmentHost() {
     window.location.href.startsWith("http://localhost") ||
     window.location.href.startsWith("https://deploy-preview")
   );
+}
+
+function getCommitsForPrQuery(user, repo, number) {
+  return `
+    {
+      repository(name: "${repo}", owner: "${user}") {
+        pullRequest(number: ${number}) {
+          commits(last: 100) {
+            nodes {
+              commit {
+                oid
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
 }
 
 function getPrQuery(user, repo, number) {
@@ -50,6 +68,8 @@ function getPrQuery(user, repo, number) {
           commits(last: 1) {
             nodes {
               commit {
+                messageHeadline
+                oid
                 status {
                   contexts {
                     description
@@ -159,7 +179,7 @@ export default class PrDisplay extends Component {
   }
 
   componentDidMount() {
-    this.update().catch((error) => {
+    this.update({}).catch((error) => {
       console.error(error);
       this.setState({ error_message: error.toString() });
     });
@@ -208,7 +228,7 @@ export default class PrDisplay extends Component {
     }
   }
 
-  async update() {
+  async update(params) {
     // Set some global persistent state to redirect back to this window for log
     // ins
     localStorage.setItem("last_redirect", window.location.href);
@@ -237,14 +257,38 @@ export default class PrDisplay extends Component {
     let commit = undefined;
     if (this.isPr()) {
       // Fetch the PR's info from GitHub's GraphQL API
-      let pr_result = await github.graphql(
-        getPrQuery(this.props.user, this.props.repo, this.props.pr_number)
-      );
-      pr = pr_result.repository.pullRequest;
+      let commitResponse = null;
+      if (params && params.selectedCommit) {
+        const selectedCommit = params.selectedCommit;
+        commitResponse = await github.graphql(
+          getCommitQuery(this.props.user, this.props.repo, selectedCommit)
+        );
+      }
+      let [prResult, prCommits] = await Promise.all([
+        github.graphql(
+          getPrQuery(this.props.user, this.props.repo, this.props.pr_number)
+        ),
+        github.graphql(
+          getCommitsForPrQuery(
+            this.props.user,
+            this.props.repo,
+            this.props.pr_number
+          )
+        ),
+      ]);
+      pr = prResult.repository.pullRequest;
+      pr.allCommits = prCommits.repository.pullRequest.commits.nodes
+        .map((n) => n.commit.oid)
+        .reverse();
       if (pr === null || pr === undefined) {
         this.state.error_message = "Failed to fetch PR " + this.props.pr_number;
         this.setState(this.state);
         return;
+      }
+      if (commitResponse) {
+        pr.commits.nodes = [
+          { commit: commitResponse.repository.object.history.nodes[0] },
+        ];
       }
       commit = pr.commits.nodes[0].commit;
     } else {
@@ -305,6 +349,7 @@ export default class PrDisplay extends Component {
       commit: commit,
       runs: workflow_runs,
       statuses: statuses,
+      loadingNewCommit: false,
     });
 
     // Go through all the runs and check if there is a prefix for the workflow
@@ -873,6 +918,57 @@ export default class PrDisplay extends Component {
     return cards;
   }
 
+  renderCommitSelector() {
+    if (
+      !this.state.pr ||
+      !this.state.pr.allCommits ||
+      this.state.pr.allCommits.length === 0
+    ) {
+      return null;
+    }
+    let items = [];
+    for (const oid of this.state.pr.allCommits) {
+      items.push(
+        <option key={`oid-${oid}`} value={oid}>
+          {oid.substring(0, 7)}
+        </option>
+      );
+    }
+    let loading = null;
+    if (this.state.loadingNewCommit) {
+      loading = (
+        <span style={{ marginLeft: "10px" }}>
+          <Spin text="Loading" />
+        </span>
+      );
+    }
+    return (
+      <div style={{ margin: "4px" }}>
+        <span>
+          Commit:{" "}
+          <a
+            href={`https://github.com/pytorch/pytorch/commit/${this.state.commit.oid}`}
+          >
+            {this.state.commit.messageHeadline}
+          </a>
+        </span>
+        <select
+          style={{
+            marginLeft: "10px",
+            borderRadius: "4px",
+          }}
+          onChange={async (e) => {
+            this.setState({ loadingNewCommit: true });
+            await this.update({ selectedCommit: e.target.value });
+          }}
+        >
+          {items}
+        </select>
+        {loading}
+      </div>
+    );
+  }
+
   render() {
     let runs = [];
     let groups = {
@@ -1042,6 +1138,7 @@ export default class PrDisplay extends Component {
         {loading}
 
         {this.renderDocPreviewButton()}
+        {this.renderCommitSelector()}
         {report}
         <div>{displayRuns}</div>
       </div>
