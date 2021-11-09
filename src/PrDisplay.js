@@ -18,7 +18,14 @@ import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
 
 import { GoPrimitiveDot, GoCircleSlash, GoCheck, GoX } from "react-icons/go";
 
-import { formatBytes, asyncAll, s3, github } from "./utils.js";
+import {
+  formatBytes,
+  asyncAll,
+  s3,
+  github,
+  setQueryParam,
+  queryParam,
+} from "./utils.js";
 
 const PREVIEW_BASE_URL = "https://docs-preview.pytorch.org";
 
@@ -39,6 +46,7 @@ function getCommitsForPrQuery(user, repo, number) {
             nodes {
               commit {
                 oid
+                messageHeadline
               }
             }
           }
@@ -179,7 +187,9 @@ export default class PrDisplay extends Component {
   }
 
   componentDidMount() {
-    this.update({}).catch((error) => {
+    this.update({
+      selectedCommit: queryParam("prCommit"),
+    }).catch((error) => {
       console.error(error);
       this.setState({ error_message: error.toString() });
     });
@@ -278,7 +288,7 @@ export default class PrDisplay extends Component {
       ]);
       pr = prResult.repository.pullRequest;
       pr.allCommits = prCommits.repository.pullRequest.commits.nodes
-        .map((n) => n.commit.oid)
+        .map((n) => [n.commit.oid, n.commit.messageHeadline])
         .reverse();
       if (pr === null || pr === undefined) {
         this.state.error_message = "Failed to fetch PR " + this.props.pr_number;
@@ -350,6 +360,7 @@ export default class PrDisplay extends Component {
       runs: workflow_runs,
       statuses: statuses,
       loadingNewCommit: false,
+      selectedCommit: commit.oid,
     });
 
     // Go through all the runs and check if there is a prefix for the workflow
@@ -927,10 +938,10 @@ export default class PrDisplay extends Component {
       return null;
     }
     let items = [];
-    for (const oid of this.state.pr.allCommits) {
+    for (const [oid, message] of this.state.pr.allCommits) {
       items.push(
         <option key={`oid-${oid}`} value={oid}>
-          {oid.substring(0, 7)}
+          {message} ({oid.substring(0, 7)})
         </option>
       );
     }
@@ -945,11 +956,10 @@ export default class PrDisplay extends Component {
     return (
       <div style={{ margin: "4px" }}>
         <span>
-          Commit:{" "}
           <a
             href={`https://github.com/pytorch/pytorch/commit/${this.state.commit.oid}`}
           >
-            {this.state.commit.messageHeadline}
+            Commit:
           </a>
         </span>
         <select
@@ -957,8 +967,10 @@ export default class PrDisplay extends Component {
             marginLeft: "10px",
             borderRadius: "4px",
           }}
+          value={this.state.selectedCommit}
           onChange={async (e) => {
             this.setState({ loadingNewCommit: true });
+            setQueryParam("prCommit", e.target.value);
             await this.update({ selectedCommit: e.target.value });
           }}
         >
@@ -1103,6 +1115,7 @@ export default class PrDisplay extends Component {
       }
     }
     add("FAILURE");
+    add("ERROR");
     add("PENDING");
     add("SUCCESS");
     add("GROUP");
