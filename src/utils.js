@@ -127,6 +127,21 @@ export let github = {
   raw: github_raw,
 };
 
+export function setQueryParam(key, value) {
+  let currentUrlParams = new URLSearchParams(window.location.search);
+  currentUrlParams.set(key, value);
+  window.history.pushState(
+    "",
+    "",
+    window.location.pathname + "?" + currentUrlParams.toString()
+  );
+}
+
+export function queryParam(key) {
+  let currentUrlParams = new URLSearchParams(window.location.search);
+  return currentUrlParams.get(key);
+}
+
 export async function s3(prefix, bucket) {
   // List the gha-artifacts S3 bucket by a specific prefix
   return await fetch(
