@@ -42,6 +42,10 @@ export const groups = [
     name: "iOS Github Actions",
   },
   {
+    regex: /^macos-/,
+    name: "macOS Github Actions",
+  },
+  {
     regex:
       /(ci\/circleci: pytorch_parallelnative_)|(ci\/circleci: pytorch_paralleltbb_)|(paralleltbb-linux-)|(parallelnative-linux-)/,
     name: "Parallel",
