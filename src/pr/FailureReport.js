@@ -33,6 +33,7 @@ function posToLine(text, idx) {
 }
 
 function guessRelevantLine(text, totalLines) {
+  // Safari (and perhaps others) do not support lookbehind regexes
   const genregex = () => {
     try {
       return new RegExp("(?<!if-no-files-found: )error", "g");
