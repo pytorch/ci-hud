@@ -33,7 +33,14 @@ function posToLine(text, idx) {
 }
 
 function guessRelevantLine(text, totalLines) {
-  const regex = new RegExp("(?<!if-no-files-found: )error", "g");
+  const genregex = () => {
+    try {
+      return new RegExp("(?<!if-no-files-found: )error", "g");
+    } catch(e) {
+      return new RegExp("error", "g");
+    }
+  };
+  const regex = genregex();
   const idx = Array.from(text.matchAll(regex)).slice(
     -1
   )[0].index;
