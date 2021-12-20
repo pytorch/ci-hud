@@ -12,7 +12,18 @@ import axios from "axios";
 import UpdateButton from "./status/UpdateButton.js";
 import { BsFillCaretRightFill, BsFillCaretDownFill } from "react-icons/bs";
 import { ImSpinner2 } from "react-icons/im";
-import { FcCancel } from "react-icons/fc";
+
+import {
+  is_success,
+  is_skipped,
+  is_failure,
+  is_aborted,
+  is_pending,
+  is_infra_failure
+} from './utils/JobStatusUtils';
+import GroupCell from "./components/GroupCell.js";
+import ResultIcon from "./components/ResultIcon.js";
+import ResultCell from './components/ResultCell.js'
 
 function isMobile() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -36,35 +47,6 @@ function array_move(arr, old_index, new_index) {
   arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
 }
 
-function is_success(result) {
-  return result === "SUCCESS" || result === "success";
-}
-
-function is_failure(result) {
-  // TODO: maybe classify timeout differently
-  return (
-    result === "FAILURE" ||
-    result === "failure" ||
-    result === "error" ||
-    result === "timed_out"
-  );
-}
-
-function is_aborted(result) {
-  return result === "ABORTED" || result === "cancelled";
-}
-
-function is_pending(result) {
-  return !result || result === "pending";
-}
-
-function is_skipped(result) {
-  return result === "skipped";
-}
-
-function is_infra_failure(result) {
-  return result === "infrastructure_fail";
-}
 
 function computeConsecutiveFailureCount(data, failure_window = 10) {
   const still_unknown_set = new Set();
@@ -119,7 +101,7 @@ class NameFilterForm extends Component {
     super(props);
     this.state = {
       jobNameFilter: props.defaultValue || "",
-      onSubmit: props.onSubmit || ((_) => {}),
+      onSubmit: props.onSubmit || ((_) => { }),
     };
   }
   render() {
@@ -255,7 +237,7 @@ export default class BuildHistoryDisplay extends Component {
           if (
             subBuild.build &&
             subBuild.build._class ===
-              "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
+            "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
           ) {
             subBuild.build.subBuilds.forEach(go);
           } else {
@@ -462,55 +444,6 @@ export default class BuildHistoryDisplay extends Component {
       return false;
     };
 
-    function result_icon(result) {
-      if (is_success(result))
-        return (
-          <span role="img" style={{ color: "green" }} aria-label="passed">
-            0
-          </span>
-        );
-      if (is_skipped(result))
-        return (
-          <span role="img" style={{ color: "gray" }} aria-label="skipped">
-            S
-          </span>
-        );
-      if (is_failure(result))
-        return (
-          <span role="img" style={{ color: "red" }} aria-label="failed">
-            X
-          </span>
-        );
-      if (is_aborted(result))
-        return (
-          <span
-            role="img"
-            style={{ marginLeft: "-2px", color: "gray" }}
-            aria-label="cancelled"
-          >
-            <FcCancel />
-          </span>
-        );
-      if (is_pending(result))
-        return (
-          <span
-            className="animate-flicker"
-            role="img"
-            style={{ color: "goldenrod" }}
-            aria-label="in progress"
-          >
-            ?
-          </span>
-        );
-      if (is_infra_failure(result))
-        return (
-          <span role="img" style={{ color: "grey" }} aria-label="failed">
-            X
-          </span>
-        );
-      return result;
-    }
-
     let builds = this.state.builds;
     let consecutive_failure_count = this.state.consecutive_failure_count;
 
@@ -611,16 +544,18 @@ export default class BuildHistoryDisplay extends Component {
         jobName = data.group.jobNames[0];
       }
       let header = (
-        <th className="rotate" key={jobName}>
+        <th className="rotate" key={jobName} >
           <div
             className={
               consecutive_failure_count &&
-              consecutive_failure_count.has(jobName)
+                consecutive_failure_count.has(jobName)
                 ? "failing-header"
                 : ""
             }
           >
-            {summarize_job(jobName)}
+            <span>
+              {summarize_job(jobName)}
+            </span>
           </div>
         </th>
       );
@@ -707,12 +642,12 @@ export default class BuildHistoryDisplay extends Component {
       // Add check_suite_focus=true to GHA checkruns
       const ghaRegex = new RegExp(
         "^https://github.com/" +
-          this.props.user +
-          "/" +
-          this.props.repo +
-          "/runs/\\d+$"
+        this.props.user +
+        "/" +
+        this.props.repo +
+        "/runs/\\d+$"
       );
-      if (url.match(ghaRegex)) {
+      if (url?.match(ghaRegex)) {
         return url + "?check_suite_focus=true";
       }
       return url;
@@ -724,6 +659,7 @@ export default class BuildHistoryDisplay extends Component {
         }
       });
     });
+
     const rows = builds.map((build) => {
       const sb_map = build.sb_map;
 
@@ -740,20 +676,9 @@ export default class BuildHistoryDisplay extends Component {
           const status = aggregateStatus(jobs);
           if (status) {
             cell = (
-              <div
-                className="display-cell"
-                style={{
-                  fontWeight: "bold",
-                }}
-                onClick={() => {
-                  toggleGroup(data.group);
-                }}
-                onAuxClick={() => {
-                  toggleGroup(data.group);
-                }}
-              >
-                {result_icon(status)}
-              </div>
+              <GroupCell toggleGroup={toggleGroup} group={data.group}>
+                <ResultIcon result={status} />
+              </GroupCell>
             );
           }
         } else {
@@ -764,17 +689,9 @@ export default class BuildHistoryDisplay extends Component {
           const sb = sb_map.get(jobName);
           if (sb !== undefined) {
             cell = (
-              <div className="display-cell">
-                <a
-                  href={decoratedBuildUrl(sb.build_url)}
-                  className="icon"
-                  target="_blank"
-                  alt={jobName}
-                  rel="noreferrer"
-                >
-                  {result_icon(sb.status)}
-                </a>
-              </div>
+              <ResultCell url={decoratedBuildUrl(sb.build_url)} jobName={jobName}>
+                <ResultIcon result={sb.status} />
+              </ResultCell>
             );
           }
         }
@@ -954,8 +871,8 @@ export default class BuildHistoryDisplay extends Component {
                 <label htmlFor="show-notifications">
                   Show notifications on master failure
                   {this.state.showNotifications &&
-                  window.Notification &&
-                  window.Notification.permission === "denied" ? (
+                    window.Notification &&
+                    window.Notification.permission === "denied" ? (
                     <Fragment>
                       {" "}
                       <strong>
