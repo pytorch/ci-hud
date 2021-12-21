@@ -6,9 +6,9 @@ export default function GroupCell({ toggleGroup, group, children }) {
             className="display-cell"
             style={{
                 fontWeight: "bold",
-                borderColor: 'black',
+                borderColor: 'Gainsboro',
                 borderStyle: "solid",
-                borderWidth: "1px"
+                borderWidth: "1px",
             }}
             onClick={() => {
                 toggleGroup(group);
