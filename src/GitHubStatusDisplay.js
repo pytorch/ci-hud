@@ -647,7 +647,7 @@ export default class BuildHistoryDisplay extends Component {
         this.props.repo +
         "/runs/\\d+$"
       );
-      if (url?.match(ghaRegex)) {
+      if (url && url.match(ghaRegex)) {
         return url + "?check_suite_focus=true";
       }
       return url;
