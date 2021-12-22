@@ -1,29 +1,29 @@
 export function is_success(result) {
-    return result === "SUCCESS" || result === "success";
+  return result === "SUCCESS" || result === "success";
 }
 
 export function is_failure(result) {
-    // TODO: maybe classify timeout differently
-    return (
-        result === "FAILURE" ||
-        result === "failure" ||
-        result === "error" ||
-        result === "timed_out"
-    );
+  // TODO: maybe classify timeout differently
+  return (
+    result === "FAILURE" ||
+    result === "failure" ||
+    result === "error" ||
+    result === "timed_out"
+  );
 }
 
 export function is_aborted(result) {
-    return result === "ABORTED" || result === "cancelled";
+  return result === "ABORTED" || result === "cancelled";
 }
 
 export function is_pending(result) {
-    return !result || result === "pending";
+  return !result || result === "pending";
 }
 
 export function is_skipped(result) {
-    return result === "skipped";
+  return result === "skipped";
 }
 
 export function is_infra_failure(result) {
-    return result === "infrastructure_fail";
+  return result === "infrastructure_fail";
 }

@@ -19,11 +19,11 @@ import {
   is_failure,
   is_aborted,
   is_pending,
-  is_infra_failure
-} from './utils/JobStatusUtils';
+  is_infra_failure,
+} from "./utils/JobStatusUtils";
 import GroupCell from "./components/GroupCell.js";
 import ResultIcon from "./components/ResultIcon.js";
-import ResultCell from './components/ResultCell.js'
+import ResultCell from "./components/ResultCell.js";
 
 function isMobile() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
@@ -46,7 +46,6 @@ function array_move(arr, old_index, new_index) {
   }
   arr.splice(new_index, 0, arr.splice(old_index, 1)[0]);
 }
-
 
 function computeConsecutiveFailureCount(data, failure_window = 10) {
   const still_unknown_set = new Set();
@@ -101,7 +100,7 @@ class NameFilterForm extends Component {
     super(props);
     this.state = {
       jobNameFilter: props.defaultValue || "",
-      onSubmit: props.onSubmit || ((_) => { }),
+      onSubmit: props.onSubmit || ((_) => {}),
     };
   }
   render() {
@@ -237,7 +236,7 @@ export default class BuildHistoryDisplay extends Component {
           if (
             subBuild.build &&
             subBuild.build._class ===
-            "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
+              "com.tikal.jenkins.plugins.multijob.MultiJobBuild"
           ) {
             subBuild.build.subBuilds.forEach(go);
           } else {
@@ -544,18 +543,16 @@ export default class BuildHistoryDisplay extends Component {
         jobName = data.group.jobNames[0];
       }
       let header = (
-        <th className="rotate" key={jobName} >
+        <th className="rotate" key={jobName}>
           <div
             className={
               consecutive_failure_count &&
-                consecutive_failure_count.has(jobName)
+              consecutive_failure_count.has(jobName)
                 ? "failing-header"
                 : ""
             }
           >
-            <span>
-              {summarize_job(jobName)}
-            </span>
+            <span>{summarize_job(jobName)}</span>
           </div>
         </th>
       );
@@ -642,10 +639,10 @@ export default class BuildHistoryDisplay extends Component {
       // Add check_suite_focus=true to GHA checkruns
       const ghaRegex = new RegExp(
         "^https://github.com/" +
-        this.props.user +
-        "/" +
-        this.props.repo +
-        "/runs/\\d+$"
+          this.props.user +
+          "/" +
+          this.props.repo +
+          "/runs/\\d+$"
       );
       if (url && url.match(ghaRegex)) {
         return url + "?check_suite_focus=true";
@@ -689,7 +686,10 @@ export default class BuildHistoryDisplay extends Component {
           const sb = sb_map.get(jobName);
           if (sb !== undefined) {
             cell = (
-              <ResultCell url={decoratedBuildUrl(sb.build_url)} jobName={jobName}>
+              <ResultCell
+                url={decoratedBuildUrl(sb.build_url)}
+                jobName={jobName}
+              >
                 <ResultIcon result={sb.status} />
               </ResultCell>
             );
@@ -871,8 +871,8 @@ export default class BuildHistoryDisplay extends Component {
                 <label htmlFor="show-notifications">
                   Show notifications on master failure
                   {this.state.showNotifications &&
-                    window.Notification &&
-                    window.Notification.permission === "denied" ? (
+                  window.Notification &&
+                  window.Notification.permission === "denied" ? (
                     <Fragment>
                       {" "}
                       <strong>
