@@ -30,6 +30,9 @@ export default function ShowMoreLinkHeader() {
             </li>
           );
         })}
+        <li>
+          <Link to="/torchbench-v0-nightly">torchbench</Link>
+        </li>
       </ul>
     );
   };
