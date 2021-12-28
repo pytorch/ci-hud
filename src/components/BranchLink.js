@@ -4,7 +4,6 @@ import axios from "axios";
 import { is_failure, is_pending } from "../utils/JobStatusUtils";
 import ResultIcon from "./ResultIcon";
 export default function BranchLink({ jsonUrl, link, children }) {
-
   const [commits, setCommits] = useState({});
   useEffect(() => {
     axios.get(jsonUrl).then((response) => {

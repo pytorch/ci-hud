@@ -264,7 +264,6 @@ export default class BuildHistoryDisplay extends Component {
       "/",
       "_"
     )}.json`;
-    console.log("JSON URL IS", jsonUrl);
     let commits = null;
     try {
       commits = await axios.get(jsonUrl);
@@ -364,6 +363,7 @@ export default class BuildHistoryDisplay extends Component {
         });
       }
     }
+
     this.setState(data);
   }
 
