@@ -12,6 +12,10 @@ export const groups = [
     name: "Linux GitHub Actions",
   },
   {
+    regex: /(^linux-binary)/,
+    name: "Linux Binary GitHub Actions",
+  },
+  {
     regex:
       /(Add annotations )|(Close stale pull requests)|(Label PRs & Issues)|(Triage )|(Update S3 HTML indices)|(codecov\/project)|(Facebook CLA Check)|(auto-label-rocm)/,
     name: "Annotations and labeling",
